@@ -1,7 +1,6 @@
 from django.urls import path
 
-from .views import EventInterestDetailView, EventInterestListCreateView
-
+from archive.views import EventInterestDetailView, EventInterestListCreateView
 
 urlpatterns = [
     path("", EventInterestListCreateView.as_view(), name="event-interest-list-create"),

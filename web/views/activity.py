@@ -1,7 +1,8 @@
 """활동 달력(캘린더) 조회 및 필터 관련 뷰와 헬퍼 모음."""
-import logging
+
 from collections import defaultdict
 from datetime import date, timedelta
+import logging
 from urllib.parse import urlencode
 
 from django.contrib.auth.decorators import login_required
@@ -20,8 +21,7 @@ from archive.activity_calendar_queries import (
 from archive.models import ActivityLogEntry
 from archive.queries import user_status_counts
 from core.calendar_grid import month_grid
-
-from ._helpers import _adjacent_month, _parse_calendar_date, _parse_calendar_month
+from web.views._helpers import _adjacent_month, _parse_calendar_date, _parse_calendar_month
 
 logger = logging.getLogger(__name__)
 
@@ -242,7 +242,9 @@ def activity_calendar(request):
     selected_types = _parse_activity_type_filter(request)
     kinds = None
     if selected_types:
-        kinds = [kind for type_group in selected_types for kind in _ACTIVITY_TYPE_GROUPS[type_group]]
+        kinds = [
+            kind for type_group in selected_types for kind in _ACTIVITY_TYPE_GROUPS[type_group]
+        ]
 
     q = request.GET.get("q", "").strip()
     search_no_match = False
@@ -258,9 +260,7 @@ def activity_calendar(request):
             list_user_activity_for_month(request.user, year=year, month=month, kinds=kinds)
         )
     except Exception:
-        logger.exception(
-            "Failed to query activity calendar for year=%s month=%s", year, month
-        )
+        logger.exception("Failed to query activity calendar for year=%s month=%s", year, month)
         items = []
         if calendar_error is None:
             calendar_error = "query_failed"
@@ -311,9 +311,7 @@ def activity_calendar(request):
         # event_calendar에도 있는 core.calendar_grid.month_grid의 알려진
         # 한계(year=1/9999 경계 채움 셀)와 동일하다 — 근본 수정은 이번
         # 변경 범위 밖이라 여기서도 완화만 한다.
-        logger.exception(
-            "Failed to build activity calendar grid for year=%s month=%s", year, month
-        )
+        logger.exception("Failed to build activity calendar grid for year=%s month=%s", year, month)
         grid = []
         if calendar_error is None:
             calendar_error = "query_failed"
@@ -327,7 +325,10 @@ def activity_calendar(request):
                 "selected": cell.date == selected_date,
                 "count": len(items_by_date.get(cell.date, [])),
                 "kinds": sorted(
-                    {_visible_activity_group(day_item.kind) for day_item in items_by_date.get(cell.date, [])}
+                    {
+                        _visible_activity_group(day_item.kind)
+                        for day_item in items_by_date.get(cell.date, [])
+                    }
                 ),
                 "items": [
                     {"group": _visible_activity_group(day_item.kind), "label": day_item.label}
@@ -388,13 +389,9 @@ def _search_activity_date_jump(request, *, q, selected_types):
     이동이 사용자 본인의 필터로 숨긴 kind를 드러내는 일이 없다.
     """
     search_group_names = [
-        group
-        for group in (selected_types or list(_ACTIVITY_TYPE_GROUPS))
-        if group != "status"
+        group for group in (selected_types or list(_ACTIVITY_TYPE_GROUPS)) if group != "status"
     ]
-    search_kinds = [
-        kind for group in search_group_names for kind in _ACTIVITY_TYPE_GROUPS[group]
-    ]
+    search_kinds = [kind for group in search_group_names for kind in _ACTIVITY_TYPE_GROUPS[group]]
 
     try:
         match_date = find_latest_activity_date_for_query(request.user, q, kinds=search_kinds)

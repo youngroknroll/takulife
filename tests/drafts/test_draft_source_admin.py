@@ -1,5 +1,6 @@
 """drafts DraftSource의 admin 등록 테스트. 모델이 존재하고 admin 목록에서
 접근 가능한지만 확인하며, list_display 등 커스텀 admin 동작은 검증하지 않는다."""
+
 import pytest
 
 pytestmark = pytest.mark.web

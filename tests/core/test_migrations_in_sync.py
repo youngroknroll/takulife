@@ -5,12 +5,12 @@
 단언으로 실행하면 "makemigrations 돌리는 걸 깜빡함"이 배포 때까지 아무도
 못 보는 낡은 마이그레이션이 아니라 빠른 스위트 실패가 된다.
 """
+
 from io import StringIO
 
-import pytest
 from django.core.management import call_command
 from django.core.management.base import CommandError
-
+import pytest
 
 pytestmark = pytest.mark.contract
 

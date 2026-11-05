@@ -52,21 +52,20 @@ CAL-5-01(Activity 전용, 다음 회차)을 뺀 CAL-5-02~5-11.
   빠른 작업은 새 엔드포인트 없이 기존 공개 계약을 재사용한다"는 전제를
   고정해 둔다.
 """
+
+from datetime import date
 import html
 import re
-from datetime import date
 from unittest.mock import patch
 
-import pytest
 from django.test import Client
+import pytest
 
 pytestmark = pytest.mark.web
 
 
 def _extract_href(body, link_text):
-    match = re.search(
-        rf'<a[^>]*href="([^"]*)"[^>]*>\s*{re.escape(link_text)}\s*</a>', body
-    )
+    match = re.search(rf'<a[^>]*href="([^"]*)"[^>]*>\s*{re.escape(link_text)}\s*</a>', body)
     assert match, f"{link_text!r} 링크를 찾을 수 없음"
     # `href="?{{ extra_query }}"`는 Django가 자동 이스케이프하는 변수
     # 치환이라, extra_query 값 안의 '&'는 응답 바이트에서 HTML 엔티티

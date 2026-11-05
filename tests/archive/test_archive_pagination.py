@@ -5,6 +5,7 @@
 방문 기록(/archive/visits/)은 타임라인을 5건씩 페이지네이션하며 요약 카드
 (누적 방문/메모 있음)는 전체 레코드 기준을 계속 보고한다.
 """
+
 import pytest
 
 from archive.models import UserEventStatus
@@ -92,7 +93,9 @@ class TestArchiveStatusesPagination:
         # (올바른 HTML이며, 브라우저는 이동 시 다시 &로 디코딩한다).
         assert b"?page=2&amp;status=planned" in resp.content
 
-    def test_나의_일정_상태_필터의_두번째_페이지는_일치하는_행만_보여준다(self, user_client, make_statuses):
+    def test_나의_일정_상태_필터의_두번째_페이지는_일치하는_행만_보여준다(
+        self, user_client, make_statuses
+    ):
         user, client = user_client()
         make_statuses(user, 7, status=UserEventStatus.Status.PLANNED)
         # 방문완료 행이 planned 필터 목록·건수에 섞여 들어가면 안 된다.
@@ -119,7 +122,9 @@ class TestArchiveVisitsPagination:
                 short_review="좋았어요" if i < with_memo else "",
             )
 
-    def test_다녀온_기록_첫_페이지는_다섯_건까지만_보여준다(self, user_client, make_event, make_visit):
+    def test_다녀온_기록_첫_페이지는_다섯_건까지만_보여준다(
+        self, user_client, make_event, make_visit
+    ):
         user, client = user_client()
         self._make_visits(user, make_event, make_visit, 7)
 
@@ -132,7 +137,9 @@ class TestArchiveVisitsPagination:
         assert len(page_obj.object_list) == 5
         assert len(resp.context["visit_rows"]) == 5
 
-    def test_다녀온_기록_두번째_페이지는_남은_건수를_보여준다(self, user_client, make_event, make_visit):
+    def test_다녀온_기록_두번째_페이지는_남은_건수를_보여준다(
+        self, user_client, make_event, make_visit
+    ):
         user, client = user_client()
         self._make_visits(user, make_event, make_visit, 7)
 
@@ -140,7 +147,9 @@ class TestArchiveVisitsPagination:
 
         assert len(resp.context["page_obj"].object_list) == 2
 
-    def test_다녀온_기록_요약_카드는_페이지가_아닌_전체_건수를_보여준다(self, user_client, make_event, make_visit):
+    def test_다녀온_기록_요약_카드는_페이지가_아닌_전체_건수를_보여준다(
+        self, user_client, make_event, make_visit
+    ):
         user, client = user_client()
         self._make_visits(user, make_event, make_visit, 7, with_memo=3)
 

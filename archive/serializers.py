@@ -1,19 +1,17 @@
 from django.utils.translation import gettext
 from rest_framework import serializers
 
-from core.vocab import normalize_collection_item_type, normalize_personal_category
-from events.image_validation import validate_uploaded_image
-from events.models import Event
-
-from .models import (
+from archive.models import (
     MEMO_MAX_LENGTH,
     CollectionItem,
     EventInterest,
     PersonalEntry,
     UserEventStatus,
     VisitRecord,
-    VisitRecordPhoto,
 )
+from core.vocab import normalize_collection_item_type, normalize_personal_category
+from events.image_validation import validate_uploaded_image
+from events.models import Event
 
 
 class PersonalEntrySerializer(serializers.ModelSerializer):
@@ -79,9 +77,7 @@ class _SubjectScopedPersonalEntryMixin:
         super().__init__(*args, **kwargs)
         request = self.context.get("request")
         if request is not None and request.user.is_authenticated:
-            self.fields["personal_entry"].queryset = PersonalEntry.objects.filter(
-                user=request.user
-            )
+            self.fields["personal_entry"].queryset = PersonalEntry.objects.filter(user=request.user)
 
     def validate(self, attrs):
         event = attrs.get("event")
@@ -176,9 +172,7 @@ class VisitRecordSerializer(serializers.ModelSerializer):
         # 연결하지 못하게 한다.
         request = self.context.get("request")
         if request is not None and request.user.is_authenticated:
-            self.fields["personal_entry"].queryset = PersonalEntry.objects.filter(
-                user=request.user
-            )
+            self.fields["personal_entry"].queryset = PersonalEntry.objects.filter(user=request.user)
 
     def validate(self, attrs):
         event = attrs.get("event")
@@ -277,9 +271,7 @@ class CollectionItemSerializer(serializers.ModelSerializer):
         # 구별됐다. 서비스 단 소유권 검사는 2차 방어로 그대로 둔다.
         request = self.context.get("request")
         if request is not None and request.user.is_authenticated:
-            self.fields["visit_record"].queryset = VisitRecord.objects.filter(
-                user=request.user
-            )
+            self.fields["visit_record"].queryset = VisitRecord.objects.filter(user=request.user)
 
     def validate_item_type(self, value):
         # 어느 언어의 유형 칩 문구든 저장값은 한국어 원문으로 통일한다.
@@ -303,7 +295,9 @@ class CollectionItemUpdateSerializer(CollectionItemSerializer):
     client_token = None
 
     class Meta(CollectionItemSerializer.Meta):
-        fields = [field for field in CollectionItemSerializer.Meta.fields if field != "client_token"]
+        fields = [
+            field for field in CollectionItemSerializer.Meta.fields if field != "client_token"
+        ]
 
 
 class CollectionItemQuerySerializer(serializers.Serializer):

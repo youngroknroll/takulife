@@ -23,7 +23,9 @@ pytestmark = pytest.mark.domain
 
 
 @pytest.mark.django_db
-def test_비공식_항목_목록_조회는_사용자로_범위를_좁히고_kind로_추가_필터링한다(make_user, make_entry):
+def test_비공식_항목_목록_조회는_사용자로_범위를_좁히고_kind로_추가_필터링한다(
+    make_user, make_entry
+):
     user = make_user(username="pe-list")
     other = make_user(username="pe-other")
     place = make_entry(user, kind="place", title="P")
@@ -67,10 +69,7 @@ def test_비공식_항목_목록_미인식_정렬은_기본_최근_등록순으�
     older = make_entry(user, title="Older")
     newer = make_entry(user, title="Newer")
 
-    titles = [
-        entry.title
-        for entry in list_user_personal_entries(user, sort="not-a-real-option")
-    ]
+    titles = [entry.title for entry in list_user_personal_entries(user, sort="not-a-real-option")]
 
     assert titles == [newer.title, older.title]
 
@@ -81,7 +80,9 @@ def test_비공식_항목_목록_미인식_정렬은_기본_최근_등록순으�
 
 
 @pytest.mark.django_db
-def test_비공식_항목_집계는_본인의_총_건수만_세고_다른_사용자의_항목은_제외한다(make_user, make_entry):
+def test_비공식_항목_집계는_본인의_총_건수만_세고_다른_사용자의_항목은_제외한다(
+    make_user, make_entry
+):
     user = make_user(username="entry-counts-user")
     other = make_user(username="entry-counts-other")
     make_entry(user, kind=PersonalEntry.Kind.PLACE, title="P1")

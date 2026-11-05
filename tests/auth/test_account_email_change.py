@@ -6,8 +6,9 @@ AS-3은 폼 자체의 유효성 판정(domain)만 보고, AS-4/AS-5는 실제
 /accounts/email/ POST를 거쳐 그 판정이 EmailAddress 부작용을 실제로
 막는지/allauth의 CHANGE_EMAIL 치환 규약이 살아있는지 본다(web).
 """
-import pytest
+
 from allauth.account.models import EmailAddress
+import pytest
 
 from accounts.forms import EmailChangeForm
 
@@ -42,9 +43,7 @@ def test_잘못된_현재_비밀번호로_이메일_변경을_요청하면_이�
     client, make_verified_user, valid_password
 ):
     user = make_verified_user(password=valid_password)
-    before = set(
-        EmailAddress.objects.filter(user=user).values_list("email", "verified", "primary")
-    )
+    before = set(EmailAddress.objects.filter(user=user).values_list("email", "verified", "primary"))
     client.force_login(user)
 
     response = client.post(
@@ -57,9 +56,7 @@ def test_잘못된_현재_비밀번호로_이메일_변경을_요청하면_이�
     )
 
     assert response.status_code == 200
-    after = set(
-        EmailAddress.objects.filter(user=user).values_list("email", "verified", "primary")
-    )
+    after = set(EmailAddress.objects.filter(user=user).values_list("email", "verified", "primary"))
     assert after == before
 
 

@@ -1,4 +1,5 @@
 """인프라 헬스체크와 API 루트 뷰. 도메인 결합이 없다."""
+
 from django.db import OperationalError, connection
 from django.http import HttpResponse
 from drf_spectacular.utils import extend_schema, inline_serializer

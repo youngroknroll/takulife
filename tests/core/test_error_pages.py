@@ -6,6 +6,7 @@ Django 테스트 환경은 세션 전체에서 ``settings.DEBUG = False``를 강
 handler404/handler500 경로와 프로젝트 브랜드 템플릿을 탄다.
 tests/auth/test_auth_rate_limit.py의 429.html 검증과 같은 방식이다.
 """
+
 import pytest
 
 pytestmark = pytest.mark.web
@@ -22,7 +23,9 @@ def test_존재하지_않는_경로에_접근하면_커스텀_404_페이지가_�
     assert "ERROR 404" in body
 
 
-def test_핸들러가_예외를_던지면_요청_컨텍스트_없이도_커스텀_500_페이지가_렌더링된다(client, monkeypatch, db):
+def test_핸들러가_예외를_던지면_요청_컨텍스트_없이도_커스텀_500_페이지가_렌더링된다(
+    client, monkeypatch, db
+):
     """Django 기본 500 핸들러(django/views/defaults.py::server_error)는
     context도 request도 없이 ``template.render()``로 templates/500.html을
     렌더한다 — 이 페이지에서는 context processor가 전혀 실행되지 않는다.

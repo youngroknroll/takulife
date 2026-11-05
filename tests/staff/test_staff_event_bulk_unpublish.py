@@ -2,12 +2,13 @@
 
 건별로 성공·실패가 갈려도 응답은 항상 200이며, 요청 구조 오류·상한 초과만 400이다.
 """
+
 import logging
 
-import pytest
 from django.db import IntegrityError, connection
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
+import pytest
 
 from events.models import Event
 from staff.models import StaffActionLog
@@ -54,9 +55,7 @@ def test_일반_사용자는_이벤트_일괄_비공개_설정을_할_수_없다
 def test_요청_구조가_잘못되면_이벤트_일괄_비공개_설정을_거부한다(staff_client, body):
     staff, client = staff_client()
 
-    response = client.post(
-        bulk_unpublish_url(), data=body, content_type="application/json"
-    )
+    response = client.post(bulk_unpublish_url(), data=body, content_type="application/json")
 
     assert response.status_code == 400
     assert "event_ids" in response.json()

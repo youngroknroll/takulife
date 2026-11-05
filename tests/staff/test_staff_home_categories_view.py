@@ -1,10 +1,11 @@
 """홈 카테고리 설정 화면(/staff/home-categories/) 인증 게이트, 템플릿 자산, 저장, 감사 로그 검증."""
+
 import re
 
-import pytest
 from django.db import IntegrityError, connection
 from django.test import Client, override_settings
 from django.test.utils import CaptureQueriesContext
+import pytest
 
 from core.models import Category, HomeConfig
 from staff.models import StaffActionLog
@@ -60,7 +61,9 @@ class TestStaffHomeCategoriesTemplateAssets:
         assert b'class="home-cats-toggle"' in resp.content
         assert b'class="home-cats-checkbox"' in resp.content
 
-    def test_홈_카테고리_설정_화면의_순서_입력_필드는_인라인_스타일을_갖지_않는다(self, staff_client):
+    def test_홈_카테고리_설정_화면의_순서_입력_필드는_인라인_스타일을_갖지_않는다(
+        self, staff_client
+    ):
         _, client = staff_client()
 
         resp = client.get("/staff/home-categories/")
@@ -107,7 +110,9 @@ class TestStaffHomeCategoriesEventCounts:
         rows_by_slug = {row["slug"]: row for row in resp.context["category_rows"]}
         assert rows_by_slug["exhibition"]["event_count"] == 0
 
-    def test_게시되지_않은_초안_이벤트는_카테고리_건수에_포함되지_않는다(self, staff_client, make_draft_event):
+    def test_게시되지_않은_초안_이벤트는_카테고리_건수에_포함되지_않는다(
+        self, staff_client, make_draft_event
+    ):
         make_draft_event(category="exhibition", official_url="https://example.com/home-cat-draft")
 
         _, client = staff_client()
@@ -138,7 +143,9 @@ class TestStaffHomeCategoriesVocabulary:
         slugs = {row["slug"] for row in resp.context["category_rows"]}
         assert "vintage_market_home" in slugs
 
-    def test_이미_강조_설정된_카테고리가_비활성화돼도_표에서_해제_가능하게_남는다(self, staff_client):
+    def test_이미_강조_설정된_카테고리가_비활성화돼도_표에서_해제_가능하게_남는다(
+        self, staff_client
+    ):
         """활성일 때 먼저 강조 목록에 넣어 "쓰는 중" 상태를 만든 다음
         비활성화한다. keep_slugs가 무력화되면 이 카테고리 행 자체가 표에서
         사라져, 스태프가 이미 켠 강조를 체크박스로 해제할 방법이 없어진다."""
@@ -154,9 +161,7 @@ class TestStaffHomeCategoriesVocabulary:
 
         content = resp.content.decode()
         assert 'id="feature_retired_featured_home"' in content
-        assert re.search(
-            r'id="feature_retired_featured_home"[^>]*checked', content
-        )
+        assert re.search(r'id="feature_retired_featured_home"[^>]*checked', content)
 
 
 @pytest.mark.django_db
@@ -197,7 +202,9 @@ class TestStaffHomeCategoriesPost:
         config = HomeConfig.get_solo()
         assert config.featured_categories == ["popup_store", "exhibition"]
 
-    def test_존재하지_않는_슬러그로_저장을_시도하면_무시되고_유효한_카테고리만_저장된다(self, staff_client):
+    def test_존재하지_않는_슬러그로_저장을_시도하면_무시되고_유효한_카테고리만_저장된다(
+        self, staff_client
+    ):
         """조작된 필드로 존재하지 않는 슬러그를 보내도 저장된 설정에 반영되면 안 된다."""
         _, client = staff_client()
 
@@ -315,7 +322,9 @@ class TestStaffHomeCategoriesAuditLog:
         assert config.featured_categories == original_categories
         assert StaffActionLog.objects.count() == 0
 
-    def test_신뢰할_프록시_설정이_없으면_전달된_X_Forwarded_For_헤더를_무시하고_원격_주소를_사용한다(self, staff_client):
+    def test_신뢰할_프록시_설정이_없으면_전달된_X_Forwarded_For_헤더를_무시하고_원격_주소를_사용한다(
+        self, staff_client
+    ):
         """신뢰 프록시 설정이 없을 때는 X-Forwarded-For를 신뢰하면 IP가 위조될 수 있어 무시해야 한다."""
         staff, client = staff_client()
 
@@ -334,7 +343,9 @@ class TestStaffHomeCategoriesAuditLog:
         assert entry.ip_address == "203.0.113.9"
 
     @override_settings(TRUSTED_PROXY_COUNT=1)
-    def test_신뢰할_프록시_설정이_있으면_전달된_X_Forwarded_For_헤더에서_클라이언트_IP를_해석한다(self, staff_client):
+    def test_신뢰할_프록시_설정이_있으면_전달된_X_Forwarded_For_헤더에서_클라이언트_IP를_해석한다(
+        self, staff_client
+    ):
         staff, client = staff_client()
 
         resp = client.post(

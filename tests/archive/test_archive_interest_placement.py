@@ -80,6 +80,7 @@ index와 동일한 3구획 툴바를 채택해(`hide_interest=True` 전달) 찜 
 `class="archive-search"`를 쓰므로 `TestIndexMovesInterestOutsideNavAfterSearch`
 파라미터에 여섯 번째 항목으로 합류한다 — 삭제가 아니라 마지막 이동이다.
 """
+
 import pytest
 
 pytestmark = pytest.mark.web

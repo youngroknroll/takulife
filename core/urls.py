@@ -1,8 +1,7 @@
 from django.urls import path
 
-from . import auth_views, views
-from .client_error_views import ClientErrorReportView
-
+from core import auth_views, views
+from core.client_error_views import ClientErrorReportView
 
 app_name = "core"
 

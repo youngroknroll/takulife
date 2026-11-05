@@ -4,7 +4,7 @@ from django.db import transaction
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
 
-from .models import CollectionItem, PersonalEntry, VisitRecordPhoto
+from archive.models import CollectionItem, PersonalEntry, VisitRecordPhoto
 
 logger = logging.getLogger(__name__)
 

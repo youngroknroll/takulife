@@ -1,5 +1,5 @@
-import pytest
 from django.db import OperationalError, connection
+import pytest
 
 pytestmark = pytest.mark.web
 

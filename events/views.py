@@ -4,10 +4,13 @@ from rest_framework.pagination import PageNumberPagination
 
 from core.analytics import record_event
 from core.models import AnalyticsEvent
-
-from .models import Event
-from .queries import PUBLIC_LISTING_PAGE_SIZE, list_published_events, parse_public_listing_params
-from .serializers import EventSerializer
+from events.models import Event
+from events.queries import (
+    PUBLIC_LISTING_PAGE_SIZE,
+    list_published_events,
+    parse_public_listing_params,
+)
+from events.serializers import EventSerializer
 
 
 class EventPagination(PageNumberPagination):

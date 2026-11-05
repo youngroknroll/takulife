@@ -3,7 +3,8 @@
 이 모듈은 도메인 앱(events, archive 등)을 임포트하지 않는다(core -> 도메인
 단방향 의존 유지).
 """
-from .context_processors import BRAND_NAME_KO, PROJECT_NAME
+
+from core.context_processors import BRAND_NAME_KO, PROJECT_NAME
 
 
 def build_website_json_ld(site_url):

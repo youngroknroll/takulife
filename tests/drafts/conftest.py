@@ -1,4 +1,5 @@
 """drafts 도메인 테스트가 공유하는 fixture 모음: httpx 통신 대역과 샘플 콘텐츠 생성기."""
+
 import socket
 
 import httpx
@@ -11,6 +12,7 @@ import drafts.fetching as fetching
 def install_mock_transport():
     """drafts.fetching의 httpx.Client를 실제 네트워크 없이 인프로세스 핸들러로 대체한다.
     `stub_validate_fetch_url=True`면 SSRF 검사를 우회하고 fetch 동작 자체만 검증한다."""
+
     def _install(monkeypatch, handler, *, stub_validate_fetch_url=False):
         if stub_validate_fetch_url:
             monkeypatch.setattr(fetching, "validate_fetch_url", lambda *a, **k: None)
@@ -30,6 +32,7 @@ def install_mock_transport():
 def fake_resolver():
     """getaddrinfo 형태의 가짜 리졸버를 만든다. 문자열이면 모든 호스트를 그 IP로,
     dict면 호스트별로 다른 IP로 해석한다(리다이렉트 대상 등)."""
+
     def _make(ip_or_by_host, port=443):
         def _resolve(host, _port, *, type=None):
             ip = ip_or_by_host[host] if isinstance(ip_or_by_host, dict) else ip_or_by_host
@@ -45,10 +48,13 @@ def rss_xml():
     """워드프레스 스타일 RSS 피드 1건을 만든다. atzip.kr/feed/의 실제 구조를 본떠
     <description>은 발췌만, 외부 공식 링크는 <content:encoded>(워드프레스 본문 HTML
     필드)에 담기게 한다."""
+
     def _make(*, link=None, description_anchors=None, content_encoded_anchors=None):
         link_xml = f"<link>{link}</link>" if link else ""
         anchors_html = "".join(f'<a href="{href}">link</a>' for href in (description_anchors or []))
-        description_xml = f"<description><![CDATA[{anchors_html}]]></description>" if anchors_html else ""
+        description_xml = (
+            f"<description><![CDATA[{anchors_html}]]></description>" if anchors_html else ""
+        )
         encoded_anchors_html = "".join(
             f'<a href="{href}">link</a>' for href in (content_encoded_anchors or [])
         )
@@ -74,6 +80,7 @@ def rss_xml():
 def sitemap_xml():
     """최소 sitemap.xml을 만든다. 실제 사이트맵(aniplustv 등)처럼 모든 <url>이
     <lastmod>을 갖지는 않으므로 (loc, lastmod-or-None) 형태도 받는다."""
+
     def _make(*locs):
         def _url_xml(entry):
             loc, lastmod = entry if isinstance(entry, tuple) else (entry, None)

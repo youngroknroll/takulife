@@ -1,5 +1,5 @@
-import logging
 from dataclasses import dataclass
+import logging
 from urllib.parse import urlparse
 
 from django.conf import settings
@@ -7,6 +7,17 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from core.vocab import is_valid_category, is_valid_region
+from drafts.extraction import (
+    EmptyExtractionError,
+    contains_hangul,
+    extract_event_fields,
+    latest_mentioned_date,
+    parse_raw_fields,
+)
+from drafts.fetching import ResponseTooLargeError, UnsupportedContentTypeError, fetch_html
+from drafts.llm_extraction import extract_event_fields_llm
+from drafts.models import EventDraft
+from drafts.url_safety import InvalidFetchUrlError, UnsafeFetchUrlError, validate_fetch_url
 from events.services import (
     DuplicateOfficialUrlError,
     MissingOfficialUrlError,
@@ -14,18 +25,6 @@ from events.services import (
     PublishEventTitleError,
     create_published_event,
 )
-
-from .extraction import (
-    EmptyExtractionError,
-    contains_hangul,
-    extract_event_fields,
-    latest_mentioned_date,
-    parse_raw_fields,
-)
-from .fetching import ResponseTooLargeError, UnsupportedContentTypeError, fetch_html
-from .llm_extraction import extract_event_fields_llm
-from .models import EventDraft
-from .url_safety import InvalidFetchUrlError, UnsafeFetchUrlError, validate_fetch_url
 
 logger = logging.getLogger(__name__)
 
@@ -182,9 +181,7 @@ def prepare_draft_from_url(*, source_url):
         extracted_end_date=extracted.get("extracted_end_date"),
         extracted_summary=extracted.get("extracted_summary", ""),
         confidence=extracted.get("confidence"),
-        extraction_method=extracted.get(
-            "extraction_method", EventDraft.ExtractionMethod.HEURISTIC
-        ),
+        extraction_method=extracted.get("extraction_method", EventDraft.ExtractionMethod.HEURISTIC),
     )
 
 
@@ -315,9 +312,7 @@ def _category_update_invalid(updates) -> bool:
 
 def _region_update_invalid(updates) -> bool:
     """updates에 extracted_region이 있는데 유효하지 않은 값이면 True."""
-    return "extracted_region" in updates and not is_valid_region(
-        updates["extracted_region"] or ""
-    )
+    return "extracted_region" in updates and not is_valid_region(updates["extracted_region"] or "")
 
 
 def update_draft(*, draft_id, updates):

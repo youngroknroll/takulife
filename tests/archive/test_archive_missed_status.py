@@ -6,6 +6,7 @@
 
 설계 문서: .docs/plans/2026-06-26-archive-missed-status-design.md
 """
+
 from datetime import date
 
 import pytest
@@ -39,7 +40,9 @@ def _derived(status_row):
 
 
 @pytest.mark.django_db
-def test_종료일이_지난_계획_상태를_방문_기록_없이_조회하면_놓침으로_파생된다(make_user, make_status):
+def test_종료일이_지난_계획_상태를_방문_기록_없이_조회하면_놓침으로_파생된다(
+    make_user, make_status
+):
     user = make_user(username="d1")
     e = _event(date(2026, 6, 20))  # 오늘보다 앞서 종료됨
     s = make_status(user, event=e, status="planned")
@@ -47,7 +50,9 @@ def test_종료일이_지난_계획_상태를_방문_기록_없이_조회하면_
 
 
 @pytest.mark.django_db
-def test_종료일이_지난_계획_상태라도_방문_기록이_있으면_놓침으로_파생되지_않는다(make_user, make_status, make_visit):
+def test_종료일이_지난_계획_상태라도_방문_기록이_있으면_놓침으로_파생되지_않는다(
+    make_user, make_status, make_visit
+):
     user = make_user(username="d2")
     e = _event(date(2026, 6, 20))
     s = make_status(user, event=e, status="planned")
@@ -56,7 +61,9 @@ def test_종료일이_지난_계획_상태라도_방문_기록이_있으면_놓�
 
 
 @pytest.mark.django_db
-def test_종료일이_지난_계획_상태라도_missed_overridden이면_계획으로_파생된다(make_user, make_status):
+def test_종료일이_지난_계획_상태라도_missed_overridden이면_계획으로_파생된다(
+    make_user, make_status
+):
     user = make_user(username="d3")
     e = _event(date(2026, 6, 20))
     s = make_status(user, event=e, status="planned", missed_overridden=True)
@@ -72,7 +79,9 @@ def test_종료일이_아직_남은_계획_상태는_계획으로_파생된다(m
 
 
 @pytest.mark.django_db
-def test_종료일이_오늘인_계획_상태는_아직_진행중으로_보아_놓침으로_파생되지_않는다(make_user, make_status):
+def test_종료일이_오늘인_계획_상태는_아직_진행중으로_보아_놓침으로_파생되지_않는다(
+    make_user, make_status
+):
     """end_date == today는 아직 진행 중으로 보아 놓침이 아니다(< 비교이므로)."""
     user = make_user(username="d5")
     e = _event(TODAY)
@@ -124,7 +133,9 @@ def test_상태별_집계를_조회하면_지난_계획_상태가_놓침_집계�
 
 
 @pytest.mark.django_db
-def test_놓침_필터로_목록을_조회하면_자동_놓침_항목이_포함되고_계획_필터에서는_제외된다(make_user, make_status):
+def test_놓침_필터로_목록을_조회하면_자동_놓침_항목이_포함되고_계획_필터에서는_제외된다(
+    make_user, make_status
+):
     user = make_user(username="c2")
     past = make_status(user, event=_event(date(2026, 6, 20), title="past"), status="planned")
     future = make_status(user, event=_event(date(2026, 6, 30), title="future"), status="planned")
@@ -142,7 +153,9 @@ def test_놓침_필터로_목록을_조회하면_자동_놓침_항목이_포함�
 
 
 @pytest.mark.django_db
-def test_자동_놓침_상태를_계획으로_되돌리면_missed_overridden이_설정되어_다시_놓침으로_돌아가지_않는다(make_user, make_status):
+def test_자동_놓침_상태를_계획으로_되돌리면_missed_overridden이_설정되어_다시_놓침으로_돌아가지_않는다(
+    make_user, make_status
+):
     """자동 놓침 행을 되돌리면 계획 상태를 유지하며 다시 놓침으로 진동하지 않는다."""
     user = make_user(username="s1")
     e = _event(date(2026, 6, 20))  # 과거
@@ -158,7 +171,9 @@ def test_자동_놓침_상태를_계획으로_되돌리면_missed_overridden이_
 
 
 @pytest.mark.django_db
-def test_행사_종료_전에_수동으로_놓침_처리하면_저장된_상태와_파생_상태가_모두_놓침이_된다(make_user, make_status):
+def test_행사_종료_전에_수동으로_놓침_처리하면_저장된_상태와_파생_상태가_모두_놓침이_된다(
+    make_user, make_status
+):
     user = make_user(username="s2")
     e = _event(date(2026, 6, 30))  # 미래
     s = make_status(user, event=e, status="planned")
@@ -171,7 +186,9 @@ def test_행사_종료_전에_수동으로_놓침_처리하면_저장된_상태�
 
 
 @pytest.mark.django_db
-def test_자동_놓침_상태를_방문완료로_처리하면_놓침에서_제외되고_방문완료로_파생된다(make_user, make_status):
+def test_자동_놓침_상태를_방문완료로_처리하면_놓침에서_제외되고_방문완료로_파생된다(
+    make_user, make_status
+):
     user = make_user(username="s3")
     e = _event(date(2026, 6, 20))  # 과거 — 자동 놓침 처리될 대상
     s = make_status(user, event=e, status="planned")

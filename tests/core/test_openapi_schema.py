@@ -1,10 +1,10 @@
 """OpenAPI 스키마·문서 엔드포인트 계약: 응답 형태(web)와 경로 완전성(contract)을 검증한다."""
+
 import re
 
-import pytest
 from django.conf import settings
 from django.urls import URLResolver, get_resolver
-
+import pytest
 
 _HTTP_METHODS = {"get", "post", "put", "patch", "delete", "head", "options", "trace"}
 

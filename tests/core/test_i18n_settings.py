@@ -1,5 +1,6 @@
 """트랙 43-1 UI 다국어 기반 — 설정 모듈 핀(LANGUAGE_CODE/LANGUAGES/LOCALE_PATHS/
 LocaleMiddleware 순서/i18n 컨텍스트 프로세서/언어 쿠키 보안 속성)."""
+
 import importlib
 
 import pytest

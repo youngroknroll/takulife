@@ -1,10 +1,11 @@
 """drafts/queries.py 테스트: list_drafts()와 DRAFT_LISTING_PAGE_SIZE.
 list_draft_sources()는 -enabled, name 순 정렬을 검증하며, staff 대시보드는
 DraftSource를 직접 조회하지 않고 이 헬퍼를 거쳐야 한다."""
+
 from datetime import timedelta
 
-import pytest
 from django.utils import timezone
+import pytest
 
 from drafts.discovery_runs import EVENT_OUTCOME_REASONS, record_heartbeat
 from drafts.models import DraftSource, EventDraft, SourceCandidate, SourceDiscoveryRun
@@ -52,7 +53,9 @@ class TestDraftReviewStats:
     def test_approved_드래프트만_있어도_세_키가_모두_포함된다(self, make_draft):
         from drafts.queries import draft_review_stats
 
-        make_draft("https://example.com/only-approved", review_status=EventDraft.ReviewStatus.APPROVED)
+        make_draft(
+            "https://example.com/only-approved", review_status=EventDraft.ReviewStatus.APPROVED
+        )
 
         result = draft_review_stats()
 
@@ -63,7 +66,9 @@ class TestDraftReviewStats:
 
 @pytest.mark.django_db
 class TestDraftReviewSla:
-    def test_드래프트가_전혀_없으면_최장_대기와_평균_처리와_반려율이_모두_None이고_카운트는_0이다(self):
+    def test_드래프트가_전혀_없으면_최장_대기와_평균_처리와_반려율이_모두_None이고_카운트는_0이다(
+        self,
+    ):
         from drafts.queries import draft_review_sla
 
         now = timezone.now()
@@ -77,7 +82,9 @@ class TestDraftReviewSla:
         assert result["decided_count"] == 0
         assert result["rejected_count"] == 0
 
-    def test_검토_대기_중인_드래프트가_여러_건이면_최장_대기는_가장_오래된_생성_시각_기준이다(self, make_draft):
+    def test_검토_대기_중인_드래프트가_여러_건이면_최장_대기는_가장_오래된_생성_시각_기준이다(
+        self, make_draft
+    ):
         from drafts.queries import draft_review_sla
 
         now = timezone.now()
@@ -108,7 +115,9 @@ class TestDraftReviewSla:
         # Then: 최장 대기는 재오픈 시각 기준이다
         assert result["longest_wait"] == timedelta(days=1)
 
-    def test_평균_처리와_반려율은_창_안에서_결정된_드래프트만_반영하고_창_밖_결정은_제외한다(self, make_draft):
+    def test_평균_처리와_반려율은_창_안에서_결정된_드래프트만_반영하고_창_밖_결정은_제외한다(
+        self, make_draft
+    ):
         from drafts.queries import draft_review_sla
 
         now = timezone.now()
@@ -254,7 +263,9 @@ class TestListDrafts:
         from drafts.queries import list_drafts
 
         older = make_draft("https://example.com/older-pending")
-        make_draft("https://example.com/approved-between", review_status=EventDraft.ReviewStatus.APPROVED)
+        make_draft(
+            "https://example.com/approved-between", review_status=EventDraft.ReviewStatus.APPROVED
+        )
         newer = make_draft("https://example.com/newer-pending")
 
         result = list(list_drafts(status=EventDraft.ReviewStatus.PENDING))
@@ -276,9 +287,13 @@ class TestListDrafts:
         for i in range(2):
             make_draft(f"https://example.com/pending-{i}")
         for i in range(3):
-            make_draft(f"https://example.com/approved-{i}", review_status=EventDraft.ReviewStatus.APPROVED)
+            make_draft(
+                f"https://example.com/approved-{i}", review_status=EventDraft.ReviewStatus.APPROVED
+            )
         for i in range(2):
-            make_draft(f"https://example.com/rejected-{i}", review_status=EventDraft.ReviewStatus.REJECTED)
+            make_draft(
+                f"https://example.com/rejected-{i}", review_status=EventDraft.ReviewStatus.REJECTED
+            )
 
         assert list_drafts(status=EventDraft.ReviewStatus.PENDING).count() == 2
         assert list_drafts(status=EventDraft.ReviewStatus.APPROVED).count() == 3
@@ -665,10 +680,7 @@ class TestRecentDiscoveryRuns:
         from drafts.queries import EVENT_OUTCOME_REASON_LABELS
 
         all_reasons = {
-            reason
-            for reasons in EVENT_OUTCOME_REASONS.values()
-            for reason in reasons
-            if reason
+            reason for reasons in EVENT_OUTCOME_REASONS.values() for reason in reasons if reason
         }
 
         assert all_reasons <= set(EVENT_OUTCOME_REASON_LABELS.keys())

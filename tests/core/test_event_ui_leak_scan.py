@@ -6,13 +6,14 @@
 파서와 요청 헬퍼는 그 파일에서 복제했다. `.mo`가 로컬에 컴파일돼 있어야 한다
 (`uv run django-admin compilemessages --ignore .venv`).
 """
-import re
+
 from datetime import date, timedelta
 from html.parser import HTMLParser
+import re
 
-import pytest
 from django.test import Client
 from django.utils import timezone
+import pytest
 
 from archive.models import EventInterest, UserEventStatus
 
@@ -280,9 +281,7 @@ def _scan_detail_visited(make_event, make_user):
 
 
 def _scan_detail_ended(make_event, make_user):
-    event = make_event(
-        title="Scan Ended Event", start_date=_FIXED_START, end_date=_FIXED_END
-    )
+    event = make_event(title="Scan Ended Event", start_date=_FIXED_START, end_date=_FIXED_END)
     return None, f"/events/{event.id}/", []
 
 
@@ -407,9 +406,7 @@ def test_영어_이벤트_화면에는_lang_ko_밖의_한글이_없다(make_even
 
 # E-26 (거짓 통과 방지: detail_related 장면은 연관 행사 섹션이 실제로 그려진다)
 @pytest.mark.django_db
-def test_detail_related_장면은_영어_연관_행사_섹션과_항목_2개를_그린다(
-    make_event, make_user
-):
+def test_detail_related_장면은_영어_연관_행사_섹션과_항목_2개를_그린다(make_event, make_user):
     user, path, _ = _scan_detail_related(make_event, make_user)
 
     root = _parse(_get(path, "en", user=user))

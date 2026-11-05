@@ -1,8 +1,9 @@
 """locale/*/LC_MESSAGES/*.po 번역 완결성 검사. 새 의존성(polib 등) 없이
 이 모듈 안에 작은 .po 파서를 직접 둔다."""
-import re
+
 from collections import Counter
 from pathlib import Path
+import re
 
 import pytest
 
@@ -240,8 +241,7 @@ def test_세_언어_카탈로그의_msgctxt_msgid_집합은_서로_같다(domain
     base = key_sets["en"]
     assert base
     assert {
-        language_dir: sorted(keys ^ base, key=str)
-        for language_dir, keys in key_sets.items()
+        language_dir: sorted(keys ^ base, key=str) for language_dir, keys in key_sets.items()
     } == {language_dir: [] for language_dir in _LANGUAGE_DIRS}
 
 
@@ -256,9 +256,7 @@ def test_세_언어_카탈로그_msgstr에는_한글이_없다():
                 for msgstr in entry["msgstrs"]:
                     checked += 1
                     if _HANGUL_RE.search(msgstr):
-                        violations.append(
-                            f"{_relpath(path)}: {entry['msgid'][:40]!r}"
-                        )
+                        violations.append(f"{_relpath(path)}: {entry['msgid'][:40]!r}")
 
     assert checked > 0
     assert violations == []
@@ -276,9 +274,7 @@ def test_msgstr의_이스케이프되지_않은_큰따옴표는_원문보다_많
                 for msgstr in entry["msgstrs"]:
                     checked += 1
                     if len(_UNESCAPED_QUOTE_RE.findall(msgstr)) > limit:
-                        violations.append(
-                            f"{_relpath(path)}: {entry['msgid'][:40]!r}"
-                        )
+                        violations.append(f"{_relpath(path)}: {entry['msgid'][:40]!r}")
 
     assert checked > 0
     assert violations == []

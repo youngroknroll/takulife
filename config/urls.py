@@ -13,7 +13,6 @@ from web.promotion_views import PromotePersonalEntryView
 from web.sitemaps import EventSitemap, StaticPageSitemap
 from web.sitemaps import sitemap as sitemap_view
 
-
 urlpatterns = [
     path("robots.txt", core_views.robots_txt, name="robots-txt"),
     path(
@@ -76,9 +75,7 @@ urlpatterns = [
     # 옛 경로를 여전히 가리킬 수 있어 쿼리스트링을 보존하는 임시(302) 리디렉션이다.
     path(
         "archive/collection/new/",
-        RedirectView.as_view(
-            url="/collection/new/", query_string=True, permanent=False
-        ),
+        RedirectView.as_view(url="/collection/new/", query_string=True, permanent=False),
         name="archive-collection-create-page",
     ),
     path(
@@ -138,9 +135,7 @@ urlpatterns = [
     ),
     path(
         "event-drafts/<int:draft_id>/",
-        RedirectView.as_view(
-            url="/staff/drafts/%(draft_id)s/", query_string=True, permanent=False
-        ),
+        RedirectView.as_view(url="/staff/drafts/%(draft_id)s/", query_string=True, permanent=False),
         name="event-draft-detail-page",
     ),
     path("staff/", include("staff.urls")),

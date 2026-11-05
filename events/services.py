@@ -6,8 +6,7 @@ from django.utils import timezone
 
 from core.categories import reconcile_palette_slot
 from core.vocab import is_valid_category, is_valid_region
-
-from .models import Event
+from events.models import Event
 
 logger = logging.getLogger(__name__)
 
@@ -108,12 +107,11 @@ def publish_field_checks(
         or not normalized_official_url
         or normalized_title.rstrip("/") != normalized_official_url.rstrip("/")
     )
-    official_url_unique = official_url_present and not existing_queryset.filter(
-        official_url=normalized_official_url
-    ).exists()
-    period_ok = not (
-        start_date is not None and end_date is not None and start_date > end_date
+    official_url_unique = (
+        official_url_present
+        and not existing_queryset.filter(official_url=normalized_official_url).exists()
     )
+    period_ok = not (start_date is not None and end_date is not None and start_date > end_date)
 
     return [
         {
@@ -124,8 +122,7 @@ def publish_field_checks(
         {
             "key": "official_url_scheme",
             "label": "공식 URL은 http:// 또는 https://로 시작하는 주소여야 합니다",
-            "passed": official_url_present
-            and _is_allowed_official_url(normalized_official_url),
+            "passed": official_url_present and _is_allowed_official_url(normalized_official_url),
         },
         {"key": "title", "label": "제목이 있어야 합니다", "passed": title_present},
         {

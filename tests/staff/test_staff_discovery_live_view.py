@@ -1,4 +1,5 @@
 """스태프 대시보드 실시간 수집 현황 조회 API 계약."""
+
 import pytest
 
 from drafts.discovery_runs import record_heartbeat
@@ -11,7 +12,9 @@ LIVE_URL = "/staff/api/discovery/live/"
 
 @pytest.mark.django_db
 @pytest.mark.parametrize("login_as_regular_user", [False, True], ids=["익명", "비스태프"])
-def test_관리자가_아니면_수집_실시간_현황을_조회할_수_없다(client, make_user, login_as_regular_user):
+def test_관리자가_아니면_수집_실시간_현황을_조회할_수_없다(
+    client, make_user, login_as_regular_user
+):
     if login_as_regular_user:
         client.force_login(make_user())
 
@@ -109,9 +112,7 @@ def test_실시간_현황_조회는_분당_40회로_제한된다(staff_client, c
 @pytest.mark.django_db
 def test_실시간_현황_JSON의_상세_문구는_원문_그대로_담긴다(staff_client):
     _, client = staff_client()
-    record_heartbeat(
-        provider="claude-code", phase="exploring", detail="<script>alert(1)</script>"
-    )
+    record_heartbeat(provider="claude-code", phase="exploring", detail="<script>alert(1)</script>")
 
     response = client.get(LIVE_URL)
 

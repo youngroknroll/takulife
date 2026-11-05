@@ -1,13 +1,14 @@
 """이벤트 URL을 실제로 읽어오는 결정론적 읽기 단계다. 모델을 쓰지 않는다 —
 호스트만 보고 인스타 캡션·X 게시물·일반 웹 경로 중 하나로 그대로 분기한다."""
+
 import html
 import math
 import re
 import socket
 from urllib.parse import urlencode, urlsplit
 
-import httpx
 from bs4 import BeautifulSoup
+import httpx
 
 from local_runner.url_safety import validate_fetch_url
 
@@ -46,7 +47,7 @@ _CAPTION_USER_AGENT = "TakuLifeRunner/1.0"
 # 공백이 있을 수 있어 비탐욕 매치로 " on "까지만 잡는다. 본문에 개행이 있어도
 # 접두 자체(줄바꿈 없는 한 줄)만 매치하면 되므로 DOTALL은 필요 없다.
 _CAPTION_PREFIX_RE = re.compile(
-    r'^[\d,]+\s+likes,\s+[\d,]+\s+comments\s+-\s+.+?\s+on\s+'
+    r"^[\d,]+\s+likes,\s+[\d,]+\s+comments\s+-\s+.+?\s+on\s+"
     r'[A-Za-z]+\s+\d{1,2},\s+\d{4}:\s+"'
 )
 # 접미: 닫는 인용부호 + 마침표 + 문자열 끝까지의 공백(있으면).

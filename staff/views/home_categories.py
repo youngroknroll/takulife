@@ -1,4 +1,5 @@
 """스태프 콘솔 화면: 홈 카테고리 타일을 고르고 순서를 정한다."""
+
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Count
@@ -8,10 +9,9 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from core.categories import category_choices_for_editing
 from core.models import HomeConfig
 from events.models import Event
-
-from ..models import StaffActionLog
-from ..permissions import staff_console_required
-from ._helpers import _action_log_kwargs, _staff_action_metadata
+from staff.models import StaffActionLog
+from staff.permissions import staff_console_required
+from staff.views._helpers import _action_log_kwargs, _staff_action_metadata
 
 
 @staff_console_required

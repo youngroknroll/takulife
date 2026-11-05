@@ -6,7 +6,7 @@
 
 ## Current fact
 
-- `core.ErrorGroup`(`core/models.py:203-224`, 마이그레이션
+- `core.ErrorGroup`(`core/models.py:194-215`, 마이그레이션
   `core/migrations/0007_errorgroup.py`)는 다음 필드를 갖는다: `source`
   (choices `backend`/`frontend`, `max_length=10`), `fingerprint`
   (`max_length=64`, `unique=True`), `error_type`(`max_length=100`),
@@ -17,91 +17,91 @@
   롤백한 힙만의 크기는 **524,288바이트** `[실측 curl+psql, track36-evidence.md]`.
   출처별 상한(아래)이 있어 이 크기를 넘지 않는다.
 - `core/error_groups.py`의 `record_error(*, source, error_type, location,
-  message)`가 유일한 기록 진입점이다(`core/error_groups.py:111-147`). HTTP나
+  message)`가 유일한 기록 진입점이다(`core/error_groups.py:112-148`). HTTP나
   Django 요청 객체를 모른다 — 호출자가 이미 문자열로 뽑아 넘긴다.
 - 지문은 `error_type`·`location`을 `_normalize_key`로 정규화(제어문자
   제거 + 길이 절단)한 뒤 `sha256(f"{source}\x1f{error_type}\x1f{location}")`
-  (`core/error_groups.py:68-83`, `_normalize_key`·`compute_fingerprint`)이고,
+  (`core/error_groups.py:69-84`, `_normalize_key`·`compute_fingerprint`)이고,
   같은 지문이면 한 행에서 `count`만 늘린다. 구분자가 제어문자(`\x1f`)라
   정규화된 값에는 존재할 수 없어 필드 경계가 일반 문자로 뒤섞이지 않는다.
 
 ## 무예외 보장
 
-`record_error`는 절대 예외를 던지지 않는다(`core/error_groups.py:111-147`).
+`record_error`는 절대 예외를 던지지 않는다(`core/error_groups.py:112-148`).
 
 1. 저장은 자체 `transaction.atomic()`(중첩이면 세이브포인트)
-   안에서 실행돼(`core/error_groups.py:132`), 호출자가 이미 깨진
+   안에서 실행돼(`core/error_groups.py:133`), 호출자가 이미 깨진
    트랜잭션 안에 있어도 이 함수의 실패가 그 트랜잭션을 추가로
    오염시키지 않는다.
 2. 갱신은 `update()`(존재하면 `count=F+1`) → 0행이면 `create()` → 동시
    생성으로 `IntegrityError`가 나면 다시 `update()`로 반영한다(DAR 결정,
-   `core/error_groups.py:150-177`, `_upsert_error_group`·`_bump`). `create()`는
+   `core/error_groups.py:151-180`, `_upsert_error_group`·`_bump`). `create()`는
    자체 세이브포인트 안에서 실행돼 실패해도 바깥 갱신 시도를 오염시키지
    않는다.
-3. 함수 전체를 `except Exception`으로 감싸고(`core/error_groups.py:142`),
+3. 함수 전체를 `except Exception`으로 감싸고(`core/error_groups.py:143`),
    실패 시 `core.error_groups` 로거에 고정 접두어 `error-group record
    failed`로 WARNING 1줄만 남긴다 — **원 메시지는 포함하지 않고**
    `source`·정제된 `error_type`(최대 100자로 자른 값)만 남긴다
-   (`core/error_groups.py:142-147`).
+   (`core/error_groups.py:143-148`).
 
 ## 메시지 정제 순서
 
-`sanitize_message`(`core/error_groups.py:86-95`)는 다음 순서로만 저장
+`sanitize_message`(`core/error_groups.py:87-96`)는 다음 순서로만 저장
 가능한 문자열을 만든다. `error_type`·`location`도 같은 제어문자 제거를
-`_strip_control`·`_normalize_key`로 공유한다(`core/error_groups.py:61-71`).
+`_strip_control`·`_normalize_key`로 공유한다(`core/error_groups.py:62-72`).
 
 1. 제어문자·개행·탭 제거 후 연속 공백 축소(`_CONTROL_CHARS_RE`,
-   `_EXTRA_SPACES_RE`, `core/error_groups.py:20-21,65`).
+   `_EXTRA_SPACES_RE`, `core/error_groups.py:21-22,66`).
 2. `settings.SECRET_KEY`·`ANTHROPIC_API_KEY`·
    `DRAFT_DISCOVERY_RUNNER_TOKEN`·DB 비밀번호(비어 있으면 대조 제외) 중
    하나라도 부분 일치하면 **메시지 전체를 빈 문자열로 비운다**
-   (`_contains_secret`, `core/error_groups.py:36-50,90-91`) — 이후
+   (`_contains_secret`, `core/error_groups.py:37-51,91-92`) — 이후
    단계로 넘어가지 않는다.
-3. 이메일을 `[email]`로 마스킹(`_mask_emails`, `core/error_groups.py:53-54,93`).
+3. 이메일을 `[email]`로 마스킹(`_mask_emails`, `core/error_groups.py:54-55,94`).
 4. URL 쿼리·프래그먼트 제거(`_strip_url_queries`,
-   `core/error_groups.py:23,57-58,94`).
-5. 500자(`MESSAGE_SAMPLE_MAX_LENGTH`, `core/error_groups.py:25,95`) 절단.
+   `core/error_groups.py:24,58-59,95`).
+5. 500자(`MESSAGE_SAMPLE_MAX_LENGTH`, `core/error_groups.py:26,96`) 절단.
 
 ## 출처별 상한
 
-`SOURCE_GROUP_LIMIT = 250`(`core/error_groups.py:28`) — `backend`·
+`SOURCE_GROUP_LIMIT = 250`(`core/error_groups.py:29`) — `backend`·
 `frontend` 각각 최대 250행, 합 최대 500행. **새 지문이 실제로 새 행을
 만들 때만** 그 출처의 최고령(`last_seen` 오름차순) 1행을 지운다
-(`_trim_source`, `core/error_groups.py:189-203`). `update()` 경로나
+(`_trim_source`, `core/error_groups.py:192-206`). `update()` 경로나
 `IntegrityError` 재시도 경로(기존 행 갱신)에서는 부르지 않는다 — 근사
 상한이라 동시 생성 시 ±1~2행 허용(DAR 결정).
 
 ## 핸들러(`core/logging.py`)
 
-- `ErrorGroupHandler`(`core/logging.py:9-42`)는 `django.request` 로거에만
-  붙는다(`LOGGING`, `config/settings.py:660-696`, `"django.request"` 항목은
+- `ErrorGroupHandler`(`core/logging.py:10-43`)는 `django.request` 로거에만
+  붙는다(`LOGGING`, `config/settings.py:654-690`, `"django.request"` 항목은
   `:689-693`의 `handlers: ["console", "error_groups"]`, `level: "ERROR"`) —
   root에는
   붙이지 않는다. 다른 경로의 의도된 WARNING이 오류 묶음으로 새는 것을
   막기 위해서다.
 - 모듈 최상단에 Django 모델·앱 임포트를 두지 않고 `emit()` 안에서만
-  지연 임포트한다(`core/logging.py:20,33`) — `settings.LOGGING`은
+  지연 임포트한다(`core/logging.py:21,34`) — `settings.LOGGING`은
   앱 레지스트리 준비 전에 평가되므로, 최상단에서 모델을 임포트하면
   부팅 시 `AppRegistryNotReady`가 난다.
-- `exc_info`가 없는 레코드는 무시한다(`core/logging.py:15-16`).
+- `exc_info`가 없는 레코드는 무시한다(`core/logging.py:16-17`).
 - 원 예외가 `django.db.Error` 계열이면 `record_error`를 아예 호출하지
-  않고 건너뛴다(`core/logging.py:20-25`) — DB 장애 중에 오류 묶음을
+  않고 건너뛴다(`core/logging.py:21-26`) — DB 장애 중에 오류 묶음을
   남기려고 DB에 또 접근하면 지연이 늘어나 `docker/entrypoint.sh`의
-  gunicorn 기본 타임아웃(설정 없음 → 기본 30초,
-  `docs/operations-runbook.md:328, 345`)을 넘길 수 있어서다.
+  gunicorn 워커 타임아웃(기본 120초, `GUNICORN_TIMEOUT`
+  `[코드 docker/entrypoint.sh]`, `docs/operations-runbook.md:328, 345`)을 넘길 수 있어서다.
 - `location`은 `f"{method} {route}".strip()`이고 `route`가 없으면
-  `"unresolved"`(`core/logging.py:27-31`). 요청 본문·쿼리스트링·쿠키·
+  `"unresolved"`(`core/logging.py:28-32`). 요청 본문·쿼리스트링·쿠키·
   사용자 정보는 저장하지 않는다.
 
 ## 수집 API — `POST /api/client-errors/`
 
 `core/client_error_views.py`, `ClientErrorReportView`(`:98-139`),
-`core/urls.py:13`에 `client-errors/`로 등록. 이 저장소의 **첫 무인증 공개
+`core/urls.py:12`에 `client-errors/`로 등록. 이 저장소의 **첫 무인증 공개
 쓰기 엔드포인트**라 어떤 입력이 와도 **항상 204**를 반환하고 상세를
 노출하지 않는다.
 
 - 같은 출처(Origin 없으면 Referer, 둘 다 없으면 거부)가 아니면 기록 없이
-  204(`_is_same_origin`, `core/client_error_views.py:44-51,120-121`).
+  204(`_is_same_origin`, `core/client_error_views.py:45-52,121-122`).
 - 본문 4096바이트(`MAX_BODY_BYTES`, `:23`) 초과·비UTF-8·비JSON이거나
   `DATA_UPLOAD_MAX_MEMORY_SIZE` 초과로 `request.body` 접근 자체가
   `RequestDataTooBig`을 던지면 204(`_parse_json_body`, `:54-66`).
@@ -120,8 +120,8 @@
   스로틀 외 다른 예외가 나도 500 대신 204로 넘기고 원인은
   `core.client_error_views` 로거에만 남긴다(`handle_exception`, `:110-117`).
 - 위 상한과 별도로 **프론트 새 묶음 생성만** 시간당 20건
-  (`NEW_GROUP_HOURLY_LIMIT`, `core/error_groups.py:30`,
-  `frontend_new_group_allowed`, `core/error_groups.py:98-108` [코드]) — 기존
+  (`NEW_GROUP_HOURLY_LIMIT`, `core/error_groups.py:31`,
+  `frontend_new_group_allowed`, `core/error_groups.py:99-109` [코드]) — 기존
   묶음 갱신(`count` 증가)은 이 상한과 무관하다. 이 상한이 없으면 익명
   프론트 보고가 새 묶음 생성만으로 시간당 상한을 소진해 다른 정상 오류의
   새 묶음 생성까지 막을 수 있다(SRR F1). 이 함수는 뷰가 아니라
@@ -137,11 +137,11 @@
   `error_type`·`location`의 제어문자를 다시 정규화하므로, 뷰가 계산한
   지문(`compute_fingerprint`)과 저장된 지문은 항상 같다.
 - 이 뷰는 `extend_schema(exclude=True)`로 공개 OpenAPI 스키마에서
-  제외된다(러너 API와 같은 패턴, `core/client_error_views.py:98`).
+  제외된다(러너 API와 같은 패턴, `core/client_error_views.py:99`).
 
 **Origin/Referer 검사는 브라우저를 통해 오는 요청 경로만 걸러낸다 — 실제
 공격 방어가 아니다.** `curl` 등은 두 헤더 모두 얼마든지 위조할 수 있다
-(`_is_same_origin` 주석, `core/client_error_views.py:45-47`, SRR F7). 이
+(`_is_same_origin` 주석, `core/client_error_views.py:46-48`, SRR F7). 이
 엔드포인트의 실질 방어는 Origin 검사가 아니라 **본문 상한(4KB)·페이로드
 스키마 검사·전역 스로틀(120/시간)·새 묶음 상한(20/시간)** 네 가지다.
 
@@ -185,7 +185,7 @@
   전체 건수, 24시간·7일 창 안 `last_seen` 묶음 수, 출처별 건수, 상위
   5개(`last_seen` 내림차순)를 계산한다. "종" 표기(`templates/staff/
   dashboard.html:363`)는 **묶음 수**이지 발생 횟수 합이 아니다.
-- `staff/views/__init__.py:284`가 이 결과를 `system_errors` 컨텍스트로
+- `staff/views/__init__.py:288`가 이 결과를 `system_errors` 컨텍스트로
   대시보드에 넘긴다. 템플릿(`templates/staff/dashboard.html:354-380`)은
   Django 기본 자동 이스케이프만 쓴다 — `|safe`·`innerHTML` 없음(SRR F6),
   `error_type`에 `<script>`가 들어와도 텍스트로 렌더된다.

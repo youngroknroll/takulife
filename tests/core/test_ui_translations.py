@@ -1,11 +1,12 @@
 """locale/*/LC_MESSAGES/*.mo가 있어야 한다 — `uv run django-admin
 compilemessages --ignore .venv`(CI도 같은 스텝)."""
+
+from html.parser import HTMLParser
 import json
 import re
-from html.parser import HTMLParser
 
-import pytest
 from django.test import Client
+import pytest
 
 pytestmark = pytest.mark.web
 
@@ -20,9 +21,7 @@ def test_영어_홈_스냅샷_통계_라벨은_Saved_Records이고_기록_대기
 
     user = make_user()
     event = make_event(title="영어스냅샷테스트행사")
-    UserEventStatus.objects.create(
-        user=user, event=event, status=UserEventStatus.Status.VISITED
-    )
+    UserEventStatus.objects.create(user=user, event=event, status=UserEventStatus.Status.VISITED)
 
     client = Client()
     client.force_login(user)
@@ -42,9 +41,9 @@ def test_영어_홈_스냅샷_통계_라벨은_Saved_Records이고_기록_대기
     assert not re.search(
         r'<dt>\s*<span class="snapshot-stat-dot"[^>]*></span>\s*Save\s*</dt>', body
     ), "통계 칸(찜)에 동작 번역 'Save'가 새어 들어왔다"
-    assert re.search(
-        r'<a class="record-action-link"[^>]*>\s*Add record\s*</a>', body
-    ), "기록 대기 행 링크가 'Add record'로 나오지 않았다"
+    assert re.search(r'<a class="record-action-link"[^>]*>\s*Add record\s*</a>', body), (
+        "기록 대기 행 링크가 'Add record'로 나오지 않았다"
+    )
 
 
 class _LangTrackingParser(HTMLParser):
@@ -60,7 +59,9 @@ class _LangTrackingParser(HTMLParser):
 
     def _push(self, tag, attrs):
         lang = dict(attrs).get("lang")
-        self._lang_stack.append(lang if lang is not None else (self._lang_stack[-1] if self._lang_stack else None))
+        self._lang_stack.append(
+            lang if lang is not None else (self._lang_stack[-1] if self._lang_stack else None)
+        )
 
     def handle_starttag(self, tag, attrs):
         self._push(tag, attrs)

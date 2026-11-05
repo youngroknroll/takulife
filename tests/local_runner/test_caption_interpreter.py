@@ -3,8 +3,9 @@
 감싸는지 검증한다. 공식 여부 판별은 탐색 프롬프트(build_exploration_prompt)
 에서 빠지고 이 프롬프트로 옮겨왔다 — 탐색은 페이지를 못 열지만 해석은
 읽기 단계가 가져온 본문을 보기 때문이다."""
-import json
+
 from datetime import date
+import json
 
 import pytest
 
@@ -15,7 +16,6 @@ from local_runner.caption_interpreter import (
     run_agent_interpretation,
     should_submit,
 )
-
 
 pytestmark = pytest.mark.unit
 
@@ -153,7 +153,11 @@ def test_해석_결과의_개최지_값이_허용값_밖이면_불확실로_정�
 
 
 def _제외_해외():
-    return {"venue_country": "not_kr", "fields": {"end_date": "2026-04-14"}}, date(2026, 3, 15), "overseas"
+    return (
+        {"venue_country": "not_kr", "fields": {"end_date": "2026-04-14"}},
+        date(2026, 3, 15),
+        "overseas",
+    )
 
 
 def _제외_종료일_어제():
@@ -161,7 +165,11 @@ def _제외_종료일_어제():
 
 
 def _제외_시작일만_어제():
-    return {"venue_country": "kr", "fields": {"start_date": "2026-03-14"}}, date(2026, 3, 15), "ended"
+    return (
+        {"venue_country": "kr", "fields": {"start_date": "2026-03-14"}},
+        date(2026, 3, 15),
+        "ended",
+    )
 
 
 def _제외_종료일_오늘():
@@ -177,11 +185,19 @@ def _제외_형식_불량():
 
 
 def _제외_개최지_불확실_미래():
-    return {"venue_country": "unclear", "fields": {"end_date": "2026-04-14"}}, date(2026, 3, 15), None
+    return (
+        {"venue_country": "unclear", "fields": {"end_date": "2026-04-14"}},
+        date(2026, 3, 15),
+        None,
+    )
 
 
 def _제외_해외이면서_지난_종료일():
-    return {"venue_country": "not_kr", "fields": {"end_date": "2026-03-14"}}, date(2026, 3, 15), "overseas"
+    return (
+        {"venue_country": "not_kr", "fields": {"end_date": "2026-03-14"}},
+        date(2026, 3, 15),
+        "overseas",
+    )
 
 
 @pytest.mark.parametrize(
@@ -237,7 +253,9 @@ def _payload_정상():
     ],
     ids=["is_event_거짓", "제목_빈_결과", "정상"],
 )
-def test_is_event가_거짓이거나_제목이_빈_해석_결과는_제출_대상에서_빠진다(make_interpreted, expected):
+def test_is_event가_거짓이거나_제목이_빈_해석_결과는_제출_대상에서_빠진다(
+    make_interpreted, expected
+):
     """제목 없는 드래프트는 승인 게이트를 영원히 못 넘고 검수 큐에만 쌓이므로
     애초에 제출하지 않는다."""
     interpreted = make_interpreted()
@@ -248,9 +266,7 @@ def test_is_event가_거짓이거나_제목이_빈_해석_결과는_제출_대�
 class _FakeCompletedProcess:
     def __init__(self):
         self.returncode = 0
-        self.stdout = json.dumps(
-            {"result": '{"is_event": false, "fields": {}}', "is_error": False}
-        )
+        self.stdout = json.dumps({"result": '{"is_event": false, "fields": {}}', "is_error": False})
         self.stderr = ""
 
 
@@ -267,9 +283,7 @@ def test_해석_실행은_대역_없이도_도구를_사실상_끄고_MCP를_전
         captured["argv"] = argv
         return _FakeCompletedProcess()
 
-    monkeypatch.setattr(
-        "local_runner.claude_code_adapter.subprocess.run", fake_run
-    )
+    monkeypatch.setattr("local_runner.claude_code_adapter.subprocess.run", fake_run)
 
     run_agent_interpretation("해석해줘")
 

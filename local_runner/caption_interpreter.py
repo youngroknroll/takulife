@@ -1,8 +1,9 @@
 """도구 없는 해석 단계다. 읽기 단계가 가져온 텍스트를 데이터로만 넘기고,
 공식 여부 판별과 행사 필드 추출을 모델에 맡긴다. Django·서버 도메인 모듈은
 임포트하지 않는다."""
-import functools
+
 from datetime import date
+import functools
 
 from local_runner.claude_code_adapter import (
     _CORRECTION_SUFFIX,
@@ -18,8 +19,7 @@ def build_interpretation_prompt(*, vocab, today, recent_drafts, text, platform):
 
     if recent_drafts:
         recent_drafts_text = "\n".join(
-            f"- {draft.get('source_url')}: {draft.get('title', '')}"
-            for draft in recent_drafts
+            f"- {draft.get('source_url')}: {draft.get('title', '')}" for draft in recent_drafts
         )
     else:
         recent_drafts_text = "(없음)"
@@ -159,9 +159,7 @@ def run_agent_interpretation(prompt, execute=None):
         # 도구 이름을 하나로 줄이지 마라 — --tools는 쉼표로 구분된 유효한
         # 이름이 둘 이상일 때만 실제로 제약이 걸린다(실측). 무해한 도구
         # 이름을 일부러 두 번 적은 것이다.
-        execute = functools.partial(
-            _execute_claude, tools="TodoWrite,TodoWrite", strict_mcp=True
-        )
+        execute = functools.partial(_execute_claude, tools="TodoWrite,TodoWrite", strict_mcp=True)
 
     output = execute(prompt)
     try:

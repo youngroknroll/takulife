@@ -3,13 +3,13 @@
 수정 성공 시 StaffActionLog(event_update)를 남기고, 규칙 위반이나 URL 중복은
 필드 오류로 매핑하되 입력값은 그대로 보존해 데이터 유실이 없도록 한다.
 """
+
 from datetime import date
 
-import pytest
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
+import pytest
 
-from events.models import Event
 from staff.models import StaffActionLog
 
 
@@ -21,7 +21,9 @@ pytestmark = pytest.mark.web
 
 
 @pytest.mark.django_db
-def test_비로그인_사용자가_이벤트_수정_페이지에_접근하면_로그인_페이지로_리다이렉트된다(client, make_event):
+def test_비로그인_사용자가_이벤트_수정_페이지에_접근하면_로그인_페이지로_리다이렉트된다(
+    client, make_event
+):
     event = make_event(official_url="https://example.com/anon-edit")
 
     resp = client.get(_edit_url(event))
@@ -31,7 +33,9 @@ def test_비로그인_사용자가_이벤트_수정_페이지에_접근하면_�
 
 
 @pytest.mark.django_db
-def test_스태프가_아닌_사용자가_이벤트_수정_페이지에_접근하면_403을_응답한다(client, make_user, make_event):
+def test_스태프가_아닌_사용자가_이벤트_수정_페이지에_접근하면_403을_응답한다(
+    client, make_user, make_event
+):
     user = make_user()
     client.force_login(user)
     event = make_event(official_url="https://example.com/403-edit")
@@ -59,7 +63,9 @@ def test_이벤트_수정_페이지_GET은_현재_필드_값을_렌더링한다(
 
 
 @pytest.mark.django_db
-def test_이벤트_수정_폼_제출은_이벤트를_갱신하고_감사_로그를_남긴다(staff_client, make_event, staff_event_payload):
+def test_이벤트_수정_폼_제출은_이벤트를_갱신하고_감사_로그를_남긴다(
+    staff_client, make_event, staff_event_payload
+):
     staff, client = staff_client()
     event = make_event(title="변경 전", official_url="https://example.com/edit-target")
 
@@ -250,13 +256,14 @@ def test_수정_폼_action은_목록_필터_쿼리를_유지한다(staff_client,
 
     assert resp.status_code == 200
     assert (
-        f'action="/staff/events/{event.pk}/edit/?warning=missing_region"'
-        in resp.content.decode()
+        f'action="/staff/events/{event.pk}/edit/?warning=missing_region"' in resp.content.decode()
     )
 
 
 @pytest.mark.django_db
-def test_수정_저장_후_리다이렉트는_목록_필터_쿼리를_유지한다(staff_client, make_event, staff_event_payload):
+def test_수정_저장_후_리다이렉트는_목록_필터_쿼리를_유지한다(
+    staff_client, make_event, staff_event_payload
+):
     staff, client = staff_client()
     event = make_event(title="변경 전", official_url="https://example.com/prg-query")
 

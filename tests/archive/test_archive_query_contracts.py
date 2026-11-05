@@ -6,6 +6,7 @@ tests/archive/test_archive_*_queries.py에 두지 않은 이유: 그 모듈들�
 tests/core/test_analytics_recording_resilience.py도 같은 이유로 모듈 전체
 마커 대신 개별 테스트에 ``@pytest.mark.contract``를 붙인다.
 """
+
 import pytest
 
 from archive.queries import list_user_statuses

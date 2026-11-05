@@ -2,8 +2,8 @@
 (.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8).
 """
 
-import pytest
 from django.test import RequestFactory, override_settings
+import pytest
 
 from core.ip import get_client_ip, resolve_client_ip
 
@@ -40,9 +40,7 @@ def test_trusted_proxy_count가_설정되면_forwarded_헤더에서_오른쪽에
 
 def test_forwarded_헤더가_없거나_신뢰_홉_수보다_짧으면_remote_addr로_폴백한다():
     assert (
-        resolve_client_ip(
-            remote_addr="10.0.0.5", forwarded_for="", trusted_proxy_count=1
-        )
+        resolve_client_ip(remote_addr="10.0.0.5", forwarded_for="", trusted_proxy_count=1)
         == "10.0.0.5"
     )
 

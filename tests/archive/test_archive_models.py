@@ -1,7 +1,8 @@
 """아카이브 모델 테스트 — HTTP 없이 필드 기본값과 제약 조건만 검증한다."""
-import pytest
+
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
+import pytest
 
 from archive.models import CollectionItem, PersonalEntry
 
@@ -102,9 +103,7 @@ def test_방문_기록의_행사와_다른_행사를_지정하면_검증_오류�
 
 
 @pytest.mark.django_db
-def test_연결된_행사가_삭제되면_컬렉션_아이템은_행사_참조만_비운_채_유지된다(
-    make_user, make_event
-):
+def test_연결된_행사가_삭제되면_컬렉션_아이템은_행사_참조만_비운_채_유지된다(make_user, make_event):
     user = make_user(username="ci-event-hard-delete")
     event = make_event(title="삭제될 이벤트")
     item = CollectionItem.objects.create(user=user, name="생존 항목", event=event)
@@ -122,9 +121,7 @@ def test_연결된_방문_기록이_삭제되면_컬렉션_아이템은_방문_�
     user = make_user(username="ci-visit-hard-delete")
     event = make_event(title="방문 삭제 이벤트")
     visit_record = make_visit(user, event=event, visited_on="2026-01-01")
-    item = CollectionItem.objects.create(
-        user=user, name="생존 항목 2", visit_record=visit_record
-    )
+    item = CollectionItem.objects.create(user=user, name="생존 항목 2", visit_record=visit_record)
 
     visit_record.delete()
     item.refresh_from_db()

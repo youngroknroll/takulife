@@ -15,6 +15,7 @@
   visit_record에서 서버가 동기화하며 사용자가 직접 선택하지 않음 — 컬렉션
   도메인 설계 계획 §3-1)은 절대 렌더되지 않는다.
 """
+
 import pytest
 
 from core.vocab import COLLECTION_ITEM_TYPE
@@ -57,7 +58,9 @@ class TestArchiveCollectionCreateSelectableVisitRecords:
 
 @pytest.mark.django_db
 class TestArchiveCollectionCreatePreselect:
-    def test_본인_방문_기록을_지정하면_해당_기록으로_선택이_고정된다(self, user_client, make_event, make_visit):
+    def test_본인_방문_기록을_지정하면_해당_기록으로_선택이_고정된다(
+        self, user_client, make_event, make_visit
+    ):
         user, client = user_client()
         event = make_event(title="다녀온 행사")
         record = make_visit(user, event=event, visited_on="2026-05-01")

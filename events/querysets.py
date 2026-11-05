@@ -146,7 +146,10 @@ class EventQuerySet(models.QuerySet):
         )
 
     def order_for_public_listing(self, *, today, sort=None):
-        """게시 이벤트를 공개 목록 순서로 정렬한다. sort 미지정 시 진행중/예정/종료 순위로 정렬한다."""
+        """게시 이벤트를 공개 목록 순서로 정렬한다.
+
+        sort 미지정 시 진행중/예정/종료 순위로 정렬한다.
+        """
         if sort == "closing_soon":
             return self._ordered_by_closing_soon(today=today)
         if sort == "start_asc":

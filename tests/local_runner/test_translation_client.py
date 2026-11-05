@@ -1,6 +1,7 @@
 """local_runner.client.TranslationRunnerClient 계약 테스트(TR-39) — httpx.post
 요청 경로·헤더·본문만 검증한다(대역이 실제 배선을 가리지 않도록 클라이언트를
 그대로 쓴다). DB·실제 HTTP 없음."""
+
 import logging
 
 import httpx
@@ -9,7 +10,6 @@ import pytest
 from local_runner.client import TranslationRunnerClient
 from local_runner.config import RunnerConfig
 from local_runner.translation_flow import translate_pending_batch
-
 
 pytestmark = pytest.mark.unit
 
@@ -102,7 +102,9 @@ def test_성공과_실패_어느_경로에서도_러너_토큰이_로그에_남�
 
     class _SubmitRejected:
         def raise_for_status(self):
-            request = httpx.Request("POST", "https://example.com/x", headers={"X-Runner-Token": token})
+            request = httpx.Request(
+                "POST", "https://example.com/x", headers={"X-Runner-Token": token}
+            )
             response = httpx.Response(409, request=request)
             raise httpx.HTTPStatusError("conflict", request=request, response=response)
 

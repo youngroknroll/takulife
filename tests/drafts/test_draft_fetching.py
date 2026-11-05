@@ -1,9 +1,10 @@
 """drafts.fetching.fetch_html을 httpx MockTransport로 검증한다. 리다이렉트 상한,
 content-type 거부, 응답 크기 상한, 정상 디코딩을 다루며, validate_fetch_url은
 전용 테스트가 따로 있어 여기서는 스텁 처리한다."""
+
+from django.test import override_settings
 import httpx
 import pytest
-from django.test import override_settings
 
 from drafts.fetching import (
     MAX_RESPONSE_BYTES,
@@ -14,7 +15,6 @@ from drafts.fetching import (
     UnsupportedContentTypeError,
     fetch_html,
 )
-
 
 pytestmark = pytest.mark.unit
 
@@ -29,7 +29,8 @@ def test_정상_응답은_디코딩된_HTML을_반환한다(monkeypatch, install
     def handler(request):
         calls.append(request)
         return httpx.Response(
-            200, headers={"content-type": "text/html; charset=utf-8"},
+            200,
+            headers={"content-type": "text/html; charset=utf-8"},
             content="<html>본문</html>".encode("utf-8"),
         )
 
@@ -89,7 +90,9 @@ def test_명시적으로_허용한_xml_content_type은_수용된다(monkeypatch,
     assert result == "<rss></rss>"
 
 
-def test_명시적_허용_content_type_목록은_기본값을_대체하고_병합하지_않는다(monkeypatch, install_mock_transport):
+def test_명시적_허용_content_type_목록은_기본값을_대체하고_병합하지_않는다(
+    monkeypatch, install_mock_transport
+):
     def handler(request):
         return httpx.Response(200, headers={"content-type": "text/html"}, content=b"<html></html>")
 
@@ -99,7 +102,9 @@ def test_명시적_허용_content_type_목록은_기본값을_대체하고_병�
 
 
 @pytest.mark.parametrize("status", [404, 500], ids=["404_응답", "500_응답"])
-def test_HTTP_오류_응답은_상태코드를_포함한_FetchHttpStatusError를_발생시킨다(monkeypatch, status, install_mock_transport):
+def test_HTTP_오류_응답은_상태코드를_포함한_FetchHttpStatusError를_발생시킨다(
+    monkeypatch, status, install_mock_transport
+):
     def handler(request):
         return httpx.Response(status, headers={"content-type": "text/html"}, content=b"")
 

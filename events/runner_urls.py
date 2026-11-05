@@ -1,7 +1,6 @@
 from django.urls import path
 
-from .runner_views import TranslationPendingView, TranslationSubmitView
-
+from events.runner_views import TranslationPendingView, TranslationSubmitView
 
 urlpatterns = [
     path("pending/", TranslationPendingView.as_view(), name="translation-runner-pending"),

@@ -3,8 +3,9 @@
 staff가 core를 임포트하는 것(라벨 맵/어휘 등 표시용)은 허용되지만,
 core가 staff를 거꾸로 임포트해서는 안 된다(tests/test_architecture_boundaries.py).
 """
-import logging
+
 from io import StringIO
+import logging
 
 from django.conf import settings
 from django.contrib import messages
@@ -26,17 +27,38 @@ from drafts.queries import (
     runner_live_summary,
 )
 from events.queries import published_quality_warnings
-
-from ..action_labels import ACTION_LABELS
-from ..models import StaffActionLog
-from ..permissions import staff_console_required
-from ..queries import (
+from staff.action_labels import ACTION_LABELS
+from staff.models import StaffActionLog
+from staff.permissions import staff_console_required
+from staff.queries import (
+    STAFF_ACTION_LOG_PAGE_SIZE,
     recent_staff_actions,
     staff_actions_count_since,
     staff_actions_per_day,
 )
-from ._helpers import _action_log_kwargs, _build_source_rows, _staff_action_metadata
-from .drafts import (
+from staff.views._helpers import _action_log_kwargs, _build_source_rows, _staff_action_metadata
+from staff.views.accounts import (
+    STAFF_ACCOUNT_LISTING_PAGE_SIZE,
+    staff_account_detail,
+    staff_account_set_active,
+    staff_account_set_staff,
+    staff_accounts,
+)
+from staff.views.audit_log import staff_audit_log
+from staff.views.categories import (
+    category_create,
+    category_edit,
+    category_list,
+    category_set_active,
+)
+from staff.views.discovery import staff_source_discovery_request
+from staff.views.discovery_live import StaffDiscoveryLiveView
+from staff.views.draft_api import (
+    AdminEventDraftDetailView,
+    AdminEventDraftListCreateView,
+    AdminEventDraftStatsView,
+)
+from staff.views.drafts import (
     MAX_BULK_APPROVE_DRAFT_IDS,
     StaffDraftApproveView,
     StaffDraftBulkApproveView,
@@ -46,7 +68,7 @@ from .drafts import (
     event_draft_detail,
     event_drafts,
 )
-from .events import (
+from staff.views.events import (
     EVENT_CREATE_BLANK_FORM_VALUES,
     EVENT_EDIT_TEXT_FIELDS,
     QUALITY_WARNING_LABELS,
@@ -57,30 +79,14 @@ from .events import (
     staff_event_verify,
     staff_events,
 )
-from .events_actions import (
+from staff.views.events_actions import (
     MAX_BULK_EVENT_IDS,
     StaffEventBulkUnpublishView,
     StaffEventPublishStatusView,
     StaffEventVerifiedView,
 )
-from .accounts import (
-    STAFF_ACCOUNT_LISTING_PAGE_SIZE,
-    staff_account_detail,
-    staff_account_set_active,
-    staff_account_set_staff,
-    staff_accounts,
-)
-from .audit_log import STAFF_ACTION_LOG_PAGE_SIZE, staff_audit_log
-from .categories import category_create, category_edit, category_list, category_set_active
-from .draft_api import (
-    AdminEventDraftDetailView,
-    AdminEventDraftListCreateView,
-    AdminEventDraftStatsView,
-)
-from .discovery import staff_source_discovery_request
-from .discovery_live import StaffDiscoveryLiveView
-from .home_categories import staff_home_categories
-from .sources import staff_draft_sources
+from staff.views.home_categories import staff_home_categories
+from staff.views.sources import staff_draft_sources
 
 __all__ = [
     "ACTION_LABELS",
@@ -166,9 +172,7 @@ def _build_activity_columns(per_day):
         {
             "date": row["date"],
             "count": row["count"],
-            "height_pct": (
-                round(row["count"] / max_count * 100) if max_count else 0
-            ),
+            "height_pct": (round(row["count"] / max_count * 100) if max_count else 0),
             "is_today": row["date"] == today,
         }
         for row in per_day
@@ -193,20 +197,26 @@ def _build_review_sla_cards(sla):
     handling = sla["avg_handling"]
     rate = sla["rejection_rate"]
     longest_value, longest_unit = _format_duration(longest) if longest is not None else (None, None)
-    handling_value, handling_unit = _format_duration(handling) if handling is not None else (None, None)
+    handling_value, handling_unit = (
+        _format_duration(handling) if handling is not None else (None, None)
+    )
     return [
         {
             "label": "최장 대기",
             "value": longest_value,
             "unit": longest_unit,
-            "note": f"대기 {sla['pending_count']}건" if longest_value is not None else "검토 대기 없음",
+            "note": f"대기 {sla['pending_count']}건"
+            if longest_value is not None
+            else "검토 대기 없음",
             "href": REVIEW_SLA_PENDING_URL,
         },
         {
             "label": "평균 처리",
             "value": handling_value,
             "unit": handling_unit,
-            "note": f"결정 {sla['decided_count']}건 기준" if handling_value is not None else "최근 7일 결정 없음",
+            "note": f"결정 {sla['decided_count']}건 기준"
+            if handling_value is not None
+            else "최근 7일 결정 없음",
             "href": None,
         },
         {
@@ -262,9 +272,7 @@ def dashboard(request):
             "failed_source_candidates": failed_source_candidates(),
             "quality_warnings": quality_warnings,
             "quality_warning_rows": quality_warning_rows,
-            "quality_warning_max": max(
-                (row["count"] for row in quality_warning_rows), default=0
-            ),
+            "quality_warning_max": max((row["count"] for row in quality_warning_rows), default=0),
             "recent_actions": recent_actions,
             "recent_action_rows": _build_action_rows(recent_actions),
             "draft_sources": draft_sources,
@@ -281,9 +289,7 @@ def dashboard(request):
             "activity_total_14d": sum(col["count"] for col in activity_columns),
             # 템플릿에서 `|last.count` 같은 필터+속성 체이닝은 문법상
             # 안 되므로 별도 키로 미리 계산해 넘긴다.
-            "activity_today_count": (
-                activity_columns[-1]["count"] if activity_columns else 0
-            ),
+            "activity_today_count": (activity_columns[-1]["count"] if activity_columns else 0),
             "system_errors": system_error_summary(),
             "storage": database_size_summary(),
         },
@@ -338,13 +344,18 @@ def staff_draft_discovery_run(request):
             call_command("discover_drafts", stdout=out)
         except CommandError as exc:
             summary = _summarize_command_output(out)
-            messages.error(request, f"수집이 부분적으로 실패했습니다: {exc}" + (f" ({summary})" if summary else ""))
+            messages.error(
+                request,
+                f"수집이 부분적으로 실패했습니다: {exc}" + (f" ({summary})" if summary else ""),
+            )
         except Exception:
             logger.exception("Unexpected error while running discover_drafts")
             messages.error(request, "수집 실행 중 오류가 발생했습니다.")
         else:
             summary = _summarize_command_output(out)
-            messages.success(request, f"수집 완료: {summary}" if summary else "수집이 완료되었습니다.")
+            messages.success(
+                request, f"수집 완료: {summary}" if summary else "수집이 완료되었습니다."
+            )
         finally:
             StaffActionLog.objects.create(
                 **_action_log_kwargs(_staff_action_metadata(request), action)

@@ -1,16 +1,15 @@
 """claude 비대화형 CLI 어댑터. 방어적 JSON 파싱과 보정 재시도 1회를 담당한다."""
+
 import functools
 import json
 import re
 import subprocess
 
-from .config import AGENT_TIMEOUT_SECONDS
+from local_runner.config import AGENT_TIMEOUT_SECONDS
 
 _CODE_FENCE_RE = re.compile(r"```(?:json)?\s*(.*?)\s*```", re.DOTALL)
 
-_CORRECTION_SUFFIX = (
-    "이전 응답이 JSON 파싱에 실패했다. 다른 텍스트 없이 JSON 객체만 출력하라."
-)
+_CORRECTION_SUFFIX = "이전 응답이 JSON 파싱에 실패했다. 다른 텍스트 없이 JSON 객체만 출력하라."
 
 
 class AdapterOutputError(Exception):
@@ -192,6 +191,9 @@ def _execute_claude(prompt, *, tools, strict_mcp, timeout=AGENT_TIMEOUT_SECONDS)
         )
     except subprocess.TimeoutExpired as exc:
         raise AdapterOutputError("claude CLI timed out") from exc
+    except FileNotFoundError as exc:
+        # launchd 상시 기동에서 PATH에 claude가 없으면 러너가 죽어 크래시 루프가 되는 것을 막는다.
+        raise AdapterOutputError("claude CLI not found on PATH") from exc
 
     if completed.returncode != 0:
         raise AdapterOutputError(f"claude CLI exited with {completed.returncode}")
@@ -203,9 +205,7 @@ def run_agent_exploration(prompt, execute=None):
     if execute is None:
         # 탐색 단계 전용 값(웹 탐색 2종 + MCP 차단)을 여기서 고정한다 — 주입된
         # execute 스텁은 prompt 하나만 받는 기존 시그니처를 그대로 유지한다.
-        execute = functools.partial(
-            _execute_claude, tools="WebSearch,WebFetch", strict_mcp=True
-        )
+        execute = functools.partial(_execute_claude, tools="WebSearch,WebFetch", strict_mcp=True)
 
     output = execute(prompt)
     try:

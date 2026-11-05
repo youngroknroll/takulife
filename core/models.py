@@ -3,6 +3,7 @@
 싱글턴 HomeConfig가 스태프가 큐레이션한 카테고리 노출 설정을 저장한다.
 비즈니스 규칙(대체값, 어휘 검증, 정렬)은 뷰가 아니라 여기 둔다.
 """
+
 from django.db import models
 from django.dispatch import Signal
 from django.utils import timezone
@@ -42,9 +43,7 @@ class Category(models.Model):
 
     PALETTE_SLOT_COUNT = len(PALETTE)
 
-    slug = models.CharField(
-        max_length=64, unique=True, validators=[validate_category_slug]
-    )
+    slug = models.CharField(max_length=64, unique=True, validators=[validate_category_slug])
     # 라벨 유일성은 같은 칩에 서로 다른 카테고리가 합쳐지는 결함을 막는 제약이다.
     label = models.CharField(max_length=64, unique=True)
     is_active = models.BooleanField(default=True)
@@ -67,9 +66,7 @@ class Category(models.Model):
         if is_new and self.palette_slot is None:
             self.palette_slot = self._next_available_slot()
 
-        became_inactive = (
-            not is_new and self._initial_is_active and not self.is_active
-        )
+        became_inactive = not is_new and self._initial_is_active and not self.is_active
 
         super().save(*args, **kwargs)
         self._initial_is_active = self.is_active
@@ -83,9 +80,7 @@ class Category(models.Model):
         # 재시도나 select_for_update 같은 명시적 잠금은 이 모델을 호출하는
         # 서비스 계층(트랙 27 11단계)에서 필요할 때 추가한다.
         used_slots = set(
-            cls.objects.exclude(palette_slot=None).values_list(
-                "palette_slot", flat=True
-            )
+            cls.objects.exclude(palette_slot=None).values_list("palette_slot", flat=True)
         )
         for slot in range(cls.PALETTE_SLOT_COUNT):
             if slot not in used_slots:
@@ -126,11 +121,7 @@ class HomeConfig(models.Model):
           스태프가 비활성화한 카테고리를 계속 노출할 이유가 없다.
         """
         if not self.featured_categories:
-            return list(
-                Category.objects.filter(is_active=True).values_list(
-                    "slug", "label"
-                )
-            )
+            return list(Category.objects.filter(is_active=True).values_list("slug", "label"))
 
         categories_by_slug = {
             category.slug: category

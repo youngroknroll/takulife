@@ -19,7 +19,8 @@ FONT_PRELOAD_CHUNKS = (
 )
 
 
-# 한글 브랜드 표기는 '타쿠라이프' 하나로만 쓴다 — 다른 파일이 이 값을 다시 적지 않고 여기서 가져다 쓴다.
+# 한글 브랜드 표기는 '타쿠라이프' 하나로만 쓴다 —
+# 다른 파일이 이 값을 다시 적지 않고 여기서 가져다 쓴다.
 PROJECT_NAME = "takulife"
 BRAND_NAME_KO = "타쿠라이프"
 
@@ -52,11 +53,7 @@ def email_delivery_enabled(request):
     """메일이 실제로 발송되는 백엔드인지 여부. 콘솔 백엔드(SMTP 미설정)에서
     템플릿이 '인증 메일을 보냈습니다' 같은 거짓 약속을 하지 않게 한다.
     """
-    return {
-        "email_delivery_enabled": not settings.EMAIL_BACKEND.endswith(
-            "console.EmailBackend"
-        )
-    }
+    return {"email_delivery_enabled": not settings.EMAIL_BACKEND.endswith("console.EmailBackend")}
 
 
 def shell_css_bundled(request):

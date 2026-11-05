@@ -1,4 +1,5 @@
 """스태프 대시보드 주간 분석 요약 검증."""
+
 import re
 
 import pytest
@@ -71,9 +72,7 @@ def test_분석_이벤트가_없으면_대시보드는_0명_0건으로_표시한
     assert resp.context["weekly_active_user_count"] == 0
     assert resp.context["weekly_event_count"] == 0
     for label, unit in (("주간 활성 사용자", "명"), ("주간 이벤트 기록", "건")):
-        card = re.search(
-            rf'<p class="dash-metric-label">{label}</p>.*?</article>', content, re.S
-        )
+        card = re.search(rf'<p class="dash-metric-label">{label}</p>.*?</article>', content, re.S)
         assert card, label
         assert re.search(
             r'<span class="mono dash-metric-value">0</span>\s*'

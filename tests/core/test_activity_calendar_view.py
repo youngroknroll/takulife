@@ -29,14 +29,15 @@
 - 무효한 month 오류 패널은 Events 달력과 동일한 문구다(프런트 사전검토
   §A-13) — "요청한 날짜를 확인할 수 없어요" 제목, "이번 달 보기" 복구 링크.
 """
+
+from datetime import date
 import html
 import re
-from datetime import date
 from urllib.parse import parse_qs, urlparse
 
-import pytest
 from django.test import Client
 from django.utils import timezone
+import pytest
 
 from archive.models import ActivityLogEntry, CollectionItem, UserEventStatus, VisitRecord
 
@@ -44,9 +45,7 @@ pytestmark = pytest.mark.web
 
 
 def _extract_href(body, link_text):
-    match = re.search(
-        rf'<a[^>]*href="([^"]*)"[^>]*>\s*{re.escape(link_text)}\s*</a>', body
-    )
+    match = re.search(rf'<a[^>]*href="([^"]*)"[^>]*>\s*{re.escape(link_text)}\s*</a>', body)
     assert match, f"{link_text!r} 링크를 찾을 수 없음"
     return html.unescape(match.group(1))
 
@@ -68,7 +67,9 @@ def _extract_block(body, *, tag, class_prefix):
 def _extract_nav_hrefs(body, nav_class):
     return [
         html.unescape(href)
-        for href in re.findall(r'href="([^"]*)"', _extract_block(body, tag="nav", class_prefix=nav_class))
+        for href in re.findall(
+            r'href="([^"]*)"', _extract_block(body, tag="nav", class_prefix=nav_class)
+        )
     ]
 
 
@@ -147,9 +148,7 @@ def test_활동_달력에는_본인_활동만_렌더된다(user_client, make_use
 
 
 @pytest.mark.django_db
-def test_활동_종류_필터가_렌더에_적용되고_월_이동_링크에_보존된다(
-    user_client, make_event
-):
+def test_활동_종류_필터가_렌더에_적용되고_월_이동_링크에_보존된다(user_client, make_event):
     user, client = user_client()
     scheduled_event = make_event(
         title="종류필터일정행사",
@@ -356,9 +355,7 @@ def test_type가_status인_북마크는_500이나_거짓_카운트_없이_0건�
 
 
 @pytest.mark.django_db
-def test_범례_카운트가_표시_월의_종류별_건수_4종을_반영한다(
-    user_client, make_event
-):
+def test_범례_카운트가_표시_월의_종류별_건수_4종을_반영한다(user_client, make_event):
     user, client = user_client()
     scheduled_event = make_event(
         title="범례카운트일정행사", start_date=date(2026, 7, 3), end_date=date(2026, 7, 5)
@@ -513,9 +510,7 @@ def test_다른_사용자의_활동은_검색으로_찾아지지_않는다(user_
 
 
 @pytest.mark.django_db
-def test_활성_종류_필터가_검색에도_적용되어_필터_밖_일치는_건너뛴다(
-    user_client, make_event
-):
+def test_활성_종류_필터가_검색에도_적용되어_필터_밖_일치는_건너뛴다(user_client, make_event):
     user, client = user_client()
     scheduled_event = make_event(
         title="검색필터병용일치행사", start_date=date(2026, 7, 3), end_date=date(2026, 7, 3)
@@ -527,9 +522,7 @@ def test_활성_종류_필터가_검색에도_적용되어_필터_밖_일치는_
         user=user, name="검색필터병용일치굿즈", acquired_on=date(2026, 7, 20)
     )
 
-    resp = client.get(
-        "/archive/calendar/", {"q": "검색필터병용일치", "type": "schedule"}
-    )
+    resp = client.get("/archive/calendar/", {"q": "검색필터병용일치", "type": "schedule"})
 
     assert resp.status_code == 302
     query = parse_qs(urlparse(resp.url).query)
@@ -575,9 +568,7 @@ def test_type_필터가_있어도_kind_counts는_필터와_무관하게_표시_�
             user=user, name=f"필터무관카운트굿즈{i}", acquired_on=date(2026, 7, 12)
         )
 
-    filtered_resp = client.get(
-        "/archive/calendar/", {"month": "2026-07", "type": "visit"}
-    )
+    filtered_resp = client.get("/archive/calendar/", {"month": "2026-07", "type": "visit"})
     unfiltered_resp = client.get("/archive/calendar/", {"month": "2026-07"})
 
     assert filtered_resp.status_code == 200
@@ -661,9 +652,7 @@ def test_전체_보기_리셋_url에는_type이_없고_month와_date가_보존�
 def test_활성_플래그가_selected_types를_반영한다(user_client):
     _, client = user_client()
 
-    resp = client.get(
-        "/archive/calendar/", {"type": ["interest", "visit"]}
-    )
+    resp = client.get("/archive/calendar/", {"type": ["interest", "visit"]})
 
     assert resp.status_code == 200
     kind_filters = resp.context["kind_filters"]
@@ -748,9 +737,7 @@ def test_필터로_모두_걸러진_달은_has_any_items가_거짓이다(user_cl
 
 
 @pytest.mark.django_db
-def test_방문_기록을_하나_남기면_달력에서_방문_활동이_한_건으로만_집계된다(
-    user_client, make_event
-):
+def test_방문_기록을_하나_남기면_달력에서_방문_활동이_한_건으로만_집계된다(user_client, make_event):
     _, client = user_client()
     event = make_event(title="방문중복집계확인행사")
     today = timezone.localdate()

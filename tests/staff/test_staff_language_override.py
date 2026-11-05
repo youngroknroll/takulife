@@ -1,12 +1,13 @@
 """트랙 43-1 UI 다국어 기반 — 스태프 콘솔 뷰는 활성 언어와 무관하게
 한국어로 강제 실행되고, 실행 후에는 원래 활성 언어로 복원된다."""
+
 import re
 import types
 
-import pytest
 from django.http import HttpResponse
 from django.test import RequestFactory
 from django.utils import translation
+import pytest
 
 from staff.permissions import staff_console_required
 

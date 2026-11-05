@@ -1,6 +1,6 @@
 """닉네임 검증 규칙(accounts.validators.validate_nickname) 단위 테스트."""
-from django.core.exceptions import ValidationError
 
+from django.core.exceptions import ValidationError
 import pytest
 
 from accounts.validators import normalize_nickname, validate_nickname

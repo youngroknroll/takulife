@@ -4,6 +4,7 @@
 목표 상태 지정(`enabled` "1"/"0")과 서버 렌더 2단계 확인
 (`staff/views/events.py`의 삭제 확인 패턴과 같은 흐름)을 거친다.
 """
+
 from urllib.parse import urlencode
 
 from django.contrib import messages
@@ -17,11 +18,10 @@ from django.views.decorators.http import require_POST
 from accounts import services as accounts_services
 from accounts.models import User
 from accounts.queries import list_accounts_for_staff
-
-from ..models import StaffActionLog
-from ..permissions import superuser_console_required
-from ..search import search_term
-from ._helpers import _action_log_kwargs, _staff_action_metadata
+from staff.models import StaffActionLog
+from staff.permissions import superuser_console_required
+from staff.search import search_term
+from staff.views._helpers import _action_log_kwargs, _staff_action_metadata
 
 STAFF_ACCOUNT_LISTING_PAGE_SIZE = 20
 
@@ -86,7 +86,9 @@ def staff_account_detail(request, pk):
     account = get_object_or_404(User, pk=pk)
     deletion_scheduled_for = None
     if account.deletion_requested_at is not None:
-        deletion_scheduled_for = account.deletion_requested_at + accounts_services.DELETION_GRACE_PERIOD
+        deletion_scheduled_for = (
+            account.deletion_requested_at + accounts_services.DELETION_GRACE_PERIOD
+        )
 
     return render(
         request,

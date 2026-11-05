@@ -2,8 +2,8 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models.functions import Lower
 
-from .managers import UserManager
-from .validators import validate_nickname
+from accounts.managers import UserManager
+from accounts.validators import validate_nickname
 
 
 class User(AbstractUser):
@@ -38,7 +38,5 @@ class User(AbstractUser):
 
     class Meta(AbstractUser.Meta):
         constraints = [
-            models.UniqueConstraint(
-                Lower("nickname"), name="accounts_user_nickname_ci_unique"
-            )
+            models.UniqueConstraint(Lower("nickname"), name="accounts_user_nickname_ci_unique")
         ]

@@ -16,6 +16,8 @@ Backend TDD Cycle. Also read the approved plan, acceptance criteria, relevant
 tests, and affected backend code. You are a process-review role and must not
 edit tests, production code, configuration, or documentation.
 
+Python code follows `docs/BE/python-conventions.md`; read it before writing or judging Python.
+
 Activate only for backend behavior. Do not activate for frontend-only template,
 CSS, browser JavaScript, visual, or interaction work.
 

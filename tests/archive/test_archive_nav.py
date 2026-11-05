@@ -16,6 +16,7 @@ tests/archive/test_archive_interest_placement.py가 페이지별로 검증한다
 .docs/plans/2026-07-23-activity-editorial-v2-plan.md,
 .docs/plans/2026-07-23-activity-editorial-v3-plan.md를 참고.
 """
+
 import pytest
 
 pytestmark = pytest.mark.web
@@ -23,7 +24,9 @@ pytestmark = pytest.mark.web
 
 @pytest.mark.django_db
 class TestArchiveNavTabs:
-    def test_아카이브_내비게이션_탭바는_내_활동_계열_네_링크만_보여주고_찜과_활동_달력과_컬렉션_링크를_포함하지_않는다(self, user_client):
+    def test_아카이브_내비게이션_탭바는_내_활동_계열_네_링크만_보여주고_찜과_활동_달력과_컬렉션_링크를_포함하지_않는다(
+        self, user_client
+    ):
         _, client = user_client()
 
         resp = client.get("/archive/personal/")
@@ -36,7 +39,7 @@ class TestArchiveNavTabs:
         end = content.index("</nav>", start)
         nav = content[start:end]
 
-        assert nav.count("<a ") + nav.count('<a\n') + nav.count('<a\r\n') == 4
+        assert nav.count("<a ") + nav.count("<a\n") + nav.count("<a\r\n") == 4
         assert '<span class="tab-label-full">나의 일정</span>' in nav
         assert '<span class="tab-label-full">다녀온 기록</span>' in nav
         assert '<span class="tab-label-full">직접 등록</span>' in nav

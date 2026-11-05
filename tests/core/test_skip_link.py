@@ -8,6 +8,7 @@
 공용 것을 억제한다 — 두 셸 모두 실제로 존재하는 대상을 가리키는 skip
 link를 정확히 하나만 갖는지 확인하는 스모크 테스트다.
 """
+
 import pytest
 
 pytestmark = pytest.mark.web
@@ -34,7 +35,9 @@ def test_행사_목록_페이지의_skip_link_대상이_실제로_존재한다(c
 
 
 @pytest.mark.django_db
-def test_스태프_대시보드는_자신의_skip_link만_유지하고_공용_skip_link를_중복하지_않는다(client, make_user):
+def test_스태프_대시보드는_자신의_skip_link만_유지하고_공용_skip_link를_중복하지_않는다(
+    client, make_user
+):
     staff = make_user(is_staff=True)
     client.force_login(staff)
 

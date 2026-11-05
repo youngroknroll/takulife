@@ -8,11 +8,11 @@ events 쪽인 여기서 한다 — 이벤트를 한 번도 만들지 않은 채 
 비활성화해도(게시상태 전이가 영영 없는 경우) 슬롯이 반납되게 하려면
 카테고리 전이 자체도 반납 트리거여야 하기 때문이다.
 """
+
 from django.dispatch import receiver
 
 from core.models import category_deactivated
-
-from .services import reconcile_category_palette_slot
+from events.services import reconcile_category_palette_slot
 
 
 @receiver(category_deactivated)

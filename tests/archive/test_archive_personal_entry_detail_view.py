@@ -5,12 +5,13 @@
 현재 공식 제보 상태를 보여준다. 소유자 범위로 제한되어 타인의 요청은 404, 비로그인
 요청은 로그인 페이지로 리다이렉트된다.
 """
+
 from datetime import datetime
 
-import pytest
 from django.test import Client
 from django.urls import reverse
 from django.utils import timezone
+import pytest
 
 from archive.models import PersonalEntry, UserEventStatus
 from core.vocab import archive_status_label
@@ -167,9 +168,7 @@ class TestArchivePersonalEntryDetailInterestAndStatus:
         # PD-7 (있는 케이스)
         user, client = user_client()
         entry = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="찜과 상태 확인용 장소")
-        decoy_entry = make_entry(
-            user, kind=PersonalEntry.Kind.PLACE, title="미끼 비공식 장소"
-        )
+        decoy_entry = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="미끼 비공식 장소")
         # 미끼: 다른 항목에 다른 찜·다른 상태를 먼저 걸어, 뷰가 딕셔너리의 아무 값이나
         # 집어도 통과하지 않도록 만든다.
         make_interest(user, personal_entry=decoy_entry)
@@ -249,9 +248,7 @@ class TestArchivePersonalEntryDetailVisitRecords:
         assert resp.context["visit_records_count"] == 2
         assert {record.pk for record in visit_records} == {visit_1.pk, visit_2.pk}
 
-    def test_연결된_방문_기록이_없으면_목록은_빈_상태로_표시된다(
-        self, user_client, make_entry
-    ):
+    def test_연결된_방문_기록이_없으면_목록은_빈_상태로_표시된다(self, user_client, make_entry):
         # PD-10
         user, client = user_client()
         entry = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="방문 기록 없는 장소")
@@ -266,7 +263,7 @@ class TestArchivePersonalEntryDetailVisitRecords:
 class TestArchivePersonalEntryDetailStatusLabel:
     """PD-12: 목록 뷰(archive_personal_entries)는 이미 어휘 정본
     archive_status_label()로 status_label/planned_label을 계산해 넘긴다
-    (web/views/archive.py:487-488). 상세 뷰가 같은 문구를 템플릿 안에
+    (web/views/archive.py:485-486). 상세 뷰가 같은 문구를 템플릿 안에
     if/elif로 하드코딩하면, vocab을 고칠 때 목록은 따라가고 상세는
     안 따라가는 드리프트가 생긴다. 두 케이스의 Given 차이는 상태 유무뿐이므로
     파라미터화한다.

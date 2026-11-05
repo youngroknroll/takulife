@@ -8,6 +8,7 @@
 가드는 create_published_event / update_published_event가 이미 공유하는
 _validate_publish_fields에 얹혀 있다(새 초크포인트를 만들지 않음).
 """
+
 import pytest
 
 from core.vocab import CATEGORY, REGION
@@ -113,6 +114,8 @@ class TestRegionVocabExpansion:
     어휘에 추가한다. 가드를 걸면서 이 셋을 빼면 해당 도시 행사를 새로 등록할
     수 없게 되므로, 어휘 확장이 가드의 선행 조건이다."""
 
-    @pytest.mark.parametrize("slug,label", [("daegu", "대구"), ("daejeon", "대전"), ("gwangju", "광주")])
+    @pytest.mark.parametrize(
+        "slug,label", [("daegu", "대구"), ("daejeon", "대전"), ("gwangju", "광주")]
+    )
     def test_추가된_도시가_어휘에_있다(self, slug, label):
         assert (slug, label) in REGION

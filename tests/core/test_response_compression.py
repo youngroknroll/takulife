@@ -2,6 +2,7 @@
 BREACH 완화는 Django 내장 GZipMiddleware가 이미 제공한다 — 응답마다 무작위
 패딩을 넣고 200바이트 미만 응답은 압축을 건너뛰므로, 압축 바이트 길이나
 본문 내용을 직접 비교하는 단언은 비결정적이라 쓰지 않는다."""
+
 import importlib
 
 import pytest

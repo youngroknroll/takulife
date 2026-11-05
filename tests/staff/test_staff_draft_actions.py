@@ -3,10 +3,11 @@
 감사 로그 기록은 승인/반려 서비스 호출을 감싸는 바깥쪽 트랜잭션에서 이뤄져,
 로그 기록이 실패하면 승인/반려 자체도 함께 롤백된다.
 """
-import pytest
+
 from django.db import IntegrityError
 from django.urls import reverse
 from django.utils import timezone
+import pytest
 
 from drafts.models import EventDraft
 from events.models import Event
@@ -80,7 +81,18 @@ def test_일반_사용자는_드래프트를_반려할_수_없다(client, make_u
 @pytest.mark.django_db
 def test_드래프트를_승인하면_이벤트가_게시되고_감사_로그가_한_건_남는다(staff_client, make_draft):
     staff, client = staff_client()
-    draft = make_draft("https://example.com/event", source_name="Official", extracted_title="Popup event", extracted_category="popup_store", extracted_work_title="Oshi Work", extracted_location_name="Seoul Mall", extracted_region="seoul", extracted_start_date="2026-06-01", extracted_end_date="2026-06-10", extracted_summary="Limited popup")
+    draft = make_draft(
+        "https://example.com/event",
+        source_name="Official",
+        extracted_title="Popup event",
+        extracted_category="popup_store",
+        extracted_work_title="Oshi Work",
+        extracted_location_name="Seoul Mall",
+        extracted_region="seoul",
+        extracted_start_date="2026-06-01",
+        extracted_end_date="2026-06-10",
+        extracted_summary="Limited popup",
+    )
 
     response = client.post(
         draft_approve_url(draft.id),
@@ -125,7 +137,9 @@ def test_드래프트를_승인하면_이벤트가_게시되고_감사_로그가
 
 
 @pytest.mark.django_db
-def test_드래프트를_반려하면_상태가_반려로_바뀌고_감사_로그가_한_건_남는다(staff_client, make_draft):
+def test_드래프트를_반려하면_상태가_반려로_바뀌고_감사_로그가_한_건_남는다(
+    staff_client, make_draft
+):
     staff, client = staff_client()
     draft = make_draft("https://example.com/rejected-event", extracted_title="Rejected event")
 
@@ -161,7 +175,9 @@ def test_드래프트를_반려하면_상태가_반려로_바뀌고_감사_로�
 @pytest.mark.django_db
 def test_반려_사유를_함께_보내면_드래프트에_반려_사유가_저장된다(staff_client, make_draft):
     staff, client = staff_client()
-    draft = make_draft("https://example.com/rejected-with-reason", extracted_title="Rejected with reason")
+    draft = make_draft(
+        "https://example.com/rejected-with-reason", extracted_title="Rejected with reason"
+    )
 
     response = client.post(
         draft_reject_url(draft.id),
@@ -307,9 +323,14 @@ def test_제목이_비어있는_드래프트는_승인이_거부되고_로그도
 
 
 @pytest.mark.django_db
-def test_제목이_공식_url과_같은_드래프트는_승인이_거부되고_로그도_남지_않는다(staff_client, make_draft):
+def test_제목이_공식_url과_같은_드래프트는_승인이_거부되고_로그도_남지_않는다(
+    staff_client, make_draft
+):
     staff, client = staff_client()
-    draft = make_draft("https://example.com/self-titled-draft", extracted_title="https://example.com/self-titled-draft")
+    draft = make_draft(
+        "https://example.com/self-titled-draft",
+        extracted_title="https://example.com/self-titled-draft",
+    )
 
     response = client.post(draft_approve_url(draft.id))
 
@@ -324,7 +345,9 @@ def test_제목이_공식_url과_같은_드래프트는_승인이_거부되고_�
 
 
 @pytest.mark.django_db
-def test_이벤트_생성이_실패하면_승인은_제어된_오류로_응답하고_로그도_남지_않는다(staff_client, monkeypatch, make_draft):
+def test_이벤트_생성이_실패하면_승인은_제어된_오류로_응답하고_로그도_남지_않는다(
+    staff_client, monkeypatch, make_draft
+):
     staff, client = staff_client()
     draft = make_draft("https://example.com/event", extracted_title="Broken event")
 
@@ -379,7 +402,9 @@ def test_예전_드래프트_승인_반려_api_경로는_더_이상_지원되지
 
 
 @pytest.mark.django_db
-def test_반려된_드래프트를_재오픈하면_대기_상태로_바뀌고_감사_로그가_한_건_남는다(staff_client, make_draft):
+def test_반려된_드래프트를_재오픈하면_대기_상태로_바뀌고_감사_로그가_한_건_남는다(
+    staff_client, make_draft
+):
     staff, client = staff_client()
     draft = make_draft(
         "https://example.com/reopen-target",
@@ -444,7 +469,9 @@ def test_일반_사용자는_드래프트를_재오픈할_수_없다(client, mak
     [EventDraft.ReviewStatus.PENDING, EventDraft.ReviewStatus.APPROVED],
     ids=["대기_상태", "승인_상태"],
 )
-def test_대기나_승인_상태의_드래프트는_재오픈이_거부되고_로그도_남지_않는다(staff_client, make_draft, review_status):
+def test_대기나_승인_상태의_드래프트는_재오픈이_거부되고_로그도_남지_않는다(
+    staff_client, make_draft, review_status
+):
     staff, client = staff_client()
     draft = make_draft("https://example.com/event", review_status=review_status)
 

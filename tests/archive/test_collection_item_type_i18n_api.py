@@ -4,6 +4,7 @@
 필터(archive/queries.py)에서 "키링"과 갈라진다. 생성·수정 시리얼라이저가
 한국어 원문으로 되돌린다.
 """
+
 import pytest
 
 from archive.models import CollectionItem
@@ -69,7 +70,9 @@ def test_한국어_원문_굿즈_유형은_영어_요청에서도_그대로_저�
     assert CollectionItem.objects.get(id=response.json()["id"]).item_type == "뱃지"
 
 
-def test_수정_요청에서도_영어_유형을_보내면_한국어_원문으로_저장한다(client, make_user, make_collection_item):
+def test_수정_요청에서도_영어_유형을_보내면_한국어_원문으로_저장한다(
+    client, make_user, make_collection_item
+):
     user = make_user(username="cit-patch")
     item = make_collection_item(user, name="원래 이름", item_type="뱃지")
 

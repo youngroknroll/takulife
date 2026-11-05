@@ -18,16 +18,14 @@
   letter-spacing: 0.01em;
 }
 
-/* ── highlighter ("형광펜") ──────────────────────────────────────── */
-/* 홈 히어로의 "한눈에" 문구 전용이다. 카드·버튼 배경으로는 확장하지 않는다.
-   box-decoration-break는 줄바꿈이 생겨도 형광펜 표시가 자연스럽게 이어지게 한다. */
-.hl {
-  background: var(--hl);
-  /* var(--text) 대신 --hl-ink를 쓴다: --text는 다크모드에서 밝은색으로
-     뒤집혀 밝은 형광펜 배경과 겹치면 거의 안 보이게 된다. --hl-ink는
-     테마와 무관하게 고정된 값이라 이 조합에서만 쓴다. */
-  color: var(--hl-ink);
-  padding: 0 0.22em;
+/* ── emphasis ──────────────────────────────────────────────────── */
+/* 홈 히어로의 강조 문구 전용이다. 카드·버튼 배경으로는 확장하지 않는다.
+   box-decoration-break는 줄바꿈이 생겨도 블록이 자연스럽게 이어지게 한다. */
+.emphasis {
+  background: var(--emphasis-bg);
+  color: var(--emphasis-ink);
+  padding: 0 0.25em;
+  border-radius: 0.2em;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }

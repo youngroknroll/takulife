@@ -1,4 +1,5 @@
 """번역 러너 API 인증·계약 테스트 — X-Runner-Token 헤더와 응답/상태 코드 계약."""
+
 import logging
 
 import pytest
@@ -102,9 +103,7 @@ def test_대기_이벤트가_있으면_id_해시_원문_필드를_돌려준다(c
 
     assert response.status_code == 200
     assert response.json() == {
-        "events": [
-            {"event_id": event.id, "source_hash": expected_hash, "fields": fields}
-        ]
+        "events": [{"event_id": event.id, "source_hash": expected_hash, "fields": fields}]
     }
 
 
@@ -121,13 +120,21 @@ def test_정상_제출은_200으로_세_언어를_저장한다(client, runner_he
 
     response = client.post(
         SUBMIT_URL,
-        data={"event_id": event.id, "source_hash": submitted_hash, "translations": _GOOD_TRANSLATIONS},
+        data={
+            "event_id": event.id,
+            "source_hash": submitted_hash,
+            "translations": _GOOD_TRANSLATIONS,
+        },
         content_type="application/json",
         **runner_headers,
     )
 
     assert response.status_code == 200
-    assert response.json() == {"status": "saved", "saved": ["en", "ja", "zh-hans"], "quarantined": {}}
+    assert response.json() == {
+        "status": "saved",
+        "saved": ["en", "ja", "zh-hans"],
+        "quarantined": {},
+    }
 
     event.refresh_from_db()
     assert event.text_translations == {
@@ -211,7 +218,11 @@ def test_전체_거부와_언어_격리는_상태_코드로_구분된다(client,
 
     rejected_response = client.post(
         SUBMIT_URL,
-        data={"event_id": rejected_event.id, "source_hash": stale_hash, "translations": _GOOD_TRANSLATIONS},
+        data={
+            "event_id": rejected_event.id,
+            "source_hash": stale_hash,
+            "translations": _GOOD_TRANSLATIONS,
+        },
         content_type="application/json",
         **runner_headers,
     )
@@ -224,19 +235,27 @@ def test_전체_거부와_언어_격리는_상태_코드로_구분된다(client,
 def test_없거나_게시되지_않은_이벤트는_404이다_없는_이벤트(client, runner_headers):
     payload = {"event_id": 999999, "source_hash": _VALID_HASH, "translations": _GOOD_TRANSLATIONS}
 
-    response = client.post(SUBMIT_URL, data=payload, content_type="application/json", **runner_headers)
+    response = client.post(
+        SUBMIT_URL, data=payload, content_type="application/json", **runner_headers
+    )
 
     assert response.status_code == 404
     assert response.json() == {"detail": "not_found"}
 
 
-def test_없거나_게시되지_않은_이벤트는_404이다_초안_이벤트(client, runner_headers, make_draft_event):
+def test_없거나_게시되지_않은_이벤트는_404이다_초안_이벤트(
+    client, runner_headers, make_draft_event
+):
     event = make_draft_event(**_SOURCE_FIELDS)
     submitted_hash = source_hash(_event_fields(event))
 
     response = client.post(
         SUBMIT_URL,
-        data={"event_id": event.id, "source_hash": submitted_hash, "translations": _GOOD_TRANSLATIONS},
+        data={
+            "event_id": event.id,
+            "source_hash": submitted_hash,
+            "translations": _GOOD_TRANSLATIONS,
+        },
         content_type="application/json",
         **runner_headers,
     )
@@ -265,7 +284,11 @@ def test_수동_확정된_이벤트는_409이고_덮어쓰지_않는다(client, 
 
     response = client.post(
         SUBMIT_URL,
-        data={"event_id": event.id, "source_hash": submitted_hash, "translations": _GOOD_TRANSLATIONS},
+        data={
+            "event_id": event.id,
+            "source_hash": submitted_hash,
+            "translations": _GOOD_TRANSLATIONS,
+        },
         content_type="application/json",
         **runner_headers,
     )
@@ -280,12 +303,20 @@ def test_수동_확정된_이벤트는_409이고_덮어쓰지_않는다(client, 
 def test_이미_현재_해시로_저장됐으면_already_current를_돌려준다(client, runner_headers, make_event):
     event = _make_source_event(make_event)
     submitted_hash = source_hash(_event_fields(event))
-    payload = {"event_id": event.id, "source_hash": submitted_hash, "translations": _GOOD_TRANSLATIONS}
+    payload = {
+        "event_id": event.id,
+        "source_hash": submitted_hash,
+        "translations": _GOOD_TRANSLATIONS,
+    }
 
-    first_response = client.post(SUBMIT_URL, data=payload, content_type="application/json", **runner_headers)
+    first_response = client.post(
+        SUBMIT_URL, data=payload, content_type="application/json", **runner_headers
+    )
     assert first_response.status_code == 200
 
-    second_response = client.post(SUBMIT_URL, data=payload, content_type="application/json", **runner_headers)
+    second_response = client.post(
+        SUBMIT_URL, data=payload, content_type="application/json", **runner_headers
+    )
 
     assert second_response.status_code == 200
     assert second_response.json() == {"status": "already_current", "saved": [], "quarantined": {}}
@@ -296,25 +327,37 @@ def test_이미_현재_해시로_저장됐으면_already_current를_돌려준다
     ["ja_키_누락", "NUL_문자_포함", "translations_키_없음"],
     ids=["ja_키_누락", "NUL_문자_포함", "translations_키_없음"],
 )
-def test_구조가_틀린_번역은_400_schema이고_NUL은_400_nul이다(client, runner_headers, make_event, scenario):
+def test_구조가_틀린_번역은_400_schema이고_NUL은_400_nul이다(
+    client, runner_headers, make_event, scenario
+):
     event = _make_source_event(make_event)
     submitted_hash = source_hash(_event_fields(event))
 
     if scenario == "ja_키_누락":
         broken_translations = _deep_copy_translations(_GOOD_TRANSLATIONS)
         del broken_translations["ja"]
-        payload = {"event_id": event.id, "source_hash": submitted_hash, "translations": broken_translations}
+        payload = {
+            "event_id": event.id,
+            "source_hash": submitted_hash,
+            "translations": broken_translations,
+        }
         expected_detail = "schema"
     elif scenario == "NUL_문자_포함":
         broken_translations = _deep_copy_translations(_GOOD_TRANSLATIONS)
         broken_translations["en"]["title"] = broken_translations["en"]["title"] + chr(0)
-        payload = {"event_id": event.id, "source_hash": submitted_hash, "translations": broken_translations}
+        payload = {
+            "event_id": event.id,
+            "source_hash": submitted_hash,
+            "translations": broken_translations,
+        }
         expected_detail = "nul"
     else:
         payload = {"event_id": event.id, "source_hash": submitted_hash}
         expected_detail = "schema"
 
-    response = client.post(SUBMIT_URL, data=payload, content_type="application/json", **runner_headers)
+    response = client.post(
+        SUBMIT_URL, data=payload, content_type="application/json", **runner_headers
+    )
 
     assert response.status_code == 400
     assert response.json() == {"detail": expected_detail}
@@ -334,7 +377,9 @@ def test_구조가_틀린_번역은_400_schema이고_NUL은_400_nul이다(client
     ids=["JSON_배열", "event_id가_문자열", "event_id가_Bool", "source_hash가_정수"],
 )
 def test_본문_모양이_틀리면_400_invalid_payload이다(client, runner_headers, payload):
-    response = client.post(SUBMIT_URL, data=payload, content_type="application/json", **runner_headers)
+    response = client.post(
+        SUBMIT_URL, data=payload, content_type="application/json", **runner_headers
+    )
 
     assert response.status_code == 400
     assert response.json() == {"detail": "invalid_payload"}
@@ -358,7 +403,11 @@ def test_source_hash가_64자_소문자_16진수가_아니면_400_invalid_payloa
 
     response = client.post(
         SUBMIT_URL,
-        data={"event_id": event.id, "source_hash": malformed_hash, "translations": _GOOD_TRANSLATIONS},
+        data={
+            "event_id": event.id,
+            "source_hash": malformed_hash,
+            "translations": _GOOD_TRANSLATIONS,
+        },
         content_type="application/json",
         **runner_headers,
     )
@@ -370,7 +419,9 @@ def test_source_hash가_64자_소문자_16진수가_아니면_400_invalid_payloa
     assert event.text_translations == {}
 
 
-def test_형식이_틀린_source_hash는_거부_로그를_남기지_않는다(client, runner_headers, make_event, caplog):
+def test_형식이_틀린_source_hash는_거부_로그를_남기지_않는다(
+    client, runner_headers, make_event, caplog
+):
     event = _make_source_event(make_event)
 
     with caplog.at_level(logging.DEBUG, logger="events.translation_queue"):
@@ -397,7 +448,11 @@ def test_제출_로그에_요청_IP가_남는다(client, runner_headers, make_ev
     with caplog.at_level(logging.INFO, logger="events.translation_queue"):
         response = client.post(
             SUBMIT_URL,
-            data={"event_id": event.id, "source_hash": submitted_hash, "translations": _GOOD_TRANSLATIONS},
+            data={
+                "event_id": event.id,
+                "source_hash": submitted_hash,
+                "translations": _GOOD_TRANSLATIONS,
+            },
             content_type="application/json",
             REMOTE_ADDR="203.0.113.7",
             **runner_headers,
@@ -409,7 +464,9 @@ def test_제출_로그에_요청_IP가_남는다(client, runner_headers, make_ev
     assert "203.0.113.7" in records[0].getMessage()
 
 
-def test_번역_러너와_드래프트_러너는_서로의_스로틀_예산을_쓰지_않는다(client, runner_headers, monkeypatch, clear_cache):
+def test_번역_러너와_드래프트_러너는_서로의_스로틀_예산을_쓰지_않는다(
+    client, runner_headers, monkeypatch, clear_cache
+):
     # THROTTLE_RATES는 임포트 시점에 고정되는 클래스 속성이라 설정만 바꿔서는
     # 반영되지 않는다 — 클래스 속성 자체를 직접 덮어쓴다(기존 드래프트 러너
     # 테스트와 같은 방식).
@@ -421,46 +478,67 @@ def test_번역_러너와_드래프트_러너는_서로의_스로틀_예산을_�
 
     client.post(HEARTBEAT_URL, data={}, content_type="application/json", **runner_headers)
     client.post(HEARTBEAT_URL, data={}, content_type="application/json", **runner_headers)
-    third_heartbeat = client.post(HEARTBEAT_URL, data={}, content_type="application/json", **runner_headers)
+    third_heartbeat = client.post(
+        HEARTBEAT_URL, data={}, content_type="application/json", **runner_headers
+    )
 
     assert third_heartbeat.status_code == 429
 
-    pending_response = client.post(PENDING_URL, data={}, content_type="application/json", **runner_headers)
+    pending_response = client.post(
+        PENDING_URL, data={}, content_type="application/json", **runner_headers
+    )
 
     assert pending_response.status_code == 200
 
 
-def test_번역_러너는_자기_scope_한도를_넘으면_429이다(client, runner_headers, monkeypatch, clear_cache):
+def test_번역_러너는_자기_scope_한도를_넘으면_429이다(
+    client, runner_headers, monkeypatch, clear_cache
+):
     monkeypatch.setattr(
         RunnerTokenThrottle,
         "THROTTLE_RATES",
         {"discovery_runner": "2/minute", "translation_runner": "2/minute"},
     )
 
-    first_response = client.post(PENDING_URL, data={}, content_type="application/json", **runner_headers)
-    second_response = client.post(PENDING_URL, data={}, content_type="application/json", **runner_headers)
-    third_response = client.post(PENDING_URL, data={}, content_type="application/json", **runner_headers)
+    first_response = client.post(
+        PENDING_URL, data={}, content_type="application/json", **runner_headers
+    )
+    second_response = client.post(
+        PENDING_URL, data={}, content_type="application/json", **runner_headers
+    )
+    third_response = client.post(
+        PENDING_URL, data={}, content_type="application/json", **runner_headers
+    )
 
     assert first_response.status_code == 200
     assert second_response.status_code == 200
     assert third_response.status_code == 429
 
 
-def test_번역_러너_스로틀은_X_Forwarded_For를_바꿔도_한_버킷으로_센다(client, runner_headers, monkeypatch, clear_cache):
-    monkeypatch.setattr(
-        RunnerTokenThrottle, "THROTTLE_RATES", {"translation_runner": "2/minute"}
-    )
+def test_번역_러너_스로틀은_X_Forwarded_For를_바꿔도_한_버킷으로_센다(
+    client, runner_headers, monkeypatch, clear_cache
+):
+    monkeypatch.setattr(RunnerTokenThrottle, "THROTTLE_RATES", {"translation_runner": "2/minute"})
 
     first_response = client.post(
-        PENDING_URL, data={}, content_type="application/json",
-        HTTP_X_FORWARDED_FOR="1.1.1.1", **runner_headers,
+        PENDING_URL,
+        data={},
+        content_type="application/json",
+        HTTP_X_FORWARDED_FOR="1.1.1.1",
+        **runner_headers,
     )
     second_response = client.post(
-        PENDING_URL, data={}, content_type="application/json",
-        HTTP_X_FORWARDED_FOR="2.2.2.2", **runner_headers,
+        PENDING_URL,
+        data={},
+        content_type="application/json",
+        HTTP_X_FORWARDED_FOR="2.2.2.2",
+        **runner_headers,
     )
     third_response = client.post(
-        PENDING_URL, data={}, content_type="application/json", **runner_headers,
+        PENDING_URL,
+        data={},
+        content_type="application/json",
+        **runner_headers,
     )
 
     assert first_response.status_code == 200

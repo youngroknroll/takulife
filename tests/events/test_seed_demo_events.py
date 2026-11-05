@@ -5,10 +5,11 @@
 - 두 번 실행해도 멱등하다: 같은 건수, 중복 없음.
 - 시드 후: 진행중 >= 7, 마감임박(<=D+5) >= 4, fan_meeting 행사 존재.
 """
-import pytest
+
 from datetime import date, timedelta
 
 from django.core.management import call_command
+import pytest
 
 from events.models import Event
 
@@ -32,21 +33,29 @@ class TestSeedDemoEvents:
         today = date.today()
         call_command("seed_demo_events", verbosity=0)
         # 진행중: 시작 <= 오늘, 종료 > 오늘+5(마감임박 창 밖)
-        ongoing_beyond_closing = Event.objects.published().filter(
-            start_date__lte=today,
-            end_date__gt=today + timedelta(days=5),
-        ).count()
+        ongoing_beyond_closing = (
+            Event.objects.published()
+            .filter(
+                start_date__lte=today,
+                end_date__gt=today + timedelta(days=5),
+            )
+            .count()
+        )
         assert ongoing_beyond_closing >= 7
 
     def test_데모_행사_시드_후_마감_임박_기간_내_행사가_4건_이상이다(self):
         today = date.today()
         call_command("seed_demo_events", verbosity=0)
         # 마감임박: 시작 <= 오늘, 종료가 [오늘, 오늘+5] 구간
-        closing = Event.objects.published().filter(
-            start_date__lte=today,
-            end_date__gte=today,
-            end_date__lte=today + timedelta(days=5),
-        ).count()
+        closing = (
+            Event.objects.published()
+            .filter(
+                start_date__lte=today,
+                end_date__gte=today,
+                end_date__lte=today + timedelta(days=5),
+            )
+            .count()
+        )
         assert closing >= 4
 
     def test_데모_행사_시드_후_팬미팅_카테고리_행사가_존재한다(self):

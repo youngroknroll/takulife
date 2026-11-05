@@ -4,6 +4,7 @@
 갈라지므로(docs/BE/i18n.md 가드레일 20) 생성·수정 모두 시리얼라이저가
 한국어 원문으로 되돌린다.
 """
+
 import uuid
 
 import pytest
@@ -119,7 +120,12 @@ def test_수정_요청의_분류_자유_입력은_그대로_저장한다(client,
 def test_같은_토큰으로_영어_칩을_다시_보내도_행은_하나이고_분류는_원문이다(client, make_user):
     user = make_user(username="pec-idempotent")
     token = str(uuid.uuid4())
-    payload = {"kind": "place", "title": "내 장소", "category": "Pop-up store", "client_token": token}
+    payload = {
+        "kind": "place",
+        "title": "내 장소",
+        "category": "Pop-up store",
+        "client_token": token,
+    }
 
     client.force_login(user)
     first = client.post("/api/personal-entries/", payload, content_type="application/json", **_EN)

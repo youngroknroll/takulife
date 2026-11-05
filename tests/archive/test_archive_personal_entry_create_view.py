@@ -7,6 +7,7 @@
 (자유 입력용 힌트 칩이며 `choices` 제약이 아님)가 담겨 템플릿이 카테고리
 추천 칩을 렌더링할 수 있다.
 """
+
 import uuid
 
 import pytest
@@ -27,7 +28,10 @@ class TestArchivePersonalEntryCreateViewAuth:
 
         assert resp.status_code == 200
         assert "core/archive/personal_create.html" in [t.name for t in resp.templates]
-        assert resp.context["PERSONAL_ENTRY_CATEGORY_SUGGESTIONS"] == PERSONAL_ENTRY_CATEGORY_SUGGESTIONS
+        assert (
+            resp.context["PERSONAL_ENTRY_CATEGORY_SUGGESTIONS"]
+            == PERSONAL_ENTRY_CATEGORY_SUGGESTIONS
+        )
         assert len(resp.context["PERSONAL_ENTRY_CATEGORY_SUGGESTIONS"]) == 6
 
     def test_비공식_장소_등록_페이지는_렌더마다_발급된_클라이언트_토큰을_컨텍스트와_히든_인풋에_담는다(
@@ -35,7 +39,7 @@ class TestArchivePersonalEntryCreateViewAuth:
     ):
         """bfcache 중복 생성 트랙(INTG-BE-05-PE-SSR): archive_visit_create /
         archive_collection_item_create의 렌더마다 client_token 발급 패턴
-        (web/views/archive.py:387, :531)을 그대로 따라, 폼이 bfcache DOM
+        (web/views/archive.py:385, :529)을 그대로 따라, 폼이 bfcache DOM
         스냅샷에서도 살아남고 재전송된 제출을 중복 제거할 수 있게 한다(plan §4-1)."""
         _, client = user_client()
 
@@ -44,11 +48,11 @@ class TestArchivePersonalEntryCreateViewAuth:
         assert resp.status_code == 200
         token = resp.context["client_token"]
         assert uuid.UUID(str(token))
-        assert (
-            f'name="client_token" value="{token}"' in resp.content.decode()
-        )
+        assert f'name="client_token" value="{token}"' in resp.content.decode()
 
-    def test_비로그인_사용자가_비공식_장소_등록_페이지에_접근하면_로그인으로_리다이렉트된다(self, client):
+    def test_비로그인_사용자가_비공식_장소_등록_페이지에_접근하면_로그인으로_리다이렉트된다(
+        self, client
+    ):
         resp = client.get("/archive/personal/new/")
 
         assert resp.status_code == 302

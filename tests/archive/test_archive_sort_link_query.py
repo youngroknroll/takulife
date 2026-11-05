@@ -7,6 +7,7 @@
 마지막 값을 반환해 새 정렬이 무시된다. 정렬 링크 전용 꼬리는 status/q만 담고
 sort와 page는 제외해야 한다(page 제외 = 정렬 변경 시 1페이지로 자동 리셋).
 """
+
 import pytest
 
 pytestmark = pytest.mark.web

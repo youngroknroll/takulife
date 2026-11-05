@@ -7,6 +7,7 @@
 (tests/core/test_category_model.py 모듈 독스트링 참고). 이 파일의
 새 슬러그는 core.vocab.CATEGORY 시딩분과 겹치지 않게 고른다.
 """
+
 import pytest
 
 from core.models import Category
@@ -26,7 +27,7 @@ def test_런타임에_추가한_카테고리가_같은_프로세스에서_바로
 
 def test_비활성_카테고리도_어휘_검증은_통과한다():
     # 확정 결정: 비활성 ≠ 삭제. 기존 이벤트가 이 슬러그로 재게시될 때
-    # events/services.py:69의 is_valid_category가 활성 여부를 이유로
+    # events/services.py:68의 is_valid_category가 활성 여부를 이유로
     # 거부하면 안 된다(비활성화 이후에도 슬러그·라벨은 그대로 남는다는
     # Category 모델 계약, tests/core/test_category_model.py 참고).
     비활성_슬러그 = "retired_market"

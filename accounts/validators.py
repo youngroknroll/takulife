@@ -1,4 +1,5 @@
 """닉네임 정규화·검증 규칙(트랙 29). 폼·매니저·마이그레이션이 공유하는 순수 함수."""
+
 import re
 import unicodedata
 
@@ -49,7 +50,5 @@ def validate_nickname(value: str) -> None:
         raise ValidationError(
             _("닉네임은 한글, 영문, 숫자, _(밑줄)만 사용할 수 있습니다."), code="invalid"
         )
-    if value.lower() in RESERVED_NICKNAMES or RESERVED_NICKNAME_PATTERN.fullmatch(
-        value
-    ):
+    if value.lower() in RESERVED_NICKNAMES or RESERVED_NICKNAME_PATTERN.fullmatch(value):
         raise ValidationError(_("이 닉네임은 사용할 수 없습니다."), code="reserved")

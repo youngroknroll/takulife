@@ -1,4 +1,5 @@
 """번역 대기 큐 pending_events의 선정·배제·정렬 규칙 — DB가 필요한 도메인 테스트."""
+
 import pytest
 
 from events.content_translation import TRANSLATED_FIELDS, source_hash

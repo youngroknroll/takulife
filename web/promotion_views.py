@@ -4,6 +4,7 @@
 이게 금지된다. archive/drafts 양쪽을 모두 볼 수 있는 프레젠테이션·교차도메인
 계층인 ``web``이 이 오케스트레이션의 자리다.
 """
+
 from drf_spectacular.utils import OpenApiResponse, extend_schema, inline_serializer
 from rest_framework import serializers, status
 from rest_framework.permissions import IsAuthenticated
@@ -87,6 +88,9 @@ class PromotePersonalEntryView(APIView):
             )
 
         return Response(
-            {"draft_id": result.draft_id, "promotion_status": result.personal_entry.promotion_status},
+            {
+                "draft_id": result.draft_id,
+                "promotion_status": result.personal_entry.promotion_status,
+            },
             status=status.HTTP_201_CREATED,
         )

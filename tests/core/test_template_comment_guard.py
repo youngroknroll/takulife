@@ -16,6 +16,7 @@ endcomment %}`를 써야 한다.
 위반 목록에 개별적으로 나열되지 않는다 — 다만 그런 줄이 있는 파일은
 여전히 검증에서 실패한다.
 """
+
 from pathlib import Path
 
 import pytest

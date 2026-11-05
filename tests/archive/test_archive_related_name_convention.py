@@ -10,6 +10,7 @@ user/event/personal_entry FK 전체에 걸쳐 하나의 related_name 명명 규�
 
 django_db 마커 없음 — 모델 _meta만 조회하고 DB 접근은 없다.
 """
+
 import pytest
 
 from archive.models import EventInterest, UserEventStatus, VisitRecord
@@ -27,7 +28,9 @@ def _related_name(model, field_name):
 @pytest.mark.parametrize(
     "model", RELATED_NAME_CONVENTION_MODELS, ids=RELATED_NAME_CONVENTION_MODEL_IDS
 )
-def test_대상_역할_FK인_event와_personal_entry는_related_name을_공유하고_archive_user_로_시작한다(model):
+def test_대상_역할_FK인_event와_personal_entry는_related_name을_공유하고_archive_user_로_시작한다(
+    model,
+):
     event_related_name = _related_name(model, "event")
     personal_entry_related_name = _related_name(model, "personal_entry")
 

@@ -1,13 +1,14 @@
 """번역 대기 큐 조회와 제출 저장을 맡는 DB 계층이다.
 해시·검증 같은 순수 규칙은 전부 content_translation 모듈이 갖고 있다.
 """
-import logging
+
 from dataclasses import dataclass
+import logging
 
 from django.db import transaction
 
-from . import content_translation as rules
-from .models import Event
+from events import content_translation as rules
+from events.models import Event
 
 logger = logging.getLogger(__name__)
 
@@ -96,25 +97,27 @@ def _submit_translation_locked(*, event_id, source_hash, translations):
                 pk=event_id, publish_status=Event.PublishStatus.PUBLISHED
             )
         except Event.DoesNotExist:
-            raise rules.SubmissionRejected("not_found")
+            raise rules.SubmissionRejectedError("not_found")
 
         stored = event.text_translations
         if not isinstance(stored, dict):
             stored = {}
 
         if stored.get("manual"):
-            raise rules.SubmissionRejected("manual_locked")
+            raise rules.SubmissionRejectedError("manual_locked")
 
         fields = _event_fields(event)
         current_hash = rules.source_hash(fields)
         if source_hash != current_hash:
-            raise rules.SubmissionRejected("stale_source")
+            raise rules.SubmissionRejectedError("stale_source")
 
         if stored.get("source_hash") == current_hash:
             return SubmissionOutcome(status="already_current", saved=[], quarantined={})
 
         result = rules.validate_translations(fields, translations)
-        saved = [language for language in rules.TARGET_LANGUAGES if language not in result.quarantined]
+        saved = [
+            language for language in rules.TARGET_LANGUAGES if language not in result.quarantined
+        ]
 
         event.text_translations = {
             "source_hash": current_hash,
@@ -155,9 +158,13 @@ def submit_translation(*, event_id, source_hash, translations, client_ip=""):
         outcome = _submit_translation_locked(
             event_id=event_id, source_hash=source_hash, translations=translations
         )
-    except rules.SubmissionRejected as exc:
-        _log_rejection(event_id=event_id, code=exc.code, submitted_hash=source_hash, client_ip=client_ip)
+    except rules.SubmissionRejectedError as exc:
+        _log_rejection(
+            event_id=event_id, code=exc.code, submitted_hash=source_hash, client_ip=client_ip
+        )
         raise
 
-    _log_outcome(event_id=event_id, outcome=outcome, submitted_hash=source_hash, client_ip=client_ip)
+    _log_outcome(
+        event_id=event_id, outcome=outcome, submitted_hash=source_hash, client_ip=client_ip
+    )
     return outcome

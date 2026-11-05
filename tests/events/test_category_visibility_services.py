@@ -5,6 +5,7 @@
 경계 가드("API/뷰 계층 테스트 파일은 services/queries를 임포트하지
 않는다")가 요구하는 대로 전용 파일에 둔다.
 """
+
 import pytest
 
 from core.models import Category

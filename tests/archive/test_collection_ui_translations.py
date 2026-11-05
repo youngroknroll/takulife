@@ -5,12 +5,13 @@
 같다(불변 핀). 날짜 값 `%Y.%m.%d`와 사용자 입력(획득 경로)은 번역하지 않는다.
 단언은 HTML을 파싱해 요소 단위로 한다.
 """
-import re
+
 from datetime import date
 from html.parser import HTMLParser
+import re
 
-import pytest
 from django.test import Client
+import pytest
 
 pytestmark = [pytest.mark.web, pytest.mark.django_db]
 
@@ -202,9 +203,7 @@ def test_카드의_수량과_교환_가능_문구는_요청_언어의_문장이�
         quantity_label, tradeable_label = _QUANTITY_LABELS[lang]
         assert row["quantity_label"] == quantity_label
         assert row["tradeable_label"] == tradeable_label
-        assert any(
-            quantity_label in text and tradeable_label in text for text in meta_texts
-        )
+        assert any(quantity_label in text and tradeable_label in text for text in meta_texts)
     else:
         _assert_no_korean([row["quantity_label"], row["tradeable_label"]])
 
@@ -241,9 +240,7 @@ _META_VALUES = {
 
 def _meta_rows(resp):
     rows = _parse(resp).find_all("div", "collection-detail-meta-row")
-    return [
-        (row.find_all("dt")[0].text(), row.find_all("dd")[0].text()) for row in rows
-    ]
+    return [(row.find_all("dt")[0].text(), row.find_all("dd")[0].text()) for row in rows]
 
 
 def _detail_item(make_collection_item, user, count):
@@ -278,9 +275,7 @@ def test_상세_메타_행의_라벨과_개수는_요청_언어를_따른다(
 
 
 @pytest.mark.parametrize("lang", _ALL_LANGS)
-def test_상세_컨텍스트의_메타_행도_같은_라벨과_값이다(
-    user_client, make_collection_item, lang
-):
+def test_상세_컨텍스트의_메타_행도_같은_라벨과_값이다(user_client, make_collection_item, lang):
     user, _ = user_client()
     item = _detail_item(make_collection_item, user, 2)
 

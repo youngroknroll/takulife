@@ -1,6 +1,7 @@
 """events.content_translation.select_display에 대한 단위 테스트 — 해시
 일치·언어 격리·해시 불일치·빈 저장소·미지원 언어에서의 노출 선택을 다룬다.
 """
+
 import pytest
 
 from events.content_translation import DisplayText, select_display, source_hash

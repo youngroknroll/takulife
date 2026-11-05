@@ -1,4 +1,5 @@
 """탈퇴를 요청하면 완료 페이지로 가고 같은 브라우저의 세션이 끊기는 여정."""
+
 from playwright.sync_api import expect
 
 

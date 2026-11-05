@@ -12,18 +12,20 @@ archive/signals.py 참고)는 accounts.services.execute_pending_deletions에서
 일어나며, 이 파일이 아니라 tests/auth/test_account_deletion_purge.py에서
 검증한다.
 """
+
+from datetime import datetime, timedelta
+from datetime import timezone as dt_timezone
 import logging
 import time as real_time
-from datetime import datetime, timedelta, timezone as dt_timezone
 
-import django.core.cache.backends.base as cache_base
-import django.core.cache.backends.db as cache_db
-import pytest
 from django.conf import settings
 from django.core.cache import cache
+import django.core.cache.backends.base as cache_base
+import django.core.cache.backends.db as cache_db
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client
 from django.utils import timezone
+import pytest
 
 from accounts import services
 from accounts.models import User
@@ -120,7 +122,9 @@ def test_스태프가_계정_삭제_페이지에_접근하면_403으로_거부�
 
 @pytest.mark.django_db
 @pytest.mark.web
-def test_스태프의_계정_삭제_요청은_403으로_거부되고_계정이_유지된다(client, make_user, valid_password):
+def test_스태프의_계정_삭제_요청은_403으로_거부되고_계정이_유지된다(
+    client, make_user, valid_password
+):
     staff = make_user(password=valid_password, is_staff=True)
     client.force_login(staff)
 
@@ -151,7 +155,9 @@ def test_스태프의_잘못된_비밀번호_요청은_잠금_카운터를_증�
 
 @pytest.mark.django_db
 @pytest.mark.web
-def test_로그인_사용자가_계정_삭제_페이지에_접근하면_확인_폼이_렌더링된다(client, make_user, valid_password):
+def test_로그인_사용자가_계정_삭제_페이지에_접근하면_확인_폼이_렌더링된다(
+    client, make_user, valid_password
+):
     user = make_user(password=valid_password)
     client.force_login(user)
 
@@ -162,7 +168,9 @@ def test_로그인_사용자가_계정_삭제_페이지에_접근하면_확인_�
 
 @pytest.mark.django_db
 @pytest.mark.web
-def test_잘못된_비밀번호로_계정_삭제를_요청하면_계정이_삭제되지_않는다(client, make_user, valid_password):
+def test_잘못된_비밀번호로_계정_삭제를_요청하면_계정이_삭제되지_않는다(
+    client, make_user, valid_password
+):
     user = make_user(password=valid_password)
     client.force_login(user)
 
@@ -234,7 +242,9 @@ def test_다섯_번_잘못된_비밀번호_시도_시_잠금_경고가_사용자
 
 @pytest.mark.django_db
 @pytest.mark.slow
-def test_잠금_상태에서_요청하면_잠시_후_다시_시도하라는_오류가_표시된다(client, make_user, valid_password):
+def test_잠금_상태에서_요청하면_잠시_후_다시_시도하라는_오류가_표시된다(
+    client, make_user, valid_password
+):
     user = make_user(password=valid_password)
     client.force_login(user)
 
@@ -317,9 +327,7 @@ def test_잠금_창은_이후_실패로_연장되지_않고_최초_실패_시점
 
 @pytest.mark.django_db
 @pytest.mark.slow
-def test_다섯_번_미만_실패_후_올바른_비밀번호는_탈퇴를_예약한다(
-    client, make_user, valid_password
-):
+def test_다섯_번_미만_실패_후_올바른_비밀번호는_탈퇴를_예약한다(client, make_user, valid_password):
     """잠금 문턱 아래에서는 이후의 맞는 비밀번호가 여전히 통해야 한다 —
     비밀번호 검사가 성공하고 나면 실패 카운터가 다음 탈퇴 세션으로 넘어가
     누적되면 안 된다."""
@@ -340,7 +348,9 @@ def test_다섯_번_미만_실패_후_올바른_비밀번호는_탈퇴를_예약
 
 @pytest.mark.django_db
 @pytest.mark.slow
-def test_한_사용자의_잠금은_다른_사용자의_계정_탈퇴_예약을_막지_않는다(client, make_user, valid_password):
+def test_한_사용자의_잠금은_다른_사용자의_계정_탈퇴_예약을_막지_않는다(
+    client, make_user, valid_password
+):
     """한 사용자의 시도 예산 소진이 다른 사용자를 잠그면 안 된다."""
     attacker = make_user(password=valid_password)
     victim = make_user(password=valid_password)
@@ -363,7 +373,9 @@ def test_한_사용자의_잠금은_다른_사용자의_계정_탈퇴_예약을_
 
 @pytest.mark.django_db
 @pytest.mark.web
-def test_계정_삭제_직후_기존_세션으로는_보호된_페이지에_접근할_수_없다(client, make_user, valid_password):
+def test_계정_삭제_직후_기존_세션으로는_보호된_페이지에_접근할_수_없다(
+    client, make_user, valid_password
+):
     user = make_user(password=valid_password)
     client.force_login(user)
 
@@ -550,9 +562,7 @@ def test_로그인_사용자가_계정_삭제_페이지에_접근하면_삭제_�
     EventInterest.objects.create(user=user, event=event2)
 
     # 나의 일정 = 1건
-    UserEventStatus.objects.create(
-        user=user, event=event1, status=UserEventStatus.Status.PLANNED
-    )
+    UserEventStatus.objects.create(user=user, event=event1, status=UserEventStatus.Status.PLANNED)
 
     # 다녀온 기록 = 3건
     visit1 = VisitRecord.objects.create(user=user, event=event1, visited_on="2026-01-01")
@@ -563,20 +573,22 @@ def test_로그인_사용자가_계정_삭제_페이지에_접근하면_삭제_�
     for photo_index in range(2):
         VisitRecordPhoto.objects.create(
             visit_record=visit1,
-            image=SimpleUploadedFile(f"v1-{photo_index}.png", png_bytes(), content_type="image/png"),
+            image=SimpleUploadedFile(
+                f"v1-{photo_index}.png", png_bytes(), content_type="image/png"
+            ),
         )
     for photo_index in range(2):
         VisitRecordPhoto.objects.create(
             visit_record=visit2,
-            image=SimpleUploadedFile(f"v2-{photo_index}.png", png_bytes(), content_type="image/png"),
+            image=SimpleUploadedFile(
+                f"v2-{photo_index}.png", png_bytes(), content_type="image/png"
+            ),
         )
 
     # 컬렉션 굿즈 = 5건 (보유 4 + 원함 전용/미보유 1)
     for goods_index in range(4):
         CollectionItem.objects.create(user=user, name=f"보유 굿즈 {goods_index}", quantity=1)
-    CollectionItem.objects.create(
-        user=user, name="원함 전용 굿즈", quantity=0, is_wanted=True
-    )
+    CollectionItem.objects.create(user=user, name="원함 전용 굿즈", quantity=0, is_wanted=True)
 
     # 직접 등록 항목 = 6건
     for entry_index in range(6):
@@ -586,14 +598,10 @@ def test_로그인_사용자가_계정_삭제_페이지에_접근하면_삭제_�
 
     # 타 사용자 데이터 — 절대 집계되면 안 된다
     EventInterest.objects.create(user=other, event=event1)
-    UserEventStatus.objects.create(
-        user=other, event=event1, status=UserEventStatus.Status.PLANNED
-    )
+    UserEventStatus.objects.create(user=other, event=event1, status=UserEventStatus.Status.PLANNED)
     VisitRecord.objects.create(user=other, event=event1, visited_on="2026-02-01")
     CollectionItem.objects.create(user=other, name="남의 굿즈")
-    PersonalEntry.objects.create(
-        user=other, kind=PersonalEntry.Kind.PLACE, title="남의 항목"
-    )
+    PersonalEntry.objects.create(user=other, kind=PersonalEntry.Kind.PLACE, title="남의 항목")
 
     client.force_login(user)
 
@@ -710,9 +718,7 @@ def test_탈퇴_화면에서_비밀번호를_틀려도_삭제_대상_카운트�
     EventInterest.objects.create(user=user, event=event2)
 
     # 나의 일정 = 1건
-    UserEventStatus.objects.create(
-        user=user, event=event1, status=UserEventStatus.Status.PLANNED
-    )
+    UserEventStatus.objects.create(user=user, event=event1, status=UserEventStatus.Status.PLANNED)
 
     # 다녀온 기록 = 3건
     visit1 = VisitRecord.objects.create(user=user, event=event1, visited_on="2026-01-01")
@@ -775,9 +781,7 @@ def test_비밀번호_잠금_상태의_탈퇴_화면에서도_삭제_대상_카�
     EventInterest.objects.create(user=user, event=event3)
 
     # 나의 일정 = 1건
-    UserEventStatus.objects.create(
-        user=user, event=event1, status=UserEventStatus.Status.PLANNED
-    )
+    UserEventStatus.objects.create(user=user, event=event1, status=UserEventStatus.Status.PLANNED)
 
     # 다녀온 기록 = 2건
     visit1 = VisitRecord.objects.create(user=user, event=event1, visited_on="2026-01-01")

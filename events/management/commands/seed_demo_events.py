@@ -3,6 +3,7 @@
 카테고리와 view_count를 다양하게 둔다.
 멱등 키는 official_url이라 재실행해도 기존 행은 그대로 두고 새로 만들지 않는다.
 """
+
 from datetime import date, timedelta
 
 from django.core.management.base import BaseCommand
@@ -228,6 +229,4 @@ class Command(BaseCommand):
             else:
                 skipped_count += 1
 
-        self.stdout.write(
-            f"seed_demo_events: created={created_count}, skipped={skipped_count}"
-        )
+        self.stdout.write(f"seed_demo_events: created={created_count}, skipped={skipped_count}")

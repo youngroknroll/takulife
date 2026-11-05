@@ -7,11 +7,12 @@
 - D-5 마감임박 창(홈 화면만의 선정 기준).
 - 가드: closing_rows의 D+5 행사도 status_slug == "ongoing"이어야 한다.
 """
-import pytest
+
 from datetime import date, timedelta
 from unittest.mock import patch
 
 from django.test import Client
+import pytest
 
 from core.vocab import CATEGORY
 from events.models import Event
@@ -95,7 +96,9 @@ class TestHomeContextCaps:
             resp = Client().get("/")
         assert len(resp.context["closing_rows"]) == 15
 
-    def test_행사가_전혀_없어도_홈_화면_섹션_리스트_키는_빈_리스트로_카테고리_타일_키는_값이_존재한다(self):
+    def test_행사가_전혀_없어도_홈_화면_섹션_리스트_키는_빈_리스트로_카테고리_타일_키는_값이_존재한다(
+        self,
+    ):
         resp = Client().get("/")
         assert resp.context["ongoing_rows"] == []
         assert resp.context["closing_rows"] == []
@@ -137,7 +140,9 @@ class TestHomeClosingWindow:
 class TestHomeSlidersDropEndedEvents:
     """슬라이더는 기간이 지난 행사(end_date < 오늘)를 숨긴다."""
 
-    def test_종료일이_지난_행사는_신규_행사_목록에서_제외되고_진행중인_행사는_유지된다(self, make_event):
+    def test_종료일이_지난_행사는_신규_행사_목록에서_제외되고_진행중인_행사는_유지된다(
+        self, make_event
+    ):
         today = date(2026, 6, 26)
         ended = make_event(
             title="Ended",
@@ -278,9 +283,7 @@ class TestHomeFeaturedEvent:
         row_ids = [row["event"].id for row in rows]
         ongoing_ids = {e.id for e in ongoing_events}
         upcoming_ids = {e.id for e in upcoming_events}
-        last_ongoing_index = max(
-            i for i, event_id in enumerate(row_ids) if event_id in ongoing_ids
-        )
+        last_ongoing_index = max(i for i, event_id in enumerate(row_ids) if event_id in ongoing_ids)
         first_upcoming_index = min(
             (i for i, event_id in enumerate(row_ids) if event_id in upcoming_ids),
             default=len(row_ids),
@@ -416,7 +419,9 @@ class TestHomeCollectionSnapshotContext:
 
         assert len(resp.context["recent_goods"]) == 5
 
-    def test_기록_미완성_행사가_5건을_넘으면_스냅샷에_5건까지만_노출된다(self, make_user, make_event):
+    def test_기록_미완성_행사가_5건을_넘으면_스냅샷에_5건까지만_노출된다(
+        self, make_user, make_event
+    ):
         from archive.models import UserEventStatus
 
         user = make_user()
@@ -432,15 +437,15 @@ class TestHomeCollectionSnapshotContext:
 
         assert len(resp.context["unrecorded"]) == 5
 
-    def test_다가오는_방문_예정_행사가_4건을_넘으면_스냅샷에_4건까지만_노출된다(self, make_user, make_event):
+    def test_다가오는_방문_예정_행사가_4건을_넘으면_스냅샷에_4건까지만_노출된다(
+        self, make_user, make_event
+    ):
         from archive.models import UserEventStatus
 
         user = make_user()
         today = date(2026, 6, 26)
         for i in range(5):
-            event = make_event(
-                title=f"다가오는 행사{i}", start_date=today + timedelta(days=i + 1)
-            )
+            event = make_event(title=f"다가오는 행사{i}", start_date=today + timedelta(days=i + 1))
             UserEventStatus.objects.create(
                 user=user, event=event, status=UserEventStatus.Status.PLANNED
             )

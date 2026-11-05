@@ -8,12 +8,13 @@ XML은 표준 xml.etree 대신 defusedxml로 파싱한다 — 외부에서 받�
 선언을 그대로 두고 fromstring에 넘기면 ValueError가 나므로 `_parse_xml`이 선언을 UTF-8로
 맞춰 재인코딩한 뒤 파싱한다.
 """
+
 import re
 from urllib.parse import parse_qsl, urlencode, urljoin, urlsplit, urlunsplit
 
 from bs4 import BeautifulSoup
-from defusedxml.ElementTree import ParseError, fromstring
 from defusedxml.common import DefusedXmlException
+from defusedxml.ElementTree import ParseError, fromstring
 from soupsieve.util import SelectorSyntaxError
 
 
@@ -31,7 +32,8 @@ _SNS_HOSTNAMES = {
     "instagram.com",
     "www.instagram.com",
 }
-# 러너 API가 제외 호스트 목록을 노출할 때 쓰는 공개 별칭 — 사설 이름을 밖에서 직접 임포트하지 않게 한다.
+# 러너 API가 제외 호스트 목록을 노출할 때 쓰는 공개 별칭 —
+# 사설 이름을 밖에서 직접 임포트하지 않게 한다.
 SNS_HOSTNAMES = _SNS_HOSTNAMES
 
 _IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg")
@@ -39,7 +41,7 @@ _IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg")
 _XML_ENCODING_DECLARATION = re.compile(r'encoding=["\'][^"\']*["\']')
 # XML 프롤로그는 문서 맨 앞(BOM 제외)에만 올 수 있어, 정규식을 앞쪽에 고정하면 본문에
 # 우연히 등장하는 encoding="..." 문자열까지 잘못 치환되는 일이 없다.
-_XML_PROLOG = re.compile(r'\A﻿?<\?xml\b[^>]*\?>')
+_XML_PROLOG = re.compile(r"\A﻿?<\?xml\b[^>]*\?>")
 
 
 def _parse_xml(content):
@@ -50,7 +52,7 @@ def _parse_xml(content):
     if prolog_match:
         prolog = prolog_match.group()
         normalized_prolog = _XML_ENCODING_DECLARATION.sub('encoding="UTF-8"', prolog, count=1)
-        normalized = normalized_prolog + content[prolog_match.end():]
+        normalized = normalized_prolog + content[prolog_match.end() :]
     else:
         normalized = content
     try:
@@ -85,7 +87,9 @@ def _strip_tracking_params(url):
         for key, value in parse_qsl(parts.query, keep_blank_values=True)
         if not key.startswith("utm_")
     ]
-    return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(kept_params), parts.fragment))
+    return urlunsplit(
+        (parts.scheme, parts.netloc, parts.path, urlencode(kept_params), parts.fragment)
+    )
 
 
 def _matches_base_page(cleaned_url, self_page):
@@ -145,9 +149,7 @@ def _local_tag(tag):
 
 
 def _first_local_child(element, tag_name):
-    return next(
-        (child for child in element if _local_tag(child.tag) == tag_name), None
-    )
+    return next((child for child in element if _local_tag(child.tag) == tag_name), None)
 
 
 def extract_links_sitemap(content, base_url):

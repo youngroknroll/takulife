@@ -10,9 +10,10 @@ axes는 시도 기록을 DB에 저장하며, 각 테스트의 ``@pytest.mark.dja
 ``clear_cache`` 독스트링 참고) 이 파일이 따로 요청할 필요가 없다.
 ``axes_reset``은 axes 자체 카운터를 깨끗한 상태로 보장한다.
 """
-import pytest
+
 from axes.utils import reset
 from django.test import override_settings
+import pytest
 
 pytestmark = pytest.mark.slow
 
@@ -49,7 +50,9 @@ def test_로그인_3회_실패_후에는_올바른_비밀번호도_IP_단위로_
 
 @pytest.mark.django_db
 @override_settings(AXES_FAILURE_LIMIT=3, ACCOUNT_RATE_LIMITS={"login_failed": "1000/m/key"})
-def test_IP_잠금_상태에서_로그인하면_한글_잠금_안내_템플릿이_렌더링된다(client, axes_reset, make_verified_user):
+def test_IP_잠금_상태에서_로그인하면_한글_잠금_안내_템플릿이_렌더링된다(
+    client, axes_reset, make_verified_user
+):
     """잠금 응답은 templates/account/lockout.html로 렌더된다."""
     make_verified_user("target2@example.com")
 

@@ -29,8 +29,7 @@ def test_운영_문서가_Django_명령을_안내하면_예외_표식_없는_한
             match.start()
             for match in re.finditer(r"(?<!uv run )python manage\.py", text)
             if not any(
-                0 <= match.start() - marker_end <= MAX_MARKER_DISTANCE
-                for marker_end in marker_ends
+                0 <= match.start() - marker_end <= MAX_MARKER_DISTANCE for marker_end in marker_ends
             )
         ]
 

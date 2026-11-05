@@ -6,6 +6,7 @@
 이 계약의 의도된 예외는 `staff/views/__init__.py`의 수집 실행 뷰 1곳뿐이다
 — `finally`에서 시도 자체를 항상 기록해야 하기 때문이다.
 """
+
 import datetime
 
 from django.conf import settings
@@ -23,7 +24,13 @@ def _staff_action_metadata(request):
 
 
 def _action_log_kwargs(
-    metadata, action, *, target_draft=None, target_event=None, target_user=None, target_category=None
+    metadata,
+    action,
+    *,
+    target_draft=None,
+    target_event=None,
+    target_user=None,
+    target_category=None,
 ):
     """`request`가 아닌 이미 추출된 `metadata` 딕셔너리를 받는다.
 
@@ -50,9 +57,7 @@ def _validate_bulk_ids(ids, *, field_name, max_items):
     # 개수 상한 검사를 먼저 해서, 과도하게 큰 payload는 전체를 훑기 전에 걸러낸다.
     if len(ids) > max_items:
         return f"{field_name} must contain at most {max_items} ids."
-    if not all(
-        isinstance(item, int) and not isinstance(item, bool) for item in ids
-    ):
+    if not all(isinstance(item, int) and not isinstance(item, bool) for item in ids):
         return f"{field_name} must contain only integers."
     return None
 

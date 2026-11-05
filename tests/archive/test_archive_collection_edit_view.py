@@ -9,15 +9,18 @@
 - `visibility`와 `name="event"` 컨트롤은 등록 페이지와 마찬가지로 절대
   렌더되지 않는다.
 """
-import pytest
+
 from django.test import Client
+import pytest
 
 pytestmark = pytest.mark.web
 
 
 @pytest.mark.django_db
 class TestArchiveCollectionEditView:
-    def test_소유자가_수정_페이지에_접근하면_기존_값이_채워진_폼이_표시된다(self, user_client, make_collection_item):
+    def test_소유자가_수정_페이지에_접근하면_기존_값이_채워진_폼이_표시된다(
+        self, user_client, make_collection_item
+    ):
         user, client = user_client()
         item = make_collection_item(
             user,
@@ -41,7 +44,9 @@ class TestArchiveCollectionEditView:
         assert f'value="{item.work_title}"'.encode() in content
         assert f'value="{item.character_name}"'.encode() in content
 
-    def test_타인_소유_항목의_수정_페이지에_접근하면_404가_된다(self, user_client, make_user, make_collection_item):
+    def test_타인_소유_항목의_수정_페이지에_접근하면_404가_된다(
+        self, user_client, make_user, make_collection_item
+    ):
         owner = make_user()
         _, client = user_client()
         item = make_collection_item(owner, name="남의 아이템")
@@ -50,7 +55,9 @@ class TestArchiveCollectionEditView:
 
         assert resp.status_code == 404
 
-    def test_비로그인_사용자가_수정_페이지에_접근하면_로그인_페이지로_리다이렉트된다(self, make_user, make_collection_item):
+    def test_비로그인_사용자가_수정_페이지에_접근하면_로그인_페이지로_리다이렉트된다(
+        self, make_user, make_collection_item
+    ):
         owner = make_user()
         item = make_collection_item(owner, name="아이템")
 
@@ -62,7 +69,9 @@ class TestArchiveCollectionEditView:
 
 @pytest.mark.django_db
 class TestArchiveCollectionEditHiddenFields:
-    def test_수정_페이지에는_visibility_필드가_렌더링되지_않는다(self, user_client, make_collection_item):
+    def test_수정_페이지에는_visibility_필드가_렌더링되지_않는다(
+        self, user_client, make_collection_item
+    ):
         user, client = user_client()
         item = make_collection_item(user, name="아이템")
 
@@ -70,7 +79,9 @@ class TestArchiveCollectionEditHiddenFields:
 
         assert b'name="visibility"' not in resp.content
 
-    def test_수정_페이지에는_이벤트_선택_컨트롤이_렌더링되지_않는다(self, user_client, make_collection_item):
+    def test_수정_페이지에는_이벤트_선택_컨트롤이_렌더링되지_않는다(
+        self, user_client, make_collection_item
+    ):
         user, client = user_client()
         item = make_collection_item(user, name="아이템")
 

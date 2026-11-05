@@ -42,14 +42,14 @@ API가 아닌 다른 곳에서 부르면 `StaffActionLog`가 남지 않는다. �
 "스태프가 admin API를 통해 조작했다"는 사실만 기록하지, 드래프트 생성 자체를
 추적하지 않는다.
 
-- `drafts/candidate_validation.py:346`(`decide_and_create_candidate` 호출) —
+- `drafts/candidate_validation.py:352`(`decide_and_create_candidate` 호출) —
   실제 생성 호출은 `drafts/candidate_intake.py:70` — 후보 URL 자동 검증
   러너가 제출.
-- `drafts/management/commands/discover_drafts.py:189` — 관리 명령이 소스를
+- `drafts/management/commands/discover_drafts.py:191` — 관리 명령이 소스를
   크롤링해 자동 생성(actor 없음).
-- `web/promotion.py:75` — 일반 사용자가 개인 기록을 공식 제보로 승격. 스태프
+- `web/promotion.py:74` — 일반 사용자가 개인 기록을 공식 제보로 승격. 스태프
   행동이 아니다.
-- `drafts/agent_drafts.py:276`(`create_draft_from_fields` 호출,
+- `drafts/agent_drafts.py:281`(`create_draft_from_fields` 호출,
   `submit_agent_draft`) — 로컬 러너 에이전트 제출.
 
 네 곳 다 별도 시스템 감사 항목으로 이연됐고(트랙 20 계획서 "배제"), 이번

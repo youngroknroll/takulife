@@ -5,13 +5,14 @@
 archive.models.ActivityLogEntry는 아직 없어 이 파일 전체가 모델이 추가되기
 전까지 수집 단계에서 ImportError로 실패하는 것이 정상이다.
 """
+
 import uuid
 
-import pytest
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.urls import Resolver404, resolve
 from django.utils import timezone
+import pytest
 
 from archive.models import ActivityLogEntry
 

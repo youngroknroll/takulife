@@ -5,10 +5,11 @@
 관찰한다 — tests/core/test_architecture_boundaries.py의 뷰 테스트 경계
 가드에 따라 archive.queries/archive.services를 임포트하지 않는다.
 """
+
 from datetime import timedelta
 
-import pytest
 from django.utils import timezone
+import pytest
 
 pytestmark = pytest.mark.web
 
@@ -21,7 +22,9 @@ TODAY = timezone.localdate()
 
 
 @pytest.mark.django_db
-def test_사용자가_관심_등록한_행사는_아카이브_관심_목록_페이지에_표시된다(client, make_user, make_event, make_interest):
+def test_사용자가_관심_등록한_행사는_아카이브_관심_목록_페이지에_표시된다(
+    client, make_user, make_event, make_interest
+):
     user = make_user(username="interests-page-user")
     event = make_event(title="Page Event")
     make_interest(user, event=event)
@@ -34,7 +37,9 @@ def test_사용자가_관심_등록한_행사는_아카이브_관심_목록_페�
 
 
 @pytest.mark.django_db
-def test_비로그인_사용자가_아카이브_관심_목록_페이지에_접근하면_로그인_페이지로_리다이렉트된다(client):
+def test_비로그인_사용자가_아카이브_관심_목록_페이지에_접근하면_로그인_페이지로_리다이렉트된다(
+    client,
+):
     response = client.get("/archive/interests/")
     assert response.status_code == 302
     assert "/accounts/login/" in response["Location"]
@@ -77,7 +82,9 @@ def test_알수없는_정렬값도_200을_반환하고_기본_정렬로_폴백�
 
 
 @pytest.mark.django_db
-def test_페이저_쿼리에_검색어와_정렬값이_모두_보존된다(client, make_user, make_event, make_interest):
+def test_페이저_쿼리에_검색어와_정렬값이_모두_보존된다(
+    client, make_user, make_event, make_interest
+):
     """V3: pager_query는 쿼리스트링 꼬리에 q와 sort를 모두 유지한다."""
     user = make_user(username="interests-v3-user")
     event = make_event(title="페이저_보존_행사")
@@ -135,10 +142,7 @@ def test_요약_통계_3종은_검색어_유무와_무관하게_동일하다(
     with_q = client.get("/archive/interests/", {"q": "이_검색어는_아무것도_매칭하지_않는다"})
 
     assert without_q.context["ongoing_count"] == with_q.context["ongoing_count"]
-    assert (
-        without_q.context["planned_overlap_count"]
-        == with_q.context["planned_overlap_count"]
-    )
+    assert without_q.context["planned_overlap_count"] == with_q.context["planned_overlap_count"]
 
 
 @pytest.mark.django_db
@@ -146,9 +150,7 @@ def test_공식_찜_행에는_상태와_디데이가_붙는다(client, make_user
     """V6: 공식(이벤트 연결) 찜 행은 null이 아닌 status/dday 쌍을 담는다
     (events.presenters.derive_event_display)."""
     user = make_user(username="interests-v6-user")
-    event = make_event(
-        title="V6_공식_행사", start_date=TODAY, end_date=TODAY + timedelta(days=10)
-    )
+    event = make_event(title="V6_공식_행사", start_date=TODAY, end_date=TODAY + timedelta(days=10))
     make_interest(user, event=event)
 
     client.force_login(user)
@@ -168,9 +170,7 @@ def test_공식_찜_행에는_본인의_방문_상태가_반영된다(
     이미 방문 완료/기타 상태로 표시한 행에는 "방문 예정" 버튼이 나오면
     안 된다."""
     user = make_user(username="interests-v7-user")
-    event = make_event(
-        title="V7_공식_행사", start_date=TODAY, end_date=TODAY + timedelta(days=10)
-    )
+    event = make_event(title="V7_공식_행사", start_date=TODAY, end_date=TODAY + timedelta(days=10))
     make_interest(user, event=event)
     make_status(user, event=event, status="visited")
 

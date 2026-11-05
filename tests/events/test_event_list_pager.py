@@ -11,13 +11,14 @@ core/templatetags/pager_tags.py 참고). web.views.event_list의 개별 구현�
   - 페이지 링크는 다른 페이지네이션 목록과 마찬가지로 활성 q/region/category/status
     필터와 활성 정렬을 보존한다.
 """
+
 from datetime import timedelta
 from html import unescape
 from urllib.parse import parse_qs, unquote, urlparse
 
-import pytest
 from django.test import Client
 from django.utils import timezone
+import pytest
 
 pytestmark = pytest.mark.web
 
@@ -62,10 +63,7 @@ class TestEventListPagerPreservesFilters:
         assert resp.status_code == 200
         body = resp.content.decode()
 
-        hrefs = [
-            href
-            for href in _pager_page_hrefs(body)
-        ]
+        hrefs = [href for href in _pager_page_hrefs(body)]
         assert hrefs, "페이저 페이지 링크가 렌더링되지 않음"
         for href in hrefs:
             params = _parse_pager_href_query(href)
@@ -106,7 +104,7 @@ def _parse_pager_href_query(href):
 
     공용 페이저 파셜의 `extra_query`는 리터럴 '&'로 시작하는데
     (core/partials/_pager.html), Django의 자동 이스케이프가 응답 본문에서
-    이를 HTML 엔티티 `&amp;`로 렌더링한다(web/views/archive.py:130-131에 이미
+    이를 HTML 엔티티 `&amp;`로 렌더링한다(web/views/archive.py:129-130에 이미
     문서화됨: "템플릿이 href 안의 선행 & 를 &amp;로 이스케이프하고 브라우저가
     디코드한다"). `html.unescape`가 먼저 그 HTML 엔티티 계층을 되돌리고,
     `urllib.parse.unquote`는 전혀 다른 계층(퍼센트 인코딩)이라 `&amp;`를

@@ -1,13 +1,12 @@
-import uuid
 from pathlib import Path
+import uuid
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 
+from archive.querysets import CollectionItemQuerySet, UserEventStatusQuerySet
 from events.models import Event
-
-from .querysets import CollectionItemQuerySet, UserEventStatusQuerySet
 
 # 요청 하나로 거대한 memo를 저장해 DB·메모리를 소모하는 것을 막는 상한이다.
 # 실제 입력 검증은 시리얼라이저가 한다.
@@ -166,9 +165,7 @@ class PersonalEntry(models.Model):
     # 사용자가 남기는 참고 링크(트윗/블로그/샵)로, 유일값도 공식 출처도 아니다.
     url = models.URLField(blank=True)
     memo = models.TextField(blank=True)
-    image = models.ImageField(
-        upload_to=personal_entry_image_upload_to, blank=True, null=True
-    )
+    image = models.ImageField(upload_to=personal_entry_image_upload_to, blank=True, null=True)
     promotion_status = models.CharField(
         max_length=20,
         choices=PromotionStatus.choices,
@@ -301,9 +298,7 @@ class CollectionItem(models.Model):
         null=True,
         blank=True,
     )
-    image = models.ImageField(
-        upload_to=collection_item_image_upload_to, blank=True, null=True
-    )
+    image = models.ImageField(upload_to=collection_item_image_upload_to, blank=True, null=True)
     memo = models.TextField(blank=True)
     is_wanted = models.BooleanField(default=False)
     tradeable_quantity = models.IntegerField(default=0)
@@ -361,9 +356,7 @@ class CollectionItem(models.Model):
         # 강제할 수 없다. create_collection_item의 서비스 단 동기화에 더해
         # 여기서 2차로 방어한다.
         if self._event_conflicts_with_visit_record():
-            raise ValidationError(
-                "event must match visit_record.event when both are set."
-            )
+            raise ValidationError("event must match visit_record.event when both are set.")
 
     def _event_conflicts_with_visit_record(self) -> bool:
         """event와 visit_record가 둘 다 있는데 서로 다른 event를 가리키면 True."""
@@ -440,7 +433,5 @@ class ActivityLogEntry(models.Model):
             ),
         ]
         indexes = [
-            models.Index(
-                fields=["user", "occurred_at"], name="archive_actlog_user_occ_idx"
-            ),
+            models.Index(fields=["user", "occurred_at"], name="archive_actlog_user_occ_idx"),
         ]

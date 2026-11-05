@@ -2,13 +2,14 @@
 
 조회 로직은 뷰가 아니라 여기 둔다(drafts/queries.py, events/queries.py와 같은 구조).
 """
+
 from datetime import datetime, time, timedelta
 
 from django.db.models import Count, Q
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 
-from .models import StaffActionLog
+from staff.models import StaffActionLog
 
 
 def recent_staff_actions(limit=10):
@@ -94,9 +95,7 @@ def staff_actions_per_day(days=14):
     current_tz = timezone.get_current_timezone()
     today = timezone.localdate()
     start_date = today - timedelta(days=days - 1)
-    window_start = timezone.make_aware(
-        datetime.combine(start_date, time.min), current_tz
-    )
+    window_start = timezone.make_aware(datetime.combine(start_date, time.min), current_tz)
 
     counts_by_date = {
         row["day"]: row["count"]

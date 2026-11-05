@@ -9,15 +9,19 @@ from drf_spectacular.utils import (
     inline_serializer,
 )
 from rest_framework import serializers, status
-from rest_framework.generics import ListCreateAPIView, RetrieveDestroyAPIView, RetrieveUpdateDestroyAPIView
-from rest_framework.pagination import PageNumberPagination
 from rest_framework.exceptions import ValidationError
+from rest_framework.generics import (
+    ListCreateAPIView,
+    RetrieveDestroyAPIView,
+    RetrieveUpdateDestroyAPIView,
+)
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
-from .models import (
+from archive.models import (
     CollectionItem,
     EventInterest,
     PersonalEntry,
@@ -25,8 +29,8 @@ from .models import (
     VisitRecord,
     VisitRecordPhoto,
 )
-from .queries import list_user_collection_items, list_user_personal_entries
-from .serializers import (
+from archive.queries import list_user_collection_items, list_user_personal_entries
+from archive.serializers import (
     CollectionItemQuerySerializer,
     CollectionItemSerializer,
     CollectionItemUpdateSerializer,
@@ -40,7 +44,7 @@ from .serializers import (
     VisitRecordSerializer,
     VisitRecordUpdateSerializer,
 )
-from .services import (
+from archive.services import (
     MAX_PHOTOS_PER_RECORD,
     DuplicateEventInterestError,
     DuplicateUserEventStatusError,
@@ -82,7 +86,10 @@ class PersonalEntryPagination(PageNumberPagination):
     get=extend_schema(
         tags=["collection"],
         summary="내 비공식 기록 목록을 조회한다",
-        responses={200: PersonalEntrySerializer, 403: OpenApiResponse(description="인증되지 않은 요청.")},
+        responses={
+            200: PersonalEntrySerializer,
+            403: OpenApiResponse(description="인증되지 않은 요청."),
+        },
     ),
     post=extend_schema(
         tags=["collection"],
@@ -148,7 +155,13 @@ class PersonalEntryListCreateView(ListCreateAPIView):
     ),
 )
 class PersonalEntryDetailView(RetrieveUpdateDestroyAPIView):
-    http_method_names = ["get", "patch", "delete", "head", "options"]  # 전체교체(PUT) 미허용 — CollectionItemDetailView와 동일 취지
+    http_method_names = [
+        "get",
+        "patch",
+        "delete",
+        "head",
+        "options",
+    ]  # 전체교체(PUT) 미허용 — CollectionItemDetailView와 동일 취지
     permission_classes = [IsAuthenticated]
     serializer_class = PersonalEntrySerializer
 
@@ -169,7 +182,10 @@ class EventInterestPagination(PageNumberPagination):
     get=extend_schema(
         tags=["archive"],
         summary="내 관심 행사 목록을 조회한다",
-        responses={200: EventInterestSerializer, 403: OpenApiResponse(description="인증되지 않은 요청.")},
+        responses={
+            200: EventInterestSerializer,
+            403: OpenApiResponse(description="인증되지 않은 요청."),
+        },
     ),
     post=extend_schema(
         tags=["archive"],
@@ -269,7 +285,9 @@ class UserEventStatusPagination(PageNumberPagination):
         summary="행사 상태를 등록한다",
         responses={
             201: UserEventStatusSerializer,
-            400: OpenApiResponse(description="입력값 검증 실패, 또는 이미 방문 기록이 있는 상태 전환."),
+            400: OpenApiResponse(
+                description="입력값 검증 실패, 또는 이미 방문 기록이 있는 상태 전환."
+            ),
             403: OpenApiResponse(description="인증되지 않은 요청."),
             409: OpenApiResponse(description="이미 등록된 행사 상태."),
         },
@@ -343,7 +361,9 @@ class UserEventStatusListCreateView(ListCreateAPIView):
         summary="행사 상태를 전환한다",
         responses={
             200: UserEventStatusSerializer,
-            400: OpenApiResponse(description="이미 방문 기록이 있는 항목은 이 상태로 되돌릴 수 없다."),
+            400: OpenApiResponse(
+                description="이미 방문 기록이 있는 항목은 이 상태로 되돌릴 수 없다."
+            ),
             403: OpenApiResponse(description="인증되지 않은 요청."),
             404: OpenApiResponse(description="존재하지 않거나 소유하지 않은 행사 상태."),
         },
@@ -405,7 +425,10 @@ class VisitRecordPagination(PageNumberPagination):
     get=extend_schema(
         tags=["archive"],
         summary="내 다녀온 기록 목록을 조회한다",
-        responses={200: VisitRecordSerializer, 403: OpenApiResponse(description="인증되지 않은 요청.")},
+        responses={
+            200: VisitRecordSerializer,
+            403: OpenApiResponse(description="인증되지 않은 요청."),
+        },
     ),
     post=extend_schema(
         tags=["archive"],
@@ -432,10 +455,7 @@ class VisitRecordListCreateView(ListCreateAPIView):
         return []
 
     def get_queryset(self):
-        return (
-            VisitRecord.objects.filter(user=self.request.user)
-            .order_by("-visited_on", "-id")
-        )
+        return VisitRecord.objects.filter(user=self.request.user).order_by("-visited_on", "-id")
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -510,9 +530,7 @@ class VisitRecordDetailView(RetrieveUpdateDestroyAPIView):
         update_visit_record(
             record=record,
             visited_on=serializer.validated_data.get("visited_on", record.visited_on),
-            short_review=serializer.validated_data.get(
-                "short_review", record.short_review
-            ),
+            short_review=serializer.validated_data.get("short_review", record.short_review),
         )
 
 
@@ -536,7 +554,9 @@ class VisitRecordPhotoCreateView(APIView):
                 },
             ),
             400: OpenApiResponse(
-                description=f"입력값 검증 실패, 또는 기록당 사진이 {MAX_PHOTOS_PER_RECORD}장을 초과함."
+                description=(
+                    f"입력값 검증 실패, 또는 기록당 사진이 {MAX_PHOTOS_PER_RECORD}장을 초과함."
+                )
             ),
             403: OpenApiResponse(description="인증되지 않은 요청."),
             404: OpenApiResponse(description="존재하지 않거나 소유하지 않은 다녀온 기록."),
@@ -547,9 +567,7 @@ class VisitRecordPhotoCreateView(APIView):
         serializer = VisitRecordPhotoUploadSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         try:
-            photo = create_visit_record_photo(
-                visit_record=record, **serializer.validated_data
-            )
+            photo = create_visit_record_photo(visit_record=record, **serializer.validated_data)
         except PhotoLimitExceededError:
             return Response(
                 {
@@ -608,7 +626,9 @@ class CollectionItemPagination(PageNumberPagination):
         summary="굿즈 컬렉션 항목을 생성한다",
         responses={
             201: CollectionItemSerializer,
-            400: OpenApiResponse(description="입력값 검증 실패(예: 교환 가능 수량이 보유 수량을 초과)."),
+            400: OpenApiResponse(
+                description="입력값 검증 실패(예: 교환 가능 수량이 보유 수량을 초과)."
+            ),
             403: OpenApiResponse(description="인증되지 않은 요청."),
         },
     ),
@@ -664,7 +684,9 @@ class CollectionItemListCreateView(ListCreateAPIView):
         summary="굿즈 컬렉션 항목을 수정한다",
         responses={
             200: CollectionItemSerializer,
-            400: OpenApiResponse(description="입력값 검증 실패(예: 교환 가능 수량이 보유 수량을 초과)."),
+            400: OpenApiResponse(
+                description="입력값 검증 실패(예: 교환 가능 수량이 보유 수량을 초과)."
+            ),
             403: OpenApiResponse(description="인증되지 않은 요청."),
             404: OpenApiResponse(description="존재하지 않거나 소유하지 않은 항목."),
         },

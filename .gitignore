@@ -27,3 +27,6 @@ locale/**/*.mo
 # Coverage artifacts
 .coverage
 htmlcov/
+
+# ruff cache
+.ruff_cache/

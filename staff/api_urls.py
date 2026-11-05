@@ -1,12 +1,11 @@
 from django.urls import path
 
-from .permissions import staff_api_korean
-from .views import (
+from staff.permissions import staff_api_korean
+from staff.views import (
     AdminEventDraftDetailView,
     AdminEventDraftListCreateView,
     AdminEventDraftStatsView,
 )
-
 
 urlpatterns = [
     path("", staff_api_korean(AdminEventDraftListCreateView.as_view()), name="event-drafts"),

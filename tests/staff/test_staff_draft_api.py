@@ -1,9 +1,8 @@
-import pytest
 from django.db import IntegrityError
 from django.test import override_settings
 from django.urls import resolve, reverse
+import pytest
 
-import staff.views.draft_api as draft_views
 from drafts.models import EventDraft, SourceDiscoveryRun
 from drafts.services import (
     DraftCreationEmptyExtractionError,
@@ -12,6 +11,7 @@ from drafts.services import (
 )
 from events.models import Event
 from staff.models import StaffActionLog
+import staff.views.draft_api as draft_views
 
 pytestmark = pytest.mark.web
 
@@ -33,7 +33,9 @@ def event_draft_detail_url(draft_id):
 
 @pytest.mark.django_db
 @override_settings(DRAFT_DISCOVERY_ENABLED=True)
-def test_관리자가_url로_이벤트_드래프트를_생성하면_추출된_필드와_함께_저장된다(admin_client, monkeypatch):
+def test_관리자가_url로_이벤트_드래프트를_생성하면_추출된_필드와_함께_저장된다(
+    admin_client, monkeypatch
+):
     def fake_fetch(url):
         return "<html><title>Sample Event</title><meta name='description' content='Short summary'></html>"
 
@@ -61,7 +63,9 @@ def test_관리자가_url로_이벤트_드래프트를_생성하면_추출된_�
 
 @pytest.mark.django_db
 @override_settings(DRAFT_DISCOVERY_ENABLED=True)
-def test_관리자가_안전하지_않은_url로_생성을_요청하면_400과_함께_거부된다_로그도_남지_않는다(admin_client):
+def test_관리자가_안전하지_않은_url로_생성을_요청하면_400과_함께_거부된다_로그도_남지_않는다(
+    admin_client,
+):
     response = admin_client.post(event_drafts_url(), {"source_url": "http://127.0.0.1/event"})
 
     assert response.status_code == 400
@@ -72,8 +76,12 @@ def test_관리자가_안전하지_않은_url로_생성을_요청하면_400과_�
 
 @pytest.mark.django_db
 @override_settings(DRAFT_DISCOVERY_ENABLED=True)
-def test_url_가져오기가_실패하면_503으로_응답하고_드래프트를_생성하지_않는다_로그도_남지_않는다(admin_client, monkeypatch):
-    monkeypatch.setattr("drafts.services.fetch_html", lambda url: (_ for _ in ()).throw(RuntimeError("timeout")))
+def test_url_가져오기가_실패하면_503으로_응답하고_드래프트를_생성하지_않는다_로그도_남지_않는다(
+    admin_client, monkeypatch
+):
+    monkeypatch.setattr(
+        "drafts.services.fetch_html", lambda url: (_ for _ in ()).throw(RuntimeError("timeout"))
+    )
     admin_client.raise_request_exception = False
 
     response = admin_client.post(event_drafts_url(), {"source_url": "https://example.com/event"})
@@ -95,8 +103,14 @@ def test_관리자는_이벤트_드래프트_상세를_조회할_수_있다(admi
 
 
 @pytest.mark.django_db
-def test_이벤트_드래프트_상세_응답은_extraction_method와_confidence를_포함한다(admin_client, make_draft):
-    draft = make_draft("https://example.com/event", extraction_method=EventDraft.ExtractionMethod.LLM, confidence=0.87)
+def test_이벤트_드래프트_상세_응답은_extraction_method와_confidence를_포함한다(
+    admin_client, make_draft
+):
+    draft = make_draft(
+        "https://example.com/event",
+        extraction_method=EventDraft.ExtractionMethod.LLM,
+        confidence=0.87,
+    )
 
     response = admin_client.get(event_draft_detail_url(draft.id))
 
@@ -132,7 +146,11 @@ def test_관리자는_검토_대기중인_드래프트의_추출_필드를_수�
 
 @pytest.mark.django_db
 def test_승인된_드래프트는_수정할_수_없다_로그도_남지_않는다(admin_client, make_draft):
-    draft = make_draft("https://example.com/event", extracted_title="Original title", review_status=EventDraft.ReviewStatus.APPROVED)
+    draft = make_draft(
+        "https://example.com/event",
+        extracted_title="Original title",
+        review_status=EventDraft.ReviewStatus.APPROVED,
+    )
 
     response = admin_client.patch(
         event_draft_detail_url(draft.id),
@@ -148,7 +166,11 @@ def test_승인된_드래프트는_수정할_수_없다_로그도_남지_않는�
 
 @pytest.mark.django_db
 def test_거절된_드래프트는_수정할_수_없다_로그도_남지_않는다(admin_client, make_draft):
-    draft = make_draft("https://example.com/event", extracted_title="Original title", review_status=EventDraft.ReviewStatus.REJECTED)
+    draft = make_draft(
+        "https://example.com/event",
+        extracted_title="Original title",
+        review_status=EventDraft.ReviewStatus.REJECTED,
+    )
 
     response = admin_client.patch(
         event_draft_detail_url(draft.id),
@@ -164,7 +186,9 @@ def test_거절된_드래프트는_수정할_수_없다_로그도_남지_않는�
 
 @pytest.mark.django_db
 def test_source_url과_원본_필드는_수정할_수_없다(admin_client, make_draft):
-    draft = make_draft("https://example.com/event", raw_title="Original raw title", raw_text="Original raw text")
+    draft = make_draft(
+        "https://example.com/event", raw_title="Original raw title", raw_text="Original raw text"
+    )
 
     response = admin_client.patch(
         event_draft_detail_url(draft.id),
@@ -204,7 +228,9 @@ def _준비_discovery_run(make_draft):
     [("intake_note", _준비_intake_note), ("discovery_run", _준비_discovery_run)],
     ids=["intake_note", "discovery_run"],
 )
-def test_수정_요청_본문의_intake_note와_discovery_run은_400으로_거부되고_값이_바뀌지_않는다(admin_client, make_draft, field_name, prepare):
+def test_수정_요청_본문의_intake_note와_discovery_run은_400으로_거부되고_값이_바뀌지_않는다(
+    admin_client, make_draft, field_name, prepare
+):
     draft, patch_body, attr_name, original_value = prepare(make_draft)
 
     response = admin_client.patch(
@@ -328,7 +354,9 @@ def test_일반_사용자는_이벤트_드래프트_검토_기능에_접근할_�
 
 @pytest.mark.django_db
 @override_settings(DRAFT_DISCOVERY_ENABLED=True)
-def test_이미_존재하는_source_url로_생성을_요청하면_거부된다_로그도_남지_않는다(admin_client, make_draft):
+def test_이미_존재하는_source_url로_생성을_요청하면_거부된다_로그도_남지_않는다(
+    admin_client, make_draft
+):
     make_draft("https://example.com/event")
 
     response = admin_client.post(event_drafts_url(), {"source_url": "https://example.com/event"})
@@ -340,7 +368,9 @@ def test_이미_존재하는_source_url로_생성을_요청하면_거부된다_�
 
 @pytest.mark.django_db
 @override_settings(DRAFT_DISCOVERY_ENABLED=True)
-def test_생성_시점의_동시성_경쟁으로_인한_중복도_source_url_필드_오류로_응답한다_로그도_남지_않는다(admin_client, monkeypatch):
+def test_생성_시점의_동시성_경쟁으로_인한_중복도_source_url_필드_오류로_응답한다_로그도_남지_않는다(
+    admin_client, monkeypatch
+):
     monkeypatch.setattr("drafts.services.fetch_html", lambda url: "<title>Event</title>")
     monkeypatch.setattr(
         "drafts.services.extract_event_fields",
@@ -370,7 +400,9 @@ def test_http가_아닌_스킴의_url로_생성을_요청하면_거부된다_로
 
 
 @pytest.mark.django_db
-def test_수집이_비활성화되어_있으면_관리자의_수동_드래프트_생성도_거부된다_로그도_남지_않는다(admin_client, monkeypatch):
+def test_수집이_비활성화되어_있으면_관리자의_수동_드래프트_생성도_거부된다_로그도_남지_않는다(
+    admin_client, monkeypatch
+):
     # settings.DRAFT_DISCOVERY_ENABLED는 기본 False(config/settings.py). 관리자
     # 권한과 무관하게 이 게이트가 fetch 시도 자체를 막아야 한다 — fetch_html이
     # 실제로 불리면 SSRF 방어가 우회될 수 있으므로, 여기서는 fetch_html을
@@ -470,9 +502,12 @@ class TestAdminCreateEndpointErrorResponses:
         )
 
     @override_settings(DRAFT_DISCOVERY_ENABLED=True)
-    def test_지원하지_않는_콘텐츠_오류는_400으로_응답한다_로그도_남지_않는다(self, staff_client, monkeypatch):
+    def test_지원하지_않는_콘텐츠_오류는_400으로_응답한다_로그도_남지_않는다(
+        self, staff_client, monkeypatch
+    ):
         monkeypatch.setattr(
-            draft_views, "prepare_draft_from_url",
+            draft_views,
+            "prepare_draft_from_url",
             _raise(DraftCreationUnsupportedContentError()),
         )
         _, client = staff_client(is_superuser=True)
@@ -481,9 +516,12 @@ class TestAdminCreateEndpointErrorResponses:
         assert StaffActionLog.objects.count() == 0
 
     @override_settings(DRAFT_DISCOVERY_ENABLED=True)
-    def test_응답_크기_초과_오류는_400으로_응답한다_로그도_남지_않는다(self, staff_client, monkeypatch):
+    def test_응답_크기_초과_오류는_400으로_응답한다_로그도_남지_않는다(
+        self, staff_client, monkeypatch
+    ):
         monkeypatch.setattr(
-            draft_views, "prepare_draft_from_url",
+            draft_views,
+            "prepare_draft_from_url",
             _raise(DraftCreationResponseTooLargeError()),
         )
         _, client = staff_client(is_superuser=True)
@@ -492,9 +530,12 @@ class TestAdminCreateEndpointErrorResponses:
         assert StaffActionLog.objects.count() == 0
 
     @override_settings(DRAFT_DISCOVERY_ENABLED=True)
-    def test_추출_결과_없음_오류는_400으로_응답한다_로그도_남지_않는다(self, staff_client, monkeypatch):
+    def test_추출_결과_없음_오류는_400으로_응답한다_로그도_남지_않는다(
+        self, staff_client, monkeypatch
+    ):
         monkeypatch.setattr(
-            draft_views, "prepare_draft_from_url",
+            draft_views,
+            "prepare_draft_from_url",
             _raise(DraftCreationEmptyExtractionError()),
         )
         _, client = staff_client(is_superuser=True)
@@ -525,7 +566,9 @@ class TestDraftUpdateApiVocabError:
         assert draft.extracted_category == "popup_store"
         assert StaffActionLog.objects.count() == 0
 
-    def test_어휘_밖_지역으로_PATCH하면_400을_응답한다_로그도_남지_않는다(self, admin_client, make_draft):
+    def test_어휘_밖_지역으로_PATCH하면_400을_응답한다_로그도_남지_않는다(
+        self, admin_client, make_draft
+    ):
         draft = make_draft(extracted_region="seoul")
 
         resp = admin_client.patch(

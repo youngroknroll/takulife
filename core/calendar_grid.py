@@ -6,8 +6,10 @@
 tests/core/test_calendar_grid.py의 AST 가드가 강제하므로 이 모듈은
 표준 라이브러리만 사용한다.
 """
+
 import calendar
 from dataclasses import dataclass
+
 # `from datetime import date`가 아니라 별칭을 쓴다: 아래 데이터클래스
 # 필드 이름도 `date`라서, `field: T = default` 형태는 클래스 본문에서
 # 어노테이션 `T`를 평가하기 *전에* 기본값을 필드 이름에 먼저 바인딩한다.

@@ -11,12 +11,12 @@ Red 기대(전체 공통): `staff/views/categories.py`, `templates/staff/categor
 `palette_hex_for`도 모듈 최상단에서 import하므로, 그 이름이 없어서
 파일 전체가 수집 단계에서 ImportError로 죽는 것도 정상이다.
 """
+
 import re
 
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
-
 import pytest
 
 from core.categories import UNASSIGNED_PALETTE, palette_hex_for
@@ -125,7 +125,9 @@ def test_유효한_슬러그_라벨로_POST하면_저장되고_목록으로_리�
 
 
 @pytest.mark.django_db
-def test_허용되지_않는_문자가_있는_슬러그로_POST하면_필드_오류와_함께_입력값을_보존한_채_재렌더된다(staff_client):
+def test_허용되지_않는_문자가_있는_슬러그로_POST하면_필드_오류와_함께_입력값을_보존한_채_재렌더된다(
+    staff_client,
+):
     """S-06"""
     _, client = staff_client(is_superuser=True)
 
@@ -152,7 +154,9 @@ def test_중복_라벨로_POST하면_필드_오류와_함께_입력값을_보존
 
 
 @pytest.mark.django_db
-def test_슬롯_소진_상태에서_생성_화면에_GET하면_목록으로_리다이렉트되고_오류_메시지가_뜬다(staff_client):
+def test_슬롯_소진_상태에서_생성_화면에_GET하면_목록으로_리다이렉트되고_오류_메시지가_뜬다(
+    staff_client,
+):
     """S-08"""
     _exhaust_palette_slots()
     _, client = staff_client(is_superuser=True)
@@ -166,7 +170,9 @@ def test_슬롯_소진_상태에서_생성_화면에_GET하면_목록으로_리�
 
 
 @pytest.mark.django_db
-def test_슬롯_소진_상태에서_POST하면_생성하지_않고_입력값을_보존한_채_오류_메시지와_함께_재렌더된다(staff_client):
+def test_슬롯_소진_상태에서_POST하면_생성하지_않고_입력값을_보존한_채_오류_메시지와_함께_재렌더된다(
+    staff_client,
+):
     """S-09"""
     _exhaust_palette_slots()
     before_count = Category.objects.count()

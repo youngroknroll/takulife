@@ -3,6 +3,7 @@
 core.retention.prune_operational_data를 감싸는 얇은 껍데기 — 대상별 집계와
 삭제 로직은 전부 그 함수에 있다.
 """
+
 from django.core.management.base import BaseCommand, CommandError
 
 from core.retention import prune_operational_data

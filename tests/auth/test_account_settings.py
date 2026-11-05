@@ -4,10 +4,11 @@ accounts.views.delete_account 자체의 서버 쪽 403 가드와 일치한다
 (tests/auth/test_account_deletion.py 참고) — UI에서 숨기는 것만으로는
 부족하지만, 둘을 합치면 페이지가 뷰가 허용하는 범위와 일관되게 유지된다.
 """
+
 import datetime as dt
 
-import pytest
 from django.utils import timezone
+import pytest
 
 pytestmark = pytest.mark.web
 
@@ -97,8 +98,10 @@ def test_비밀번호_변경_이력이_있으면_설정_페이지의_변경일_�
     settings.TIME_ZONE(Asia/Seoul) 기준 날짜여야 한다(마이페이지의 동일 규칙,
     tests/core/test_mypage_view.py와 동일 패턴)."""
     user = make_user()
-    utc_changed_at = timezone.now().astimezone(dt.timezone.utc).replace(
-        hour=23, minute=0, second=0, microsecond=0
+    utc_changed_at = (
+        timezone.now()
+        .astimezone(dt.timezone.utc)
+        .replace(hour=23, minute=0, second=0, microsecond=0)
     )
     user.password_changed_at = utc_changed_at
     user.save(update_fields=["password_changed_at"])
@@ -108,6 +111,4 @@ def test_비밀번호_변경_이력이_있으면_설정_페이지의_변경일_�
 
     response = client.get(SETTINGS_URL)
 
-    assert response.context["password_changed_display"] == expected_local_date.strftime(
-        "%Y.%m.%d"
-    )
+    assert response.context["password_changed_display"] == expected_local_date.strftime("%Y.%m.%d")

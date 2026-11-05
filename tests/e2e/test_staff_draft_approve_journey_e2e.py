@@ -1,4 +1,5 @@
 """스태프가 드래프트를 승인하면 공개 이벤트가 되는 여정."""
+
 import re
 
 from playwright.sync_api import expect
@@ -12,9 +13,7 @@ def test_스태프가_드래프트를_승인하면_공개_이벤트_상세가_�
 ):
     staff = verified_user(is_staff=True)
     login_as(staff)
-    draft = make_pending_draft(
-        raw_title="e2e 승인 드래프트", extracted_title="e2e 승인 드래프트"
-    )
+    draft = make_pending_draft(raw_title="e2e 승인 드래프트", extracted_title="e2e 승인 드래프트")
 
     page.goto(f"{base_url}/staff/drafts/{draft.id}/")
     page.get_by_role("button", name="승인하고 게시").click()

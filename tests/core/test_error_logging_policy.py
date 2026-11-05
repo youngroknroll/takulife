@@ -18,9 +18,10 @@
 파일마다 먼저 AST를 훑어 `X = logging.getLogger(...)` 대입 대상을 모으고,
 그 이름에 대한 호출만 로거 호출로 센다.
 """
+
 import ast
-import re
 from pathlib import Path
+import re
 
 import pytest
 
@@ -28,7 +29,17 @@ pytestmark = pytest.mark.contract
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-_SCAN_PACKAGES = ("accounts", "archive", "config", "core", "drafts", "events", "staff", "web", "local_runner")
+_SCAN_PACKAGES = (
+    "accounts",
+    "archive",
+    "config",
+    "core",
+    "drafts",
+    "events",
+    "staff",
+    "web",
+    "local_runner",
+)
 
 _LOGGER_METHODS = {"debug", "info", "warning", "error", "exception", "critical"}
 

@@ -1,6 +1,7 @@
 """스태프 대시보드 "시스템 오류" 패널 검증
 (트랙 36 S7, prompt_plan.md 트랙 36 EG-24·EG-25 참고).
 """
+
 import pytest
 
 from core.error_groups import compute_fingerprint

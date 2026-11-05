@@ -28,15 +28,19 @@
 2. **`import *`를 쓰지 마라.** 서브모듈의 module-level 이름이 패키지
    네임스페이스에 얹히면, 테스트의 몽키패치가 "성공"하고 "통과"하지만
    실행 경로에는 닿지 않는 **조용한 무효화**가 생긴다. 명시 import만.
-   ⚠️ **이 규칙만 자동 테스트가 있다** —
-   `tests/core/test_architecture_boundaries.py`의
-   `test_web_디렉터리_아래_모듈은_import_별표를_쓰지_않는다`. 아래 3·4번은
-   **미강제** — 코드로만 지켜지고 기계 가드는 없다.
+   이 규칙은 `tests/core/test_architecture_boundaries.py`의
+   `test_web_디렉터리_아래_모듈은_import_별표를_쓰지_않는다`가 강제한다.
+   아래 3번은 `tests/core/test_web_views_package_boundaries.py`가 강제하고
+   (2026-10-29, 트랙 47), 4번(로거)은
+   `tests/core/test_error_logging_policy.py::test_모듈_로거는_모듈명으로만_생성한다`가
+   이미 강제한다.
 3. **`archive.py` → `collection.py`는 단방향이다.** 방문 상세가 굿즈 카드
    헬퍼(`_collection_item_row`, `_series_ink_classes`)를 쓴다.
    **`collection.py`에서 `archive.py`를 임포트하면 순환이 된다.**
    공유가 필요하면 `_helpers.py`로 올려라 — 그 파일은 어떤 형제도
-   임포트하지 않는 리프여야 한다.
+   임포트하지 않는 리프여야 한다. 가드 테스트:
+   `test_컬렉션_뷰_모듈은_아카이브_뷰_모듈을_임포트하지_않는다`,
+   `test_뷰_공용_헬퍼_모듈은_형제_뷰_모듈을_임포트하지_않는다`.
 4. **로거는 모듈마다 `logging.getLogger(__name__)`으로 새로 만든다.**
    다른 모듈의 `logger`를 임포트하지 마라 —
    `tests/core/test_error_logging_policy.py`가 모듈명 생성만 허용한다.

@@ -16,10 +16,11 @@ GitGuardian은 AST가 아니라 원시 텍스트를 스캔하므로, 이 파일 
 런타임에만 조립한다 — 기록되는 픽스처 파일 내용 자체는 이전과 동일하므로
 검출력은 그대로다.
 """
+
 import ast
+from pathlib import Path
 import re
 import subprocess
-from pathlib import Path
 
 import pytest
 
@@ -131,9 +132,7 @@ def _iter_tracked_test_files(root):
 def test_password_kwarg에_4자_이상_상수가_있으면_위반이다(tmp_path):
     fixture = tmp_path / "fixture.py"
     fixture.write_text(
-        "create_user(email='a@example.com', {kw}='abcd')\n".format(
-            kw=_KWARG_NAME_FRAGMENT
-        )
+        "create_user(email='a@example.com', {kw}='abcd')\n".format(kw=_KWARG_NAME_FRAGMENT)
     )
 
     assert _password_literal_violations(fixture)
@@ -142,9 +141,7 @@ def test_password_kwarg에_4자_이상_상수가_있으면_위반이다(tmp_path
 def test_password_kwarg가_3자면_경계값으로_통과한다(tmp_path):
     fixture = tmp_path / "fixture.py"
     fixture.write_text(
-        "create_user(email='a@example.com', {kw}='abc')\n".format(
-            kw=_KWARG_NAME_FRAGMENT
-        )
+        "create_user(email='a@example.com', {kw}='abc')\n".format(kw=_KWARG_NAME_FRAGMENT)
     )
 
     assert not _password_literal_violations(fixture)
@@ -159,18 +156,14 @@ def test_password_할당에_4자_이상_상수가_있으면_위반이다(tmp_pat
 
 def test_password_할당값이_변수_참조면_위반이_아니다(tmp_path):
     fixture = tmp_path / "fixture.py"
-    fixture.write_text(
-        "{kw} = some_generated_value\n".format(kw=_KWARG_NAME_FRAGMENT)
-    )
+    fixture.write_text("{kw} = some_generated_value\n".format(kw=_KWARG_NAME_FRAGMENT))
 
     assert not _password_literal_violations(fixture)
 
 
 def test_이름에_password가_포함된_db_password류_할당도_위반이다(tmp_path):
     fixture = tmp_path / "fixture.py"
-    fixture.write_text(
-        "db_{kw} = 'abcd'\n".format(kw=_KWARG_NAME_FRAGMENT)
-    )
+    fixture.write_text("db_{kw} = 'abcd'\n".format(kw=_KWARG_NAME_FRAGMENT))
 
     assert _password_literal_violations(fixture)
 
@@ -178,9 +171,7 @@ def test_이름에_password가_포함된_db_password류_할당도_위반이다(t
 def test_이름에_password가_포함돼도_값이_url_경로면_위반이_아니다(tmp_path):
     fixture = tmp_path / "fixture.py"
     fixture.write_text(
-        "{kw}_CHANGE_URL = '/accounts/{kw}/change/'\n".format(
-            kw=_KWARG_NAME_FRAGMENT
-        )
+        "{kw}_CHANGE_URL = '/accounts/{kw}/change/'\n".format(kw=_KWARG_NAME_FRAGMENT)
     )
 
     assert not _password_literal_violations(fixture)
@@ -189,9 +180,7 @@ def test_이름에_password가_포함돼도_값이_url_경로면_위반이_아�
 def test_자격증명이_포함된_uri_상수는_위반이다(tmp_path):
     fixture = tmp_path / "fixture.py"
     fixture.write_text(
-        "DATABASE_URL = 'postgresql://{cred}@localhost:5432/taku'\n".format(
-            cred="taku:" + "taku"
-        )
+        "DATABASE_URL = 'postgresql://{cred}@localhost:5432/taku'\n".format(cred="taku:" + "taku")
     )
 
     assert _credential_uri_violations(fixture)
@@ -209,12 +198,8 @@ def test_두_판정_함수가_합성_캐너리_파일에서_각각_실제로_위
     패턴①·②를 한 파일에 함께 심어 둘 다 잡히는지 확인한다."""
     fixture = tmp_path / "canary.py"
     fixture.write_text(
-        "create_user(email='a@example.com', {kw}='abcd')\n".format(
-            kw=_KWARG_NAME_FRAGMENT
-        )
-        + "DATABASE_URL = 'postgresql://{cred}@localhost:5432/taku'\n".format(
-            cred="taku:" + "taku"
-        )
+        "create_user(email='a@example.com', {kw}='abcd')\n".format(kw=_KWARG_NAME_FRAGMENT)
+        + "DATABASE_URL = 'postgresql://{cred}@localhost:5432/taku'\n".format(cred="taku:" + "taku")
     )
 
     assert _password_literal_violations(fixture)

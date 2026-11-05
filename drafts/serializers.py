@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import EventDraft
+from drafts.models import EventDraft
 
 
 class DiscoveryRunnerLiveSerializer(serializers.Serializer):

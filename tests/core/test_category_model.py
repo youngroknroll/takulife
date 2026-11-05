@@ -4,7 +4,7 @@
 
 - 슬러그·라벨 유일성 위반은 DB 레벨(models.Field(unique=True))로 강제한다고
   가정하고 IntegrityError로 잡는다. 이 저장소의 선례
-  tests/auth/test_nickname_model_contracts.py:11-21이 커스텀 매니저 없는
+  tests/auth/test_nickname_model_contracts.py:11-19이 커스텀 매니저 없는
   .objects.create() 경로에서 UniqueConstraint 위반을 IntegrityError로
   잡는 방식을 그대로 따른다 — Category에는 커스텀 매니저를 두지 않을
   예정이므로 같은 경로가 적용된다.
@@ -24,9 +24,9 @@
   하드코딩하지 말고 DB에서 읽어라(예:
   `Category.objects.exclude(palette_slot=None).values_list("palette_slot", flat=True)`).
 """
+
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
-
 import pytest
 
 from core.models import Category
@@ -71,9 +71,7 @@ def test_카테고리를_생성하면_팔레트_슬롯이_자동_배정된다():
     # unique=True 충돌이 나므로, 기존에 쓰인 슬롯을 DB에서 읽어 새
     # 카테고리 하나가 그 슬롯들과 겹치지 않는 슬롯을 받는지만 본다.
     used_slots = set(
-        Category.objects.exclude(palette_slot=None).values_list(
-            "palette_slot", flat=True
-        )
+        Category.objects.exclude(palette_slot=None).values_list("palette_slot", flat=True)
     )
 
     new_category = Category.objects.create(slug="new_category", label="새카테고리")

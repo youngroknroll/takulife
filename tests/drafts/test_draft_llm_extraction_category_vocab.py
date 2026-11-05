@@ -8,6 +8,7 @@ drafts/llm_extraction.py:28의 `CATEGORY_SLUGS = [slug for slug, _ in CATEGORY]`
 모듈 임포트 시점 스냅샷인 한, 런타임에 추가한 카테고리는 이 테스트에서
 스키마 enum에 나타날 수 없다 — 그래서 Red다.
 """
+
 import pytest
 
 from core.models import Category

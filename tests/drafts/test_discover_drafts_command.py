@@ -2,8 +2,9 @@
 하며, 실제 하위 모듈을 그대로 쓰는 예외 두 곳(중복 생성 경로, robots 캐시 검증)은
 해당 테스트 안에 이유를 적어 둔다. DRAFT_DISCOVERY_ENABLED는 아래 autouse fixture로
 기본 True다."""
-import pytest
+
 from django.core.management import CommandError, call_command
+import pytest
 
 from drafts.candidate_intake import decide_and_create_candidate
 from drafts.discovery import DiscoveryParseError
@@ -17,7 +18,6 @@ from drafts.services import (
     DraftCreationFetchError,
 )
 
-
 pytestmark = [pytest.mark.django_db, pytest.mark.domain]
 
 
@@ -30,14 +30,18 @@ def _discovery_enabled(settings):
 def _no_inter_request_delay(monkeypatch):
     # 소스별 예의 지연(INTER_REQUEST_DELAY_SECONDS)은 이 파일의 검증 대상이
     # 아니다. 꺼두지 않으면 소스가 늘 때마다 실제로 1초씩 대기하게 된다.
-    monkeypatch.setattr("drafts.management.commands.discover_drafts.time.sleep", lambda seconds: None)
+    monkeypatch.setattr(
+        "drafts.management.commands.discover_drafts.time.sleep", lambda seconds: None
+    )
 
 
 class _FakeRobotsChecker:
     """drafts.robots.RobotsChecker 대역. 실제 네트워크 대신 이걸로 robots 결과를
     직접 지정한다."""
 
-    def __init__(self, outcomes=None, default=RobotsCheckResult(True, None), crawl_delay_value=None):
+    def __init__(
+        self, outcomes=None, default=RobotsCheckResult(True, None), crawl_delay_value=None
+    ):
         self.outcomes = outcomes or {}
         self.default = default
         self.calls = []
@@ -54,17 +58,15 @@ class _FakeRobotsChecker:
 
 
 def _patch_robots_checker(monkeypatch, checker):
-    monkeypatch.setattr(
-        "drafts.management.commands.discover_drafts.RobotsChecker", lambda: checker
-    )
+    monkeypatch.setattr("drafts.management.commands.discover_drafts.RobotsChecker", lambda: checker)
 
 
 class TestFlagGating:
-    def test_DRAFT_DISCOVERY_ENABLED가_꺼져_있으면_실행을_거부하고_설정명을_안내한다(self, settings, monkeypatch, capsys, fail_if_called):
+    def test_DRAFT_DISCOVERY_ENABLED가_꺼져_있으면_실행을_거부하고_설정명을_안내한다(
+        self, settings, monkeypatch, capsys, fail_if_called
+    ):
         settings.DRAFT_DISCOVERY_ENABLED = False
-        monkeypatch.setattr(
-            "drafts.management.commands.discover_drafts.fetch_html", fail_if_called
-        )
+        monkeypatch.setattr("drafts.management.commands.discover_drafts.fetch_html", fail_if_called)
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.extract_candidate_urls",
             fail_if_called,
@@ -80,10 +82,10 @@ class TestFlagGating:
         output = capsys.readouterr().out
         assert "DRAFT_DISCOVERY_ENABLED" in output
 
-    def test_활성_소스가_없으면_안내_문구를_출력하고_정상_종료한다(self, monkeypatch, capsys, fail_if_called):
-        monkeypatch.setattr(
-            "drafts.management.commands.discover_drafts.fetch_html", fail_if_called
-        )
+    def test_활성_소스가_없으면_안내_문구를_출력하고_정상_종료한다(
+        self, monkeypatch, capsys, fail_if_called
+    ):
+        monkeypatch.setattr("drafts.management.commands.discover_drafts.fetch_html", fail_if_called)
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.extract_candidate_urls",
             fail_if_called,
@@ -99,7 +101,9 @@ class TestFlagGating:
         output = capsys.readouterr().out
         assert "활성 소스가 없습니다" in output
 
-    def test_discover_drafts는_인스타_소스를_건너뛰고_오류를_남기지_않는다(self, monkeypatch, capsys, make_source, fail_if_called):
+    def test_discover_drafts는_인스타_소스를_건너뛰고_오류를_남기지_않는다(
+        self, monkeypatch, capsys, make_source, fail_if_called
+    ):
         source = make_source(
             name="instagram-source",
             url="https://instagram.example.com/account",
@@ -108,9 +112,7 @@ class TestFlagGating:
         )
         checker = _FakeRobotsChecker()
         _patch_robots_checker(monkeypatch, checker)
-        monkeypatch.setattr(
-            "drafts.management.commands.discover_drafts.fetch_html", fail_if_called
-        )
+        monkeypatch.setattr("drafts.management.commands.discover_drafts.fetch_html", fail_if_called)
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.extract_candidate_urls",
             fail_if_called,
@@ -131,9 +133,7 @@ class TestFlagGating:
 
     def test_비활성_소스는_처리되지_않는다(self, monkeypatch, make_source, fail_if_called):
         make_source(enabled=False)
-        monkeypatch.setattr(
-            "drafts.management.commands.discover_drafts.fetch_html", fail_if_called
-        )
+        monkeypatch.setattr("drafts.management.commands.discover_drafts.fetch_html", fail_if_called)
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.extract_candidate_urls",
             fail_if_called,
@@ -150,13 +150,13 @@ class TestListingLevel:
     @pytest.mark.parametrize(
         "reason", [ROBOTS_DISALLOWED, ROBOTS_FETCH_FAILED], ids=["robots_불허", "robots_페치_실패"]
     )
-    def test_리스팅_페이지가_robots에_의해_차단되면_소스를_건너뛰고_사유를_기록한다(self, monkeypatch, reason, make_source, fail_if_called):
+    def test_리스팅_페이지가_robots에_의해_차단되면_소스를_건너뛰고_사유를_기록한다(
+        self, monkeypatch, reason, make_source, fail_if_called
+    ):
         source = make_source()
         checker = _FakeRobotsChecker(outcomes={source.url: RobotsCheckResult(False, reason)})
         _patch_robots_checker(monkeypatch, checker)
-        monkeypatch.setattr(
-            "drafts.management.commands.discover_drafts.fetch_html", fail_if_called
-        )
+        monkeypatch.setattr("drafts.management.commands.discover_drafts.fetch_html", fail_if_called)
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.extract_candidate_urls",
             fail_if_called,
@@ -172,7 +172,9 @@ class TestListingLevel:
         assert reason in source.last_error
         assert source.last_checked_at is not None
 
-    def test_후보가_없으면_이전_에러를_지우고_0건을_보고한다(self, monkeypatch, capsys, make_source, fail_if_called):
+    def test_후보가_없으면_이전_에러를_지우고_0건을_보고한다(
+        self, monkeypatch, capsys, make_source, fail_if_called
+    ):
         source = make_source(last_error="이전 실행에서 남은 에러")
         _patch_robots_checker(monkeypatch, _FakeRobotsChecker())
         monkeypatch.setattr(
@@ -184,7 +186,8 @@ class TestListingLevel:
             lambda *args, **kwargs: [],
         )
         monkeypatch.setattr(
-            "drafts.management.commands.discover_drafts.create_collected_draft_from_url", fail_if_called
+            "drafts.management.commands.discover_drafts.create_collected_draft_from_url",
+            fail_if_called,
         )
 
         call_command("discover_drafts")
@@ -195,9 +198,11 @@ class TestListingLevel:
         assert "0" in output
 
     @pytest.mark.parametrize("failure_mode", ["fetch", "parse"], ids=["페치_실패", "파싱_실패"])
-    def test_소스_레벨_실패는_다른_소스에_전파되지_않고_0이_아닌_종료코드를_유발한다(self, monkeypatch, failure_mode, make_draft, make_source):
+    def test_소스_레벨_실패는_다른_소스에_전파되지_않고_0이_아닌_종료코드를_유발한다(
+        self, monkeypatch, failure_mode, make_draft, make_source
+    ):
         source_a = make_source(name="A", url="https://a.example.com/feed.xml")
-        source_b = make_source(name="B", url="https://b.example.com/feed.xml")
+        make_source(name="B", url="https://b.example.com/feed.xml")
         _patch_robots_checker(monkeypatch, _FakeRobotsChecker())
 
         def fake_fetch(url, **kwargs):
@@ -212,9 +217,7 @@ class TestListingLevel:
                 return []
             return ["https://b.example.com/event-1"]
 
-        monkeypatch.setattr(
-            "drafts.management.commands.discover_drafts.fetch_html", fake_fetch
-        )
+        monkeypatch.setattr("drafts.management.commands.discover_drafts.fetch_html", fake_fetch)
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.extract_candidate_urls", fake_extract
         )
@@ -230,14 +233,14 @@ class TestListingLevel:
         assert source_a.last_error != ""
         assert EventDraft.objects.filter(source_url="https://b.example.com/event-1").exists()
 
-    def test_손상된_source_type을_가진_소스는_자신에게만_실패가_격리된다(self, monkeypatch, make_draft, make_source):
+    def test_손상된_source_type을_가진_소스는_자신에게만_실패가_격리된다(
+        self, monkeypatch, make_draft, make_source
+    ):
         """choices에 없는 source_type도 objects.create()는 검증 없이 저장하므로
         실제 운영 데이터에서 있을 수 있는 상태다. 그 소스만 실패해야 하고 B 소스
         처리 전에 전체가 죽으면 안 된다."""
-        source_a = make_source(
-            name="A", url="https://a.example.com/feed.xml", source_type="atom"
-        )
-        source_b = make_source(name="B", url="https://b.example.com/feed.xml")
+        source_a = make_source(name="A", url="https://a.example.com/feed.xml", source_type="atom")
+        make_source(name="B", url="https://b.example.com/feed.xml")
 
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.fetch_html",
@@ -290,15 +293,18 @@ class TestCandidateLevel:
 
         assert calls == [("https://target.example.com/event-1", source.name)]
 
-    def test_이미_존재하는_URL은_후보_robots_점검_전에_중복_제거된다(self, monkeypatch, make_draft, make_source, fail_if_called):
-        source = make_source()
+    def test_이미_존재하는_URL은_후보_robots_점검_전에_중복_제거된다(
+        self, monkeypatch, make_draft, make_source, fail_if_called
+    ):
+        make_source()
         candidate_url = "https://target.example.com/event-1"
         make_draft(candidate_url, review_status=EventDraft.ReviewStatus.REJECTED)
         _install_listing(monkeypatch, [candidate_url])
         checker = _FakeRobotsChecker()
         _patch_robots_checker(monkeypatch, checker)
         monkeypatch.setattr(
-            "drafts.management.commands.discover_drafts.create_collected_draft_from_url", fail_if_called
+            "drafts.management.commands.discover_drafts.create_collected_draft_from_url",
+            fail_if_called,
         )
 
         call_command("discover_drafts")
@@ -315,14 +321,17 @@ class TestCandidateLevel:
         ],
         ids=["robots_불허", "robots_페치_실패"],
     )
-    def test_후보_URL이_robots에_의해_차단되면_실행_실패_없이_사유별로_건너뛴다(self, monkeypatch, reason, report_substring, capsys, make_source, fail_if_called):
-        source = make_source()
+    def test_후보_URL이_robots에_의해_차단되면_실행_실패_없이_사유별로_건너뛴다(
+        self, monkeypatch, reason, report_substring, capsys, make_source, fail_if_called
+    ):
+        make_source()
         candidate_url = "https://target.example.com/event-1"
         _install_listing(monkeypatch, [candidate_url])
         checker = _FakeRobotsChecker(outcomes={candidate_url: RobotsCheckResult(False, reason)})
         _patch_robots_checker(monkeypatch, checker)
         monkeypatch.setattr(
-            "drafts.management.commands.discover_drafts.create_collected_draft_from_url", fail_if_called
+            "drafts.management.commands.discover_drafts.create_collected_draft_from_url",
+            fail_if_called,
         )
 
         call_command("discover_drafts")
@@ -332,7 +341,7 @@ class TestCandidateLevel:
         assert report_substring in output
 
     def test_중복_생성_오류는_실행_실패로_이어지지_않고_건너뛴다(self, monkeypatch, make_source):
-        source = make_source()
+        make_source()
         _install_listing(monkeypatch, ["https://target.example.com/event-1"])
         _patch_robots_checker(monkeypatch, _FakeRobotsChecker())
 
@@ -340,13 +349,14 @@ class TestCandidateLevel:
             raise DraftCreationDuplicateError()
 
         monkeypatch.setattr(
-            "drafts.management.commands.discover_drafts.create_collected_draft_from_url", raise_duplicate
+            "drafts.management.commands.discover_drafts.create_collected_draft_from_url",
+            raise_duplicate,
         )
 
         call_command("discover_drafts")
 
     def test_빈_추출_오류도_실행_실패로_이어지지_않고_건너뛴다(self, monkeypatch, make_source):
-        source = make_source()
+        make_source()
         _install_listing(monkeypatch, ["https://target.example.com/event-1"])
         _patch_robots_checker(monkeypatch, _FakeRobotsChecker())
 
@@ -354,7 +364,8 @@ class TestCandidateLevel:
             raise DraftCreationEmptyExtractionError()
 
         monkeypatch.setattr(
-            "drafts.management.commands.discover_drafts.create_collected_draft_from_url", raise_empty
+            "drafts.management.commands.discover_drafts.create_collected_draft_from_url",
+            raise_empty,
         )
 
         call_command("discover_drafts")
@@ -364,7 +375,9 @@ class TestCandidateLevel:
         [("non_korean", "excluded_non_korean"), ("ended", "excluded_ended")],
         ids=["한글_없음", "종료됨"],
     )
-    def test_수집_후보가_제외되면_예외_대신_사유로_건너뛴다(self, reason, expected_skip_key, make_source, fail_if_called):
+    def test_수집_후보가_제외되면_예외_대신_사유로_건너뛴다(
+        self, reason, expected_skip_key, make_source, fail_if_called
+    ):
         source = make_source()
         candidate_url = "https://target.example.com/event-1"
 
@@ -390,7 +403,9 @@ class TestCandidateLevel:
         assert outcome.skip_key == expected_skip_key
         assert outcome.errored is False
 
-    def test_후보_생성_실패는_다른_후보에_전파되지_않지만_0이_아닌_종료코드를_유발하고_소스_에러는_바꾸지_않는다(self, monkeypatch, capsys, make_draft, make_source):
+    def test_후보_생성_실패는_다른_후보에_전파되지_않지만_0이_아닌_종료코드를_유발하고_소스_에러는_바꾸지_않는다(
+        self, monkeypatch, capsys, make_draft, make_source
+    ):
         source = make_source()
         failing_url = "https://target.example.com/event-1"
         succeeding_url = "https://target.example.com/event-2"
@@ -403,7 +418,8 @@ class TestCandidateLevel:
             return make_draft(source_url, source_name=source_name)
 
         monkeypatch.setattr(
-            "drafts.management.commands.discover_drafts.create_collected_draft_from_url", flaky_create
+            "drafts.management.commands.discover_drafts.create_collected_draft_from_url",
+            flaky_create,
         )
 
         with pytest.raises(CommandError):
@@ -425,8 +441,10 @@ class TestCandidateLevel:
         [("non_korean", "한글 없음 1건"), ("ended", "종료됨 1건")],
         ids=["한글_없음", "종료됨"],
     )
-    def test_수집_명령_보고에_사유별_제외_건수가_나온다(self, monkeypatch, reason, report_substring, capsys, make_source):
-        source = make_source()
+    def test_수집_명령_보고에_사유별_제외_건수가_나온다(
+        self, monkeypatch, reason, report_substring, capsys, make_source
+    ):
+        make_source()
         _install_listing(monkeypatch, ["https://target.example.com/event-1"])
         _patch_robots_checker(monkeypatch, _FakeRobotsChecker())
 
@@ -444,16 +462,19 @@ class TestCandidateLevel:
         output = capsys.readouterr().out
         assert report_substring in output
 
-    def test_같은_실행에서_서로_다른_소스가_같은_URL을_후보로_내면_한_건만_생성되고_나머지는_건너뛴다(self, monkeypatch, make_source):
+    def test_같은_실행에서_서로_다른_소스가_같은_URL을_후보로_내면_한_건만_생성되고_나머지는_건너뛴다(
+        self, monkeypatch, make_source
+    ):
         """실제 create_collected_draft_from_url을 그대로 쓰고 fetch_html만 스텁한다.
         같은 소스 내 중복 제거만으로는 닿지 않는 실제 IntegrityError →
         DraftCreationDuplicateError 경로를 검증하는 유일한 테스트다."""
         shared_url = "https://target.example.com/event-1"
-        source_a = make_source(name="A", url="https://a.example.com/feed.xml")
-        source_b = make_source(name="B", url="https://b.example.com/feed.xml")
+        make_source(name="A", url="https://a.example.com/feed.xml")
+        make_source(name="B", url="https://b.example.com/feed.xml")
 
         monkeypatch.setattr(
-            "drafts.management.commands.discover_drafts.fetch_html", lambda url, **kwargs: "<xml></xml>"
+            "drafts.management.commands.discover_drafts.fetch_html",
+            lambda url, **kwargs: "<xml></xml>",
         )
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.extract_candidate_urls",
@@ -471,7 +492,9 @@ class TestCandidateLevel:
 
 
 class TestCaps:
-    def test_생성_상한에_도달하면_이후_후보_생성을_멈추고_보류_건수를_보고한다(self, monkeypatch, settings, capsys, make_draft, make_source):
+    def test_생성_상한에_도달하면_이후_후보_생성을_멈추고_보류_건수를_보고한다(
+        self, monkeypatch, settings, capsys, make_draft, make_source
+    ):
         settings.DRAFT_DISCOVERY_MAX_PER_RUN = 1
         make_source()
         url1 = "https://target.example.com/event-1"
@@ -494,7 +517,9 @@ class TestCaps:
         output = capsys.readouterr().out
         assert "1건 보류" in output
 
-    def test_중복_제거된_후보는_소스별_페치_상한을_소비하지_않는다(self, monkeypatch, settings, make_draft, make_source):
+    def test_중복_제거된_후보는_소스별_페치_상한을_소비하지_않는다(
+        self, monkeypatch, settings, make_draft, make_source
+    ):
         settings.DRAFT_DISCOVERY_MAX_FETCHES_PER_SOURCE = 1
         make_source()
         dup_url = "https://target.example.com/existing"
@@ -518,13 +543,15 @@ class TestCaps:
         assert not EventDraft.objects.filter(source_url=new_url2).exists()
         assert new_url2 not in checker.calls
 
-    def test_생성_상한은_소스별이_아니라_실행_전체에서_공유된다(self, monkeypatch, settings, make_draft, make_source):
+    def test_생성_상한은_소스별이_아니라_실행_전체에서_공유된다(
+        self, monkeypatch, settings, make_draft, make_source
+    ):
         """DRAFT_DISCOVERY_MAX_PER_RUN이 소스별이 아니라 실행 전체 1회로
         적용됨을 고정한다. 소스별로 잘못 적용되면 두 소스 후보가 모두
         생성돼 버린다."""
         settings.DRAFT_DISCOVERY_MAX_PER_RUN = 1
         source_a = make_source(name="A", url="https://a.example.com/feed.xml")
-        source_b = make_source(name="B", url="https://b.example.com/feed.xml")
+        make_source(name="B", url="https://b.example.com/feed.xml")
         url_a = "https://target.example.com/event-a"
         url_b = "https://target.example.com/event-b"
 
@@ -549,12 +576,14 @@ class TestCaps:
         assert EventDraft.objects.filter(source_url=url_a).exists()
         assert not EventDraft.objects.filter(source_url=url_b).exists()
 
-    def test_소스별_페치_상한은_다른_소스의_예산을_굶기지_않는다(self, monkeypatch, settings, make_draft, make_source):
+    def test_소스별_페치_상한은_다른_소스의_예산을_굶기지_않는다(
+        self, monkeypatch, settings, make_draft, make_source
+    ):
         """소스별 페치 예산이 전역으로 공유되면 A가 예산을 다 쓴 순간 B의
         후보도 덩달아 보류된다. 이 테스트는 소스별 독립성을 고정한다."""
         settings.DRAFT_DISCOVERY_MAX_FETCHES_PER_SOURCE = 1
         source_a = make_source(name="A", url="https://a.example.com/feed.xml")
-        source_b = make_source(name="B", url="https://b.example.com/feed.xml")
+        make_source(name="B", url="https://b.example.com/feed.xml")
         url_a1 = "https://a-target.example.com/event-1"
         url_a2 = "https://a-target.example.com/event-2"
         url_b1 = "https://b-target.example.com/event-1"
@@ -579,7 +608,8 @@ class TestCaps:
             return make_draft(source_url, source_name=source_name)
 
         monkeypatch.setattr(
-            "drafts.management.commands.discover_drafts.create_collected_draft_from_url", fake_create
+            "drafts.management.commands.discover_drafts.create_collected_draft_from_url",
+            fake_create,
         )
 
         call_command("discover_drafts")
@@ -589,7 +619,9 @@ class TestCaps:
 
 
 class TestCandidatePacing:
-    def test_페치_예산을_소비한_후보마다_한_번씩_일시정지한다(self, monkeypatch, make_draft, make_source):
+    def test_페치_예산을_소비한_후보마다_한_번씩_일시정지한다(
+        self, monkeypatch, make_draft, make_source
+    ):
         """네트워크 페치 예산을 실제로 쓴 후보마다(최소 robots 점검) 예의상
         일시정지한다. 정확한 대기 시간이 아니라 정지 횟수와 Crawl-delay
         참조 여부만 검증한다."""
@@ -614,7 +646,9 @@ class TestCandidatePacing:
         assert len(sleep_calls) == 2
         assert checker.crawl_delay_calls == [url1, url2]
 
-    def test_보류되거나_중복_제거된_후보는_일시정지를_유발하지_않는다(self, monkeypatch, settings, make_draft, make_source):
+    def test_보류되거나_중복_제거된_후보는_일시정지를_유발하지_않는다(
+        self, monkeypatch, settings, make_draft, make_source
+    ):
         settings.DRAFT_DISCOVERY_MAX_PER_RUN = 1
         make_source()
         url1 = "https://target.example.com/event-1"
@@ -641,7 +675,9 @@ class TestCandidatePacing:
 
 
 class TestRobotsCache:
-    def test_robots_txt는_전체_실행에서_호스트당_최대_한_번만_페치된다(self, monkeypatch, make_draft, make_source):
+    def test_robots_txt는_전체_실행에서_호스트당_최대_한_번만_페치된다(
+        self, monkeypatch, make_draft, make_source
+    ):
         """실제 RobotsChecker를 쓰고 drafts.robots.fetch_html만 패치해 호출
         횟수를 센다. 같은 호스트의 소스·후보가 실행 전체에서 캐시 하나를
         공유한다는 것을 동작으로 증명한다."""
@@ -685,7 +721,9 @@ class TestListingContentType:
         [DraftSource.SourceType.RSS, DraftSource.SourceType.SITEMAP],
         ids=["RSS", "사이트맵"],
     )
-    def test_RSS와_사이트맵_리스팅_페치는_XML_content_type을_명시적으로_허용한다(self, monkeypatch, source_type, make_source):
+    def test_RSS와_사이트맵_리스팅_페치는_XML_content_type을_명시적으로_허용한다(
+        self, monkeypatch, source_type, make_source
+    ):
         make_source(source_type=source_type)
         captured = {}
 
@@ -693,9 +731,7 @@ class TestListingContentType:
             captured["allowed_content_types"] = kwargs.get("allowed_content_types")
             return "<xml></xml>"
 
-        monkeypatch.setattr(
-            "drafts.management.commands.discover_drafts.fetch_html", capture_fetch
-        )
+        monkeypatch.setattr("drafts.management.commands.discover_drafts.fetch_html", capture_fetch)
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.extract_candidate_urls",
             lambda *args, **kwargs: [],

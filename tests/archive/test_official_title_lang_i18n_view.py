@@ -6,6 +6,7 @@
 `tests`에 `__init__.py`가 없어 파일 간 임포트가 불안정하므로, 요소 트리 파서는
 `tests/core/test_archive_ui_leak_scan.py`에서 필요한 최소분만 복제했다.
 """
+
 from html.parser import HTMLParser
 
 import pytest

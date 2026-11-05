@@ -1,5 +1,6 @@
 """아카이브 검색어를 입력하면 새로고침 없이 결과가 좁혀지는 여정
 (디바운스 + 조각 교체 + pushState는 브라우저 JS가 아니면 확인할 수 없다)."""
+
 import re
 
 from playwright.sync_api import expect
@@ -14,12 +15,8 @@ def test_아카이브_검색어를_입력하면_새로고침_없이_결과가_�
     login_as(user)
     summer = make_published_event("e2e 여름 팝업스토어")
     winter = make_published_event("e2e 겨울 콜라보 카페")
-    UserEventStatus.objects.create(
-        user=user, event=summer, status=UserEventStatus.Status.PLANNED
-    )
-    UserEventStatus.objects.create(
-        user=user, event=winter, status=UserEventStatus.Status.PLANNED
-    )
+    UserEventStatus.objects.create(user=user, event=summer, status=UserEventStatus.Status.PLANNED)
+    UserEventStatus.objects.create(user=user, event=winter, status=UserEventStatus.Status.PLANNED)
 
     page.goto(f"{base_url}/archive/statuses/")
     page.get_by_label("아카이브 검색").fill("여름")

@@ -10,6 +10,9 @@ fi
 python manage.py bundle_shell_css --output static/css/dist/shell.css
 python manage.py collectstatic --noinput
 
+# 「지금 수집」·러너 후보 제출이 요청 안에서 동기 네트워크를 돌아 기본 30초를 넘길 수 있다.
+# 0은 타임아웃 해제라 금지.
 exec gunicorn config.wsgi:application \
     --bind "0.0.0.0:${PORT:-8000}" \
-    --workers "${WEB_CONCURRENCY:-3}"
+    --workers "${WEB_CONCURRENCY:-3}" \
+    --timeout "${GUNICORN_TIMEOUT:-120}"

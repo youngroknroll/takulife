@@ -7,4 +7,4 @@ class EventsConfig(AppConfig):
 
     def ready(self):
         # 카테고리 비활성화 시 팔레트 슬롯 반납 신호 구독을 등록한다.
-        from . import signals  # noqa: F401
+        from events import signals  # noqa: F401

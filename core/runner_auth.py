@@ -1,5 +1,5 @@
-"""러너 토큰 인증·속도 제한 공용 베이스 — drafts와 events가 함께 쓴다.
-"""
+"""러너 토큰 인증·속도 제한 공용 베이스 — drafts와 events가 함께 쓴다."""
+
 import hashlib
 
 from django.conf import settings

@@ -1,10 +1,12 @@
 """Staff-domain fixtures."""
+
 import pytest
 
 
 @pytest.fixture
 def staff_event_payload():
     """스태프 이벤트 폼의 유효 페이로드 팩토리 — create/edit 파일의 _valid_payload 사본을 대체."""
+
     def _make(**overrides):
         payload = {
             "title": "새 이벤트",

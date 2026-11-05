@@ -4,11 +4,12 @@
 참조 여부 판단과 삭제 가드 로직은 events와 archive 양쪽에 의존해도 되는
 staff/services.py에 둔다.
 """
+
 import datetime
 
-import pytest
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
+import pytest
 
 from archive.models import CollectionItem, EventInterest, UserEventStatus, VisitRecord
 from events.models import Event
@@ -70,7 +71,9 @@ def test_관심_참조가_있는_행사를_삭제하면_거부되고_관심_건�
 
 
 @pytest.mark.django_db
-def test_방문상태_참조가_있는_행사를_삭제하면_거부되고_상태_건수가_예외에_담긴다(make_event, make_user):
+def test_방문상태_참조가_있는_행사를_삭제하면_거부되고_상태_건수가_예외에_담긴다(
+    make_event, make_user
+):
     event = make_event(official_url="https://example.com/blocked-by-status")
     user = make_user()
     UserEventStatus.objects.create(user=user, event=event, status=UserEventStatus.Status.PLANNED)
@@ -83,7 +86,9 @@ def test_방문상태_참조가_있는_행사를_삭제하면_거부되고_상�
 
 
 @pytest.mark.django_db
-def test_방문기록_참조가_있는_행사를_삭제하면_거부되고_방문_건수가_예외에_담긴다(make_event, make_user):
+def test_방문기록_참조가_있는_행사를_삭제하면_거부되고_방문_건수가_예외에_담긴다(
+    make_event, make_user
+):
     event = make_event(official_url="https://example.com/blocked-by-visit")
     user = make_user()
     VisitRecord.objects.create(user=user, event=event, visited_on=datetime.date(2026, 1, 1))
@@ -96,7 +101,9 @@ def test_방문기록_참조가_있는_행사를_삭제하면_거부되고_방�
 
 
 @pytest.mark.django_db
-def test_컬렉션_항목_참조가_있는_행사를_삭제하면_거부되고_컬렉션_항목_건수가_예외에_담긴다(make_event, make_user):
+def test_컬렉션_항목_참조가_있는_행사를_삭제하면_거부되고_컬렉션_항목_건수가_예외에_담긴다(
+    make_event, make_user
+):
     event = make_event(official_url="https://example.com/blocked-by-collection-item")
     user = make_user()
     CollectionItem.objects.create(user=user, name="참조 굿즈", event=event)
@@ -118,7 +125,9 @@ def test_컬렉션_항목_참조가_있는_행사를_삭제하면_거부되고_�
 
 @pytest.mark.django_db
 @pytest.mark.contract
-def test_이벤트_삭제는_이벤트_행을_FOR_UPDATE로_잠근_뒤_참조_판정과_삭제를_한_트랜잭션으로_실행한다(make_event):
+def test_이벤트_삭제는_이벤트_행을_FOR_UPDATE로_잠근_뒤_참조_판정과_삭제를_한_트랜잭션으로_실행한다(
+    make_event,
+):
     event = make_event(official_url="https://example.com/for-update-lock")
     table_name = Event._meta.db_table
 

@@ -4,8 +4,9 @@ D9: 운영자(is_staff)는 행위자/행동/대상/시각만 볼 수 있고 ip_a
 user_agent는 볼 수 없다(슈퍼유저 전용, staff/admin.py). 이 화면의 컨텍스트
 자체에 그 두 필드가 실려서는 안 된다.
 """
-import pytest
+
 from django.urls import reverse
+import pytest
 
 from core.models import Category
 from staff.models import StaffActionLog
@@ -30,17 +31,13 @@ def _make_approvable_draft(make_draft, source_url, *, extracted_title, **overrid
 def _approve_draft(client, draft_id, **extra):
     """승인 POST 응답을 검증하고 넘어간다. 실패해도 조용히 지나가면 감사
     로그가 비어 있는 채로 이후 단언(len==1 등)에서야 원인 불명으로 깨진다."""
-    resp = client.post(
-        reverse("staff:draft-approve", kwargs={"draft_id": draft_id}), **extra
-    )
+    resp = client.post(reverse("staff:draft-approve", kwargs={"draft_id": draft_id}), **extra)
     assert resp.status_code == 200, resp.content
     return resp
 
 
 def _reject_draft(client, draft_id, **extra):
-    resp = client.post(
-        reverse("staff:draft-reject", kwargs={"draft_id": draft_id}), **extra
-    )
+    resp = client.post(reverse("staff:draft-reject", kwargs={"draft_id": draft_id}), **extra)
     assert resp.status_code == 200, resp.content
     return resp
 
@@ -200,7 +197,9 @@ def test_대시보드_최근_처리_내역에도_ip_주소나_user_agent가_없�
 
 
 @pytest.mark.django_db
-def test_계정_행동_로그_행의_대상_라벨은_계정_번호이고_본문에_대상_이메일이_없다(staff_client, make_user):
+def test_계정_행동_로그_행의_대상_라벨은_계정_번호이고_본문에_대상_이메일이_없다(
+    staff_client, make_user
+):
     staff, client = staff_client()  # 슈퍼유저 아닌 운영자
     target = make_user(email="account-log-target@example.com")
     StaffActionLog.objects.create(
@@ -266,7 +265,9 @@ def test_대시보드_최근_처리_내역의_계정_행동_행에_대상_이메
 
 
 @pytest.mark.django_db
-def test_감사_로그_화면에_드래프트_생성_수정_행동이_한국어_라벨과_드래프트_대상으로_보인다(staff_client, make_draft):
+def test_감사_로그_화면에_드래프트_생성_수정_행동이_한국어_라벨과_드래프트_대상으로_보인다(
+    staff_client, make_draft
+):
     staff, client = staff_client()
     created_draft = make_draft("https://example.com/audit-draft-create")
     updated_draft = make_draft("https://example.com/audit-draft-update")
@@ -287,7 +288,6 @@ def test_감사_로그_화면에_드래프트_생성_수정_행동이_한국어_
     assert create_row["target_label"] == "https://example.com/audit-draft-create"
     assert update_row["action_label"] == "드래프트 수정"
     assert update_row["target_label"] == "https://example.com/audit-draft-update"
-
 
 
 @pytest.mark.django_db

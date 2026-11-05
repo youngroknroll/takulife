@@ -3,11 +3,12 @@
 건별로 성공·실패가 갈려도 응답은 항상 200이며 succeeded/failed로 구분된다.
 400은 반복 처리 전에 걸러지는 요청 구조 오류(빈 값·비정수·상한 초과)에서만 쓴다.
 """
+
 import logging
 
-import pytest
 from django.db import IntegrityError
 from django.urls import reverse
+import pytest
 
 from drafts.models import EventDraft
 from events.models import Event
@@ -82,7 +83,9 @@ def test_draft_ids에_정수가_아닌_값이_있으면_일괄_승인_요청을_
 
 
 @pytest.mark.django_db
-def test_draft_ids_개수가_상한을_초과하면_일괄_승인_요청을_거부하고_아무것도_변경하지_않는다(staff_client, make_draft):
+def test_draft_ids_개수가_상한을_초과하면_일괄_승인_요청을_거부하고_아무것도_변경하지_않는다(
+    staff_client, make_draft
+):
     staff, client = staff_client()
     drafts = [
         make_draft(f"https://example.com/over-cap-{i}", extracted_title=f"Over cap {i}")
@@ -97,9 +100,7 @@ def test_draft_ids_개수가_상한을_초과하면_일괄_승인_요청을_거�
 
     assert response.status_code == 400
     assert response.json() == {
-        "draft_ids": [
-            f"draft_ids must contain at most {MAX_BULK_APPROVE_DRAFT_IDS} ids."
-        ]
+        "draft_ids": [f"draft_ids must contain at most {MAX_BULK_APPROVE_DRAFT_IDS} ids."]
     }
     for draft in drafts:
         draft.refresh_from_db()
@@ -139,7 +140,9 @@ def test_draft_ids가_리스트가_아니면_일괄_승인_요청을_거부한�
 
 
 @pytest.mark.django_db
-def test_대기중_드래프트_여러_건을_일괄_승인하면_모두_게시되고_건별로_감사_로그가_남는다(staff_client, make_draft):
+def test_대기중_드래프트_여러_건을_일괄_승인하면_모두_게시되고_건별로_감사_로그가_남는다(
+    staff_client, make_draft
+):
     staff, client = staff_client()
     draft_a = make_draft("https://example.com/bulk-a", extracted_title="Bulk A")
     draft_b = make_draft("https://example.com/bulk-b", extracted_title="Bulk B")
@@ -155,12 +158,17 @@ def test_대기중_드래프트_여러_건을_일괄_승인하면_모두_게시�
     assert response.status_code == 200
     assert response.json() == {"succeeded": [draft_a.id, draft_b.id], "failed": []}
 
-    for draft, source_url in ((draft_a, "https://example.com/bulk-a"), (draft_b, "https://example.com/bulk-b")):
+    for draft, source_url in (
+        (draft_a, "https://example.com/bulk-a"),
+        (draft_b, "https://example.com/bulk-b"),
+    ):
         draft.refresh_from_db()
         assert draft.review_status == EventDraft.ReviewStatus.APPROVED
         assert draft.reviewed_by_id == staff.id
         assert draft.approved_at is not None
-        assert Event.objects.filter(official_url=source_url, publish_status=Event.PublishStatus.PUBLISHED).exists()
+        assert Event.objects.filter(
+            official_url=source_url, publish_status=Event.PublishStatus.PUBLISHED
+        ).exists()
 
     assert StaffActionLog.objects.count() == 2
     for entry in StaffActionLog.objects.all():
@@ -215,7 +223,9 @@ def test_존재하지_않는_draft_id는_전체_요청_실패가_아니라_건�
 
 
 @pytest.mark.django_db
-def test_같은_draft_id를_중복_전달하면_첫_처리만_성공하고_두번째는_이미_처리됨으로_실패한다(staff_client, make_draft):
+def test_같은_draft_id를_중복_전달하면_첫_처리만_성공하고_두번째는_이미_처리됨으로_실패한다(
+    staff_client, make_draft
+):
     staff, client = staff_client()
     draft = make_draft("https://example.com/bulk-repeat", extracted_title="Bulk repeat")
 
@@ -236,17 +246,25 @@ def test_같은_draft_id를_중복_전달하면_첫_처리만_성공하고_두�
 
 
 @pytest.mark.django_db
-def test_여러_실패_사유가_섞인_draft_ids를_일괄_승인하면_성공과_실패가_사유와_함께_부분_보고된다(staff_client, make_draft):
+def test_여러_실패_사유가_섞인_draft_ids를_일괄_승인하면_성공과_실패가_사유와_함께_부분_보고된다(
+    staff_client, make_draft
+):
     staff, client = staff_client()
 
-    already_approved = make_draft("https://example.com/bulk-already-approved", extracted_title="Already approved", review_status=EventDraft.ReviewStatus.APPROVED)
+    already_approved = make_draft(
+        "https://example.com/bulk-already-approved",
+        extracted_title="Already approved",
+        review_status=EventDraft.ReviewStatus.APPROVED,
+    )
     ok_1 = make_draft("https://example.com/bulk-ok-1", extracted_title="Bulk ok 1")
     Event.objects.create(
         title="Already published",
         official_url="https://example.com/bulk-duplicate",
         publish_status=Event.PublishStatus.PUBLISHED,
     )
-    duplicate_url = make_draft("https://example.com/bulk-duplicate", extracted_title="Duplicate url draft")
+    duplicate_url = make_draft(
+        "https://example.com/bulk-duplicate", extracted_title="Duplicate url draft"
+    )
     blank_title = make_draft("https://example.com/bulk-blank-title")
     ok_2 = make_draft("https://example.com/bulk-ok-2", extracted_title="Bulk ok 2")
 
@@ -291,7 +309,9 @@ def test_여러_실패_사유가_섞인_draft_ids를_일괄_승인하면_성공�
 
 
 @pytest.mark.django_db
-def test_한_항목의_감사_로그_기록이_예기치_못한_오류로_실패해도_나머지_항목_처리는_계속된다(staff_client, monkeypatch, caplog, make_draft):
+def test_한_항목의_감사_로그_기록이_예기치_못한_오류로_실패해도_나머지_항목_처리는_계속된다(
+    staff_client, monkeypatch, caplog, make_draft
+):
     staff, client = staff_client()
     draft_1 = make_draft("https://example.com/bulk-continue-1", extracted_title="Bulk continue 1")
     draft_2 = make_draft("https://example.com/bulk-continue-2", extracted_title="Bulk continue 2")

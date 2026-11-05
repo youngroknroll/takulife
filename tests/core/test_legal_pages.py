@@ -6,7 +6,6 @@
 §4 참고.
 """
 
-
 import pytest
 
 pytestmark = pytest.mark.web

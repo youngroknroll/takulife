@@ -10,9 +10,8 @@ from django.utils.safestring import mark_safe
 from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
 
-from .services import NICKNAME_DUPLICATE_MESSAGE
-from .validators import LENGTH_ERROR, normalize_nickname, validate_nickname
-
+from accounts.services import NICKNAME_DUPLICATE_MESSAGE
+from accounts.validators import LENGTH_ERROR, normalize_nickname, validate_nickname
 
 # /legal/ 경로(legal-terms-page / legal-privacy-page, core/views.py)가
 # 이미 있으므로 하드코딩 경로 대신 이름으로 참조한다 — 나중에 경로가

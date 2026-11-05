@@ -1,6 +1,7 @@
 """core.analytics.pseudonymous_user_key 검증
 (.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8).
 """
+
 import pytest
 
 from core.analytics import pseudonymous_user_key

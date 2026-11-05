@@ -203,7 +203,7 @@ PaaS(managed load balancer 등)를 쓰는 경우 이 설정은 보통 플랫폼�
 - **익명 사용자** → `settings.LOGIN_URL`(`/accounts/login/`)로 리다이렉트(`next` 파라미터 보존).
 - **로그인했지만 스태프가 아닌 사용자** → `403 PermissionDenied`(로그인 페이지로 되돌리지 않는다 — 이미 로그인된 상태에서 LOGIN_URL로 보내면 allauth의 인증됨 리다이렉트와 충돌해 무한 루프가 될 수 있기 때문).
 - Django 기본 관리자 페이지(`/admin/`)는 슈퍼유저용 백업 경로로 계속 유지되지만, `accounts.User`는 여전히 admin에 등록돼 있지 않다(`accounts/admin.py` 없음). 계정 운영(`is_staff` 부여/해제, `is_active` 전환)은 이제 admin이나 shell이 아니라 `/staff/accounts/`(트랙 19, H1)에서 한다: `superuser_console_required`(`staff/permissions.py`)로 조작 주체를 superuser로 한정하고, 목표 상태 지정(`enabled="1"`/`"0"`, 토글 아님) + `confirmed=yes` 2단계 확인을 거쳐 `accounts/services.py`의 `set_staff_flag`·`set_active_flag`를 호출한다. 상세 가드레일(멱등, 보호 계정, 감사 기록 형태)은 `docs/BE/staff-account-operations.md`가 정본이다.
-- **예외 — superuser 계정 자체(자기 계정 포함)는 콘솔 대상에서 제외**된다(사용자 확정 2026-09-07: superuser는 `createsuperuser`·shell로만 만들고 바꾼다): `set_staff_flag`·`set_active_flag`가 `user.is_superuser`면 `ProtectedAccountError`를 던져 뷰가 무변경으로 되돌린다(`accounts/services.py:179-190`, `:194-203`). superuser 계정을 다뤄야 하면 지금도 아래처럼 shell로 직접 조작한다(§1의 `axes_reset_ip`처럼 운영자가 로컬 체크아웃에서 치는 비상용 명령이라 `uv run`을 쓴다):
+- **예외 — superuser 계정 자체(자기 계정 포함)는 콘솔 대상에서 제외**된다(사용자 확정 2026-09-07: superuser는 `createsuperuser`·shell로만 만들고 바꾼다): `set_staff_flag`·`set_active_flag`가 `user.is_superuser`면 `ProtectedAccountError`를 던져 뷰가 무변경으로 되돌린다(`accounts/services.py:180-191`, `:195-204`). superuser 계정을 다뤄야 하면 지금도 아래처럼 shell로 직접 조작한다(§1의 `axes_reset_ip`처럼 운영자가 로컬 체크아웃에서 치는 비상용 명령이라 `uv run`을 쓴다):
 
   ```bash
   uv run python manage.py shell -c "from accounts.models import User; u = User.objects.get(email='<email>'); u.is_staff = False; u.save(update_fields=['is_staff'])"
@@ -212,7 +212,7 @@ PaaS(managed load balancer 등)를 쓰는 경우 이 설정은 보통 플랫폼�
 
   `is_active=False`로 바꾸면 다음 요청부터 그 계정의 세션이 무효화된다(`[실측 2026-09-05]` Django `ModelBackend.get_user`가 `user_can_authenticate` 실패 시 None을 반환하고, allauth 인증 백엔드는 `get_user`를 오버라이드하지 않는다).
   `createsuperuser`는 트랙 29부터 닉네임 프롬프트가 추가됐다(`accounts.models.User.REQUIRED_FIELDS`에 `nickname` 포함).
-- 계정 상태 변경은 `StaffActionLog.target_user`로 기록된다(`staff/models.py:53-58`). 운영자(is_staff) 화면에는 대상 회원 이메일을 노출하지 않고 `계정 #<id>`로만 표시한다(`staff/views/audit_log.py:32-34`).
+- 계정 상태 변경은 `StaffActionLog.target_user`로 기록된다(`staff/models.py:53-58`). 운영자(is_staff) 화면에는 대상 회원 이메일을 노출하지 않고 `계정 #<id>`로만 표시한다(`staff/views/audit_log.py:31-33`).
 - 정정 전 기록(2026-09-05 이전 문안): "Staff Console 접근에 문제가 생기면 슈퍼유저는 `/admin/`으로 계정/권한을 직접 조작할 수 있다" — 실측으로 사실과 다름이 확인돼 위와 같이 바꿨다.
 - 정정 전 기록(2026-09-07 이전 문안): "accounts.User는 admin 미등록이라 스태프 권한 부여/해제(`is_staff`)와 계정 비활성화(`is_active`)는 `/admin/`에서 할 수 없고, shell로 직접 다룬다" — 트랙 19로 `/staff/accounts/` 화면이 생겨 superuser 대상이 아닌 계정은 더 이상 shell이 유일한 경로가 아니다.
 - **만료 행사 일괄 비공개 처리(트랙 24, H2)**: `/staff/events/`에서 경고 필터 "종료됐지만 게시 중"을 걸고 체크박스로 대상을 선택한 뒤 "선택 항목 비공개로 설정"을 누르면 한 번에 최대 20건[코드]까지 처리된다(`POST /staff/events/bulk-unpublish/`, 상세 가드레일은 `docs/BE/staff-event-publish-actions.md`가 정본). 부분 실패 시 처리되지 않은 행에는 사유가 표시되며, 서버가 멱등이라 같은 선택으로 재시도해도 이미 처리된 항목이 다시 바뀌지 않는다.
@@ -260,9 +260,9 @@ one-off command" 등 이 컨테이너의 기본 ENTRYPOINT를 우회하고 지�
 `삭제 N건 / 실패 M건`이 실제로 찍히는지 확인한다 — 이 확인이 없으면
 "스케줄러에 등록했다"와 "실제로 파기가 실행된다"를 구분할 방법이 없다.
 
-- `accounts.services.execute_pending_deletions`(`accounts/services.py:206`)를
+- `accounts.services.execute_pending_deletions`(`accounts/services.py:207`)를
   호출하는 얇은 래퍼다. 유예 기간(`DELETION_GRACE_PERIOD = timedelta(days=10)`,
-  `accounts/services.py:24`)이 지난 탈퇴 후보를 조회해, **후보마다 개별
+  `accounts/services.py:25`)이 지난 탈퇴 후보를 조회해, **후보마다 개별
   트랜잭션**으로 취소 여부를 재확인한 뒤 하드 삭제한다.
 - **실행 주기 권고: 하루 1회.** 유예 기간이 10일 단위이므로, 파기 시점이
   하루 정도 늦어져도 사용자에게 약속한 기한을 벗어나는 정도가 작다. 반대로
@@ -301,10 +301,10 @@ PaaS의 ENTRYPOINT 우회 기능으로 등록하고, **등록 직후 반드시 �
 실행**해 표준출력에 대상별 `count=`·`deleted=` 줄이 실제로 찍히는지
 확인한다.
 
-- `core.retention.prune_operational_data`(`core/retention.py:66-79`)를 호출하는
+- `core.retention.prune_operational_data`(`core/retention.py:67-80`)를 호출하는
   얇은 래퍼다. 만료 세션, 보존 기간이 지난 axes 로그(`AccessLog`·
   `AccessFailureLog`), 보존 기간이 지난 `core.ErrorGroup`(트랙 36)을 대상별로
-  정리한다. `--days`(기본 90 `[코드 core/retention.py:66]`)는
+  정리한다. `--days`(기본 90 `[코드 core/retention.py:67]`)는
   `access_logs`·`access_failure_logs`·`error_groups`에 적용되고, `sessions`는
   만료분만 지운다. 대상 표·제외 이유·설계상 0건인 이유는
   `docs/BE/data-retention.md` 참고.
@@ -325,7 +325,7 @@ PaaS의 ENTRYPOINT 우회 기능으로 등록하고, **등록 직후 반드시 �
 - **선행 확인**: 배포된 이미지가 F6 SSRF TOCTOU 수정(`drafts/fetching.py`의 IP
   핀닝 — `validate_fetch_url`이 반환한 검증 IP로 직접 연결)을 포함한 버전인지
   확인한다. 포함하지 않은 버전에서 켜면 DNS 리바인딩에 의한 SSRF 위험이 남는다.
-- **선행 확인(타임아웃)**: 대시보드 「지금 수집」은 요청 안에서 동기 실행되며(`staff/views/__init__.py`의 `staff_draft_discovery_run`), `docker/entrypoint.sh`의 gunicorn에 `--timeout`이 없어 기본 30초가 적용된다. 활성 소스가 많거나 응답이 느리면 워커가 강제 종료돼 수집이 부분 실행되고 감사 로그가 남지 않을 수 있다. 수치와 보류 상태는 `docs/backlog.md` G2 참조.
+- **선행 확인(타임아웃)**: 대시보드 「지금 수집」은 요청 안에서 동기 실행되며(`staff/views/__init__.py`의 `staff_draft_discovery_run`), `docker/entrypoint.sh`의 gunicorn 워커 타임아웃은 `GUNICORN_TIMEOUT` 환경변수(기본 120초 `[코드 docker/entrypoint.sh]`)다(트랙 46, 2026-10-28). `--graceful-timeout`은 기본 30초 `[코드 gunicorn/config.py]`라 배포·SIGTERM 시 진행 중 요청은 30초 뒤 강제 종료된다. 타임아웃 발생은 Render 로그의 `WORKER TIMEOUT (pid:` 문자열로만 보이며 대시보드 오류 묶음에는 잡히지 않는다 `[코드 gunicorn/arbiter.py:591]`. 수치와 이연 항목은 `docs/backlog.md` G2 참조.
 - **활성화**: PaaS 시크릿에 `DRAFT_DISCOVERY_ENABLED=true`를 등록하고
   **컨테이너를 재기동**한다. `config/settings.py`의 `DRAFT_DISCOVERY_ENABLED =
   load_draft_discovery_enabled()`는 모듈 임포트 시점(프로세스 기동 시) 1회만
@@ -342,14 +342,14 @@ PaaS의 ENTRYPOINT 우회 기능으로 등록하고, **등록 직후 반드시 �
 - 「지금 수집」 실행 중에는 두 번째 POST가 캐시 뮤텍스(`cache.add`,
   키 `staff-draft-discovery-run-lock`)에 막혀 명령을 돌리지 않고 안내
   메시지만 보여준다(감사 로그도 늘지 않는다).
-- **보장 범위**: 정상 종료·파이썬 예외·gunicorn 기본 타임아웃(30초 `[코드 gunicorn/config.py, docker/entrypoint.sh에 --timeout 없음]`)의
+- **보장 범위**: 정상 종료·파이썬 예외·gunicorn 워커 타임아웃(기본 120초, `GUNICORN_TIMEOUT` `[코드 docker/entrypoint.sh]`)의
   SIGABRT 종료에서는 잠금이 풀린다. SIGKILL 뒤에는 TTL(600초 `[코드]`)까지
   잠금이 남는다.
 - 잠금이 남았다고 의심되면 수동으로 해제한다.
   ```bash
   uv run python manage.py shell -c "from django.core.cache import cache; cache.delete('staff-draft-discovery-run-lock')"
   ```
-- 같은 축의 워커 수준 방어(gunicorn `--timeout`)는 G2로 별도 트랙이다.
+- 같은 축의 워커 수준 방어(gunicorn `--timeout`)는 G2로 해결됐다(트랙 46, 기본 120초 `GUNICORN_TIMEOUT`).
 
 ### 8.x 러너 프로덕션 연결·종료·토큰 회전 (트랙 39)
 
@@ -360,7 +360,7 @@ PaaS의 ENTRYPOINT 우회 기능으로 등록하고, **등록 직후 반드시 �
   러너 재시작 전에 맥 저장소를 머지된 main으로 맞춘 뒤 `uv sync`를
   실행한다(러너가 옛 코드·옛 의존성으로 뜨는 것을 막는다).
 - **env 파일**: 러너 시크릿(러너가 읽는 이름은 `TAKULIFE_RUNNER_TOKEN`,
-  `TAKULIFE_SERVER_URL` `[코드 local_runner/config.py:53-54]`이고,
+  `TAKULIFE_SERVER_URL` `[코드 local_runner/config.py:54-55]`이고,
   `DRAFT_DISCOVERY_RUNNER_TOKEN`은 서버 설정 이름이다)은 저장소 밖 `~/.takulife-runner.env`에
   `chmod 600`으로 둔다. 실행 전 `set -a; source
   ~/.takulife-runner.env; set +a`로 셸에 로드한 뒤 `uv run python -m
@@ -436,6 +436,100 @@ PaaS의 ENTRYPOINT 우회 기능으로 등록하고, **등록 직후 반드시 �
   초기화가 필요하다). ③ `uv run python manage.py report_translation_queue`로
   `pending` 증가를 확인한다.
 
+### 8.y 러너 launchd 자동 시작(트랙 46)
+
+- **목적**: 로그인 시 러너를 자동 기동하고, 비정상 종료(종료 코드 0이 아님) 시
+  60초 간격으로 재기동한다 `[코드 kr.takulife.runner.plist]`. 설치는 사용자 액션이다. 템플릿·래퍼는
+  `local_runner/launchd/kr.takulife.runner.plist`·`run-runner.sh`.
+- **선행 조건 3개**:
+  1. `~/.takulife-runner.env`가 존재하고 권한이 600이다. 아니면 래퍼가 메시지
+     1줄을 남기고 종료 코드 0으로 끝나며 재기동하지 않는다.
+  2. `claude`·`uv`가 래퍼 PATH(`~/.local/bin`, `/opt/homebrew/bin`,
+     `/usr/local/bin`, `/usr/bin`, `/bin`)에 있다. 이 고정 목록은 그대로이고,
+     그 밖에 설치된 `claude`(예: nvm — 이 Mac은
+     `~/.nvm/versions/node/v22.14.0/bin/claude`, 네이티브 arm64 실행 파일
+     `[실측 2026-10-30 which/file]`)는 env 파일에
+     `TAKULIFE_RUNNER_PATH_PREPEND=<그 bin 디렉터리>`로 알려 준다(래퍼가 env
+     파일을 PATH 설정 전에 읽어 맨 앞에 붙인다 `[코드 run-runner.sh]`). 없으면
+     "claude 실행 파일을 PATH에서 찾지 못해 시작하지 않는다" 1줄·종료 코드
+     0으로 영구히 뜨지 않는다 `[실측 2026-10-30]`.
+  3. ~~저장소가 `~/Desktop` 같은 보호 폴더면 "Operation not permitted"가 날 수
+     있다. 저장소를 옮기거나 `/bin/sh`에 전체 디스크 접근을 허용한다(미검증,
+     설치 직후 로그를 확인한다).~~(2026-10-30 이전 기록) 실측: `~/Desktop`
+     아래 저장소를 plist로 기동하면 로그에
+     `shell-init: error retrieving current directory: getcwd: cannot access
+     parent directories: Operation not permitted`와
+     `/bin/sh: …/run-runner.sh: Operation not permitted`, `last exit code =
+     126`, `state = spawn scheduled`(종료 코드가 0이 아니라 60초마다
+     재기동 루프에 들어간다 — 즉시 `launchctl bootout`으로 멈췄다)
+     `[실측 2026-10-30]`. **채택한 해법 = 보호 폴더 밖 전용 클론
+     `~/takulife-runner`**(`/bin/sh`에 전체 디스크 접근을 주는 방법은
+     채택하지 않았고, 개발 작업 트리를 옮기는 것은 사용자 결정으로 남긴다).
+     전용 클론은 개발 트리의 브랜치 전환이 돌고 있는 러너에 영향을 주지
+     않는다.
+- **설치**(전용 클론 기준):
+  ```bash
+  git clone https://github.com/youngroknroll/takulife.git ~/takulife-runner
+  cd ~/takulife-runner && uv sync --frozen        # 336MB [실측 du 2026-10-30]
+  mkdir -p ~/Library/LaunchAgents ~/Library/Logs
+  sed -e "s|__REPO_DIR__|$HOME/takulife-runner|g" -e "s|__HOME__|$HOME|g" local_runner/launchd/kr.takulife.runner.plist > ~/Library/LaunchAgents/kr.takulife.runner.plist
+  launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/kr.takulife.runner.plist
+  ```
+  env 파일 예(값은 적지 않는다): `TAKULIFE_SERVER_URL=https://takulife.kr`,
+  `TAKULIFE_RUNNER_TOKEN=…`,
+  `TAKULIFE_RUNNER_PATH_PREPEND=$HOME/.nvm/versions/node/<버전>/bin`(`$HOME`은
+  셸이 확장하므로 실제 경로를 적는다), `chmod 600`.
+- **확인·운영**:
+  - 상태: `launchctl print gui/$(id -u)/kr.takulife.runner`. 로그:
+    `~/Library/Logs/takulife-runner.log`.
+  - ~~**미검증**: 래퍼가 `exec uv run --frozen python -m local_runner.runner`로 기동하므로 `uv`가 SIGTERM을 파이썬 자식에 전달하는지 확인되지 않았다. 설치 후 `launchctl kill TERM …` 뒤 로그에 `러너 종료 — 오프라인 보고 완료`가 없고 `launchctl print`의 `last exit code`가 0이 아니면 래퍼의 마지막 줄을 `exec .venv/bin/python -m local_runner.runner`로 바꾼다(그 경우 `uv sync --frozen`은 설치 때 1회).~~(2026-10-30 이전 기록) 실측: `uv run --frozen python <스크립트>`에 `kill -TERM <uv pid>`를 보내면 자식 파이썬의 SIGTERM 핸들러가 신호 15를 받고 종료하며, 남는 프로세스 0개·uv 종료 코드 0이다 `[실측 2026-10-30]`. 재현:
+    ```bash
+    uv run python -c 'import signal, sys, time; signal.signal(signal.SIGTERM, lambda *_: sys.exit(print("child got SIGTERM"))); print("ready", flush=True); [time.sleep(0.2) for _ in iter(int, 1)]' & sleep 3; kill -TERM $!; wait $!; echo "uv exit=$?"
+    ```
+    기대 출력: `ready`, `child got SIGTERM`, `uv exit=0`. 래퍼의
+    `exec uv run …` 그대로 유지하고 `.venv/bin/python` 대안은 불필요하다.
+  - 종료 확인: `launchctl kill TERM gui/$(id -u)/kr.takulife.runner` 후 로그에
+    `러너 종료 — 오프라인 보고 완료`가 남는다. 러너는 SIGTERM에서 종료 코드 0으로
+    끝나므로 `SuccessfulExit=false` 설정상 **재기동되지 않는다**. 다시 띄우려면
+    `launchctl kickstart gui/$(id -u)/kr.takulife.runner`.
+  - 해제: `launchctl bootout gui/$(id -u)/kr.takulife.runner`. 수동 기동 전에는
+    먼저 bootout한다(중복 폴링 방지). 설치 자체를 되돌리려면 bootout 뒤
+    `rm ~/Library/LaunchAgents/kr.takulife.runner.plist`와 전용 클론
+    `rm -rf ~/takulife-runner`(336MB `[실측 du 2026-10-30]`)를 지운다.
+  - 토큰 회전 후: `launchctl kickstart -k gui/$(id -u)/kr.takulife.runner`.
+  - 갱신 절차: 배포 뒤 러너 갱신은
+    `cd ~/takulife-runner && git pull && uv sync --frozen && launchctl kickstart -k gui/$(id -u)/kr.takulife.runner`로
+    한다. §8.x의 "맥 저장소 main·uv sync" 재시작 절차도 이 전용 클론
+    기준이다. 머지 전까지 이 Mac의 클론은 브랜치
+    `test/track-49-xdist-launchd`를 체크아웃한 상태이며, PR #407 머지 뒤
+    `git checkout main && git pull`로 돌린다(사용자 잔여).
+  - `ThrottleInterval 60`은 종료 코드가 0이 아닌 경우(토큰 빈 값
+    `RuntimeError` 등)의 재기동 간격이고, env 파일 부재·권한 불일치·실행
+    파일 부재는 종료 코드 0이라 재기동하지 않는다. 래퍼가 실제 러너까지
+    가서 `TAKULIFE_RUNNER_TOKEN`이 빈 값이면 `RuntimeError`·종료 코드 1이다
+    `[실측 2026-10-30]`.
+  - 절전 시 러너가 멈추고, 120초 신선도 만료(`[코드 drafts/discovery_runs.py HEARTBEAT_FRESH_SECONDS]`)로 오프라인 표시되며, 복귀 후 폴링이
+    재개된다.
+  - 구독 사용량: 번역 대기분이 있으면 폴링마다 최대 3건 `[코드 local_runner/runner.py]` `claude`를 호출한다.
+  - `bypassPermissions` 격리 권고는 미결이다
+    (`docs/BE/draft-source-agent-discovery.md` "격리 권고" 참조). 상시 운영으로
+    전환하기 전에 별도 실행 계정 또는 격리 환경을 검토한다.
+- **알려진 한계**:
+  - env 파일 문법 오류나 `load_config` 실패(토큰 빈 값)는 비정상 종료라 60초마다 재기동하며 로그만 쌓인다.
+  - 로그 파일 회전이 없다.
+  - `claude` 자식 프로세스가 `TAKULIFE_RUNNER_TOKEN`을 환경으로 상속한다(도구가 WebSearch·WebFetch뿐이라 직접 유출 경로는 없음, 비상속은 이연).
+  - 토큰은 URL-safe 문자만 쓴다(`. "$ENV_FILE"`이 셸로 읽는다).
+- **이 Mac 현재 상태**: ~~`~/.takulife-runner.env` 없음, `~/Library/LaunchAgents`에
+  taku 항목 없음 `[실측 ls 2026-10-28]`. launchd 설치·실동작은 미검증이다
+  (`plutil -lint` OK, `sh -n` OK만 확인).~~(2026-10-28 기록) 2026-10-30 실측:
+  plist 설치 완료(`~/Library/LaunchAgents/kr.takulife.runner.plist` →
+  `~/takulife-runner`), `launchctl print`의 `runs = 1`·`last exit code =
+  0`·`state = not running`, 로그 1줄 "러너 환경 파일이 없어 시작하지
+  않는다", 65초 뒤에도 `runs = 1`(재기동 없음) `[실측 2026-10-30]`.
+  `~/.takulife-runner.env`는 여전히 없음 → **사용자 잔여 2건**: env 파일
+  작성(위 3변수, 권한 600) + `launchctl kickstart gui/$(id -u)/kr.takulife.runner`,
+  그 뒤 로그에 "서버 응답 확인 — 러너 온라인"이 뜨는지 확인한다.
+
 ## 9. 오류 묶음 확인 (트랙 36, `core.ErrorGroup`)
 
 - **위치**: 스태프 대시보드(`/staff/`) 오른쪽 레일, 「품질 경고」 다음
@@ -448,7 +542,7 @@ PaaS의 ENTRYPOINT 우회 기능으로 등록하고, **등록 직후 반드시 �
   record_error`는 DB 장애 시 자체 저장 실패를 삼키고(무예외 보장) WARNING
   1줄만 남기며, 백엔드 핸들러(`core.logging.ErrorGroupHandler`)는 원 예외가
   `django.db.Error` 계열이면 애초에 저장을 시도하지 않는다
-  (`core/logging.py:20-25`) — DB 장애 자체가 오류 묶음으로 기록되지 않는
+  (`core/logging.py:21-26`) — DB 장애 자체가 오류 묶음으로 기록되지 않는
   설계다. 가드레일 상세는 `docs/BE/error-groups.md` 참고.
 - **기록 자체가 실패했는지 확인하는 법**: PaaS 콘솔 로그(stdout)에서
   `error-group record failed`를 검색한다 — 이 고정 접두어가 나오면

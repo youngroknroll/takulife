@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import StaffActionLog
+from staff.models import StaffActionLog
 
 
 @admin.register(StaffActionLog)

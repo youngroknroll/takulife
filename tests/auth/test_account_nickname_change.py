@@ -1,7 +1,7 @@
 """닉네임 변경 페이지(/accounts/settings/nickname/, 트랙 29 NICK-15).
 게이트·초기값 채움만 다룬다(선례 tests/auth/test_account_settings.py)."""
-from django.core.cache import cache
 
+from django.core.cache import cache
 import pytest
 
 from accounts.forms import NicknameChangeForm
@@ -13,7 +13,9 @@ NICKNAME_URL = "/accounts/settings/nickname/"
 
 
 @pytest.mark.django_db
-def test_로그인_사용자가_닉네임_변경_페이지에_접근하면_현재_닉네임이_채워진_폼이_렌더링된다(user_client):
+def test_로그인_사용자가_닉네임_변경_페이지에_접근하면_현재_닉네임이_채워진_폼이_렌더링된다(
+    user_client,
+):
     user, client = user_client(nickname="타쿠러")
 
     response = client.get(NICKNAME_URL)
@@ -48,7 +50,9 @@ def test_유효한_새_닉네임을_제출하면_닉네임이_갱신되고_같�
 
 
 @pytest.mark.django_db
-def test_타인이_사용중인_닉네임으로_변경을_시도하면_거부되고_기존_닉네임이_유지된다(user_client, make_user):
+def test_타인이_사용중인_닉네임으로_변경을_시도하면_거부되고_기존_닉네임이_유지된다(
+    user_client, make_user
+):
     make_user(nickname="Foo")
     user, client = user_client(nickname="원래닉")
 
@@ -87,7 +91,9 @@ def test_한_시간_한도를_넘는_닉네임_변경은_DB_변경_없이_거부
 
 
 @pytest.mark.django_db
-def test_사전_중복_검사를_통과한_뒤_DB_제약에_걸리면_중복_오류로_안내된다(user_client, make_user, monkeypatch):
+def test_사전_중복_검사를_통과한_뒤_DB_제약에_걸리면_중복_오류로_안내된다(
+    user_client, make_user, monkeypatch
+):
     # 폼의 iexact 사전 검사를 건너뛰어 두 요청이 거의 동시에 도착한
     # 경쟁 창을 재현한다 — 최후 방어는 DB UniqueConstraint다.
     monkeypatch.setattr(

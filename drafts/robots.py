@@ -10,11 +10,12 @@ RobotFileParser.parse()에 줄 단위로 넘긴다(parse 자체는 I/O를 하지
 크기 초과, SSRF 거부, 예상 밖 content-type)는 후보 URL을 차단 처리한다 — 일시 오류가
 크롤링 허가로 오인되면 안 된다.
 """
+
 from dataclasses import dataclass
 from urllib.parse import urlsplit, urlunsplit
 from urllib.robotparser import RobotFileParser
 
-from .fetching import (
+from drafts.fetching import (
     USER_AGENT,
     FetchError,
     FetchHttpStatusError,
@@ -22,8 +23,7 @@ from .fetching import (
     UnsupportedContentTypeError,
     fetch_html,
 )
-from .url_safety import InvalidFetchUrlError, UnsafeFetchUrlError
-
+from drafts.url_safety import InvalidFetchUrlError, UnsafeFetchUrlError
 
 ROBOTS_DISALLOWED = "robots_disallowed"
 ROBOTS_FETCH_FAILED = "robots_fetch_failed"

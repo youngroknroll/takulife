@@ -6,14 +6,15 @@
 한국어 라벨만 `lang="ko"`를 유지한다. 단언은 HTML을 파싱해 요소 단위 등식으로
 하고 부분 문자열 비교는 쓰지 않는다.
 """
+
+from datetime import date
+from html.parser import HTMLParser
 import json
 import re
-from datetime import date
 from unittest.mock import patch
-from html.parser import HTMLParser
 
-import pytest
 from django.test import Client
+import pytest
 
 from archive.models import PersonalEntry, UserEventStatus
 from core.models import Category, HomeConfig
@@ -301,9 +302,7 @@ def test_영어_상세의_카테고리_줄_세_곳은_번역_라벨이고_ko_범
 
     root = _parse(_get(f"/events/{event.id}/", "en"))
 
-    breadcrumb = root.find_all(
-        "a", attrs={"href": "/events/?category=popup_store"}
-    )
+    breadcrumb = root.find_all("a", attrs={"href": "/events/?category=popup_store"})
     label = root.find_all(cls="event-detail-cat-label")
     info_rows = [
         row
@@ -322,9 +321,7 @@ def test_영어_상세의_카테고리_줄_세_곳은_번역_라벨이고_ko_범
 def test_영어_달력_아젠다의_카테고리는_번역_라벨이고_ko_범위가_아니다(make_event):
     _event(make_event, "popup_store")
 
-    root = _parse(
-        _get("/events/calendar/?month=2026-03&date=2026-03-05", "en")
-    )
+    root = _parse(_get("/events/calendar/?month=2026-03&date=2026-03-05", "en"))
 
     cats = root.find_all(cls="agenda-cat")
     assert [cat.text() for cat in cats] == ["Pop-up store"]
@@ -379,9 +376,7 @@ def test_카테고리가_적용된_영어_요청에서_빠른_칩의_aria_label�
 @pytest.mark.django_db
 @pytest.mark.parametrize("path", ["/events/", "/events/calendar/"])
 @pytest.mark.parametrize("lang", _ALL_LANGS)
-def test_필터_체크박스_라벨은_고정_번역표와_같고_번역된_라벨은_ko_범위가_아니다(
-    path, lang
-):
+def test_필터_체크박스_라벨은_고정_번역표와_같고_번역된_라벨은_ko_범위가_아니다(path, lang):
     labels = _checkbox_labels(_parse(_get(path, lang)))
 
     assert {slug: labels[slug].text() for slug in _SLUGS} == _TRANSLATED[lang]
@@ -398,9 +393,7 @@ def test_필터_체크박스_라벨은_고정_번역표와_같고_번역된_라�
 @pytest.fixture
 def untranslated_categories(db):
     Category.objects.create(slug="zz_night_market", label="야시장", sort_order=900)
-    Category.objects.create(
-        slug="zz_night_en", label="Night Market", sort_order=901
-    )
+    Category.objects.create(slug="zz_night_en", label="Night Market", sort_order=901)
 
 
 # C-09 — Red 예측: 영어에서 두 라벨 모두 지금은 lang="ko" 범위라 Red
@@ -469,9 +462,7 @@ def test_홈_카테고리_타일은_고정_번역표와_같고_번역된_타일�
 # ko 범위도 이미 참이라 Green으로 도착할 수 있다(변이 계획 대상).
 @pytest.mark.django_db
 @pytest.mark.parametrize("lang", _FOREIGN_LANGS)
-def test_번역_없는_DB_라벨_타일은_한국어_그대로이고_ko_범위다(
-    untranslated_categories, lang
-):
+def test_번역_없는_DB_라벨_타일은_한국어_그대로이고_ko_범위다(untranslated_categories, lang):
     _feature_all_categories()
 
     names = _tile_names(_parse(_get("/", lang)))
@@ -569,9 +560,7 @@ def test_홈_컬렉션_스냅샷의_공식_행은_번역되고_어휘_밖_개인
 ):
     user = make_user()
     event = make_event(title="공식 방문 행사", category="popup_store")
-    UserEventStatus.objects.create(
-        user=user, event=event, status=UserEventStatus.Status.VISITED
-    )
+    UserEventStatus.objects.create(user=user, event=event, status=UserEventStatus.Status.VISITED)
     # 43-3부터 제안 칩 어휘와 같은 저장값은 요청 언어로 보이므로, 번역하지 않는
     # 사용자 자유 입력은 어휘 밖 값으로 고정한다.
     entry = PersonalEntry.objects.create(

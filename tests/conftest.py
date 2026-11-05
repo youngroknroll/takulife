@@ -3,21 +3,21 @@
 픽스처가 객체가 아니라 함수를 돌려주므로 각 테스트가 필요한 값만 직접 넘긴다.
 고정된 공용 객체를 쓰면 테스트가 무엇을 검증하는지 픽스처가 몰래 바꾼다.
 """
+
 import io
 import secrets
 import string
 
-import PIL.Image
-import pytest
 from allauth.account.models import EmailAddress
 from django.core.cache import cache
 from django.db.utils import Error as DjangoDatabaseError
 from django.test import Client
 from django.utils import translation
+import PIL.Image
+import pytest
 
 from drafts.models import DraftSource, EventDraft
 from events.models import Event
-
 
 # core/migrations/0006_seed_categories.py의 _CATEGORY와 같은 값이다.
 # 마이그레이션은 동결 스냅샷을 심으므로 여기서 그 파일을 import하지 않는다.
@@ -61,8 +61,7 @@ def _reseed_category_vocabulary(request):
     """
     marker = request.node.get_closest_marker("django_db")
     is_transactional = bool(
-        (marker and marker.kwargs.get("transaction"))
-        or "transactional_db" in request.fixturenames
+        (marker and marker.kwargs.get("transaction")) or "transactional_db" in request.fixturenames
     )
     if not is_transactional:
         yield
@@ -129,9 +128,7 @@ def make_user(db, django_user_model):
         # 비밀번호를 안 넘기면 로그인 불가 상태로 만든다 — 해시 계산이 없어
         # 빠르고, 대부분의 테스트는 비밀번호로 로그인하지 않는다. 실제 로그인이
         # 필요한 테스트만 자기 비밀번호를 넘긴다.
-        return django_user_model.objects.create_user(
-            email=email, password=password, **kwargs
-        )
+        return django_user_model.objects.create_user(email=email, password=password, **kwargs)
 
     return _make
 
@@ -139,6 +136,7 @@ def make_user(db, django_user_model):
 @pytest.fixture
 def user_client(make_user):
     """(user, force_login된 Client) 팩토리 — 파일마다 복제되던 _login 헬퍼를 대체."""
+
     def _make(user=None, **user_kwargs):
         user = user or make_user(**user_kwargs)
         client = Client()
@@ -151,6 +149,7 @@ def user_client(make_user):
 @pytest.fixture
 def staff_client(user_client):
     """(staff_user, force_login된 Client) 팩토리. is_superuser 등은 kwargs로 통과."""
+
     def _make(**user_kwargs):
         return user_client(is_staff=True, **user_kwargs)
 
@@ -197,6 +196,7 @@ def make_source(db):
 def fail_if_called():
     """불리면 테스트를 실패시키는 대역. 어떤 경로가 아예 실행되지 않음을
     확인할 때 그 자리에 끼워 넣는다."""
+
     def _fn(*args, **kwargs):
         raise AssertionError("this collaborator must not be called")
 

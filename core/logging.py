@@ -3,6 +3,7 @@
 `django.request` 로거에만 붙는다(root 금지) — 그래야 500 로그만 잡고 다른
 경로의 의도된 warning까지 오류 묶음으로 새지 않는다.
 """
+
 import logging
 
 
