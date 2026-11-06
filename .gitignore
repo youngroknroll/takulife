@@ -30,3 +30,9 @@ htmlcov/
 
 # ruff cache
 .ruff_cache/
+
+#runner
+.takulife-runner.env
+
+# macOS
+.DS_Store
