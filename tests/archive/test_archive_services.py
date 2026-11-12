@@ -857,7 +857,7 @@ def test_수정_도중_다른_요청이_먼저_삭제하면_DoesNotExist_예외�
     DoesNotExist를 던진다. 이건 그 지적의 서비스 계층 절반이다 —
     archive/views.py가 이를 Http404로 변환해야 한다(뷰 계층 절반은
     tests/archive/test_collection_items_api.py의
-    test_patch_race_with_concurrent_delete_returns_404 참고, 같은 경합
+    test_수정_중_동시에_삭제되면_404가_된다 참고, 같은 경합
     형태에 대한 VisitRecordPhotoCreateView의 동일한 VisitRecord.DoesNotExist
     -> Http404 가드와 대응)."""
     user = make_user(username="ci-update-concurrent-delete")
