@@ -323,6 +323,8 @@ MIDDLEWARE = [
     # 정적 파일 서버/CDN이 필요 없다. whitenoise 문서 권장대로
     # SecurityMiddleware 바로 다음(GZipMiddleware 바로 뒤)에 둬야 한다.
     "whitenoise.middleware.WhiteNoiseMiddleware",
+    # 세션·DB를 건드리기 전에 걸러야 해서 이 자리에 둔다.
+    "core.middleware.CrawlerQueryBlockMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     # CommonMiddleware가 리다이렉트를 판단하기 전에 세션/쿠키/헤더로 언어를 결정해야 한다.
     "django.middleware.locale.LocaleMiddleware",
