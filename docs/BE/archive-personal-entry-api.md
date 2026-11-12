@@ -43,8 +43,7 @@ PATCH를 여는 순간 **멱등 키가 함께 열렸다.** `client_token`은 모
 `VisitRecord` 세 곳에서 `CASCADE`라 그 장소에 딸린 방문 기록과 사진이 함께
 사라진다. (삭제 경고 문구는 정확히 있다 — `static/js/pages/personal_entries.js`.)
 
-화면은 신규 페이지라 프론트 이중 게이트 대상이고, **시안 재작업 중이라
-새 시안 이후로 미뤘다**(2026-07-30 사용자 결정). 지금 지으면 두 번 짓는다.
+이 화면은 프론트 이중 게이트를 거쳐 **구현 완료**됐다(`docs/FE/personal-place-detail-edit.md`).
 
 ## 공식 제보와의 관계 — 제약 없음
 

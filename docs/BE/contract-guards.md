@@ -49,7 +49,7 @@ import 없는 행위적 결합(시그널 등), `migrations/`(의도적 제외).
 변환, 커밋 `9debe14c`). 위 서술은 변환 전 상태의 기록이며, 상대 임포트의 재도입은
 CI의 ruff `TID252`(`ban-relative-imports = "all"`)가 막는다. 그래서 스캐너가
 상대 임포트를 건너뛰어도 놓치는 지점이 새로 생기지 않는다. 설정 근거는
-`docs/BE/python-style.md`.
+`docs/BE/python-conventions.md`.
 
 ⚠️ **공허 통과 방지가 스캔 함수 안에 있다.** 대상 파일이 0개면(앱 이름 오탈자
 포함) 조용히 통과하지 않고 실패한다. 이 단언을 지우면 2건이 Red가 되는 것을 확인했다.
@@ -153,7 +153,7 @@ R1(`test_core_공용_모듈은_도메인_앱_모듈을_임포트하지_않는다
 
 **왜 기존 해석기를 안 썼나**: `_package_name_for_file`은 최상위 패키지명만
 돌려줘 중첩 패키지 파일의 상대 임포트를 `web.archive`로 오해석한다
-`[코드 tests/core/test_architecture_boundaries.py:761-766]`. 현재 호출처는
+`[코드 tests/core/test_architecture_boundaries.py:774-779]`. 현재 호출처는
 최상위 모듈뿐이라 영향이 없고, 잠재 한계로만 기록한다. 기존 가드는 `web/views`
 안의 상대 임포트 주입을 건너뛰어 못 잡는다(위 뮤테이션 참조).
 
@@ -210,6 +210,19 @@ WVG-4 생존 테스트가 스캐너 자체의 무력화를 잡는다.
 ⚠️ **앵커 유일성은 페이지 단일 템플릿에서 세지 마라.** 렌더 결과는 `base.html`과
 partial이 합쳐진 것이다. `<form`을 앵커로 골랐다가 `_topbar.html`의 로그아웃 폼
 때문에 실패한 사례가 있다.
+
+## 그 외 단일 목적 가드
+
+- `tests/core/test_entrypoint_contract.py` — `docker/entrypoint.sh`의 gunicorn
+  타임아웃이 `GUNICORN_TIMEOUT` 환경변수와 문서화된 기본값으로 정해지는지 고정한다.
+- `tests/core/test_run_runner_wrapper_contract.py` — 로컬 러너 launchd 래퍼가
+  환경파일의 `PATH_PREPEND` 디렉터리에 있는 `claude` 스텁을 찾는지 고정한다.
+- `tests/core/test_ci_command_policy.py` — CI·운영 문서가 Python/Django 명령을
+  실행할 때 `uv run`을 쓰는지 고정한다(uv-only 정책의 CI 쪽 반영).
+- `tests/core/test_ci_trigger_policy.py` — `production` 브랜치를 향한 PR에서
+  `ci.yml`의 `pull_request` 트리거를 건너뛰는지 고정한다.
+- `tests/core/test_comment_language_guard.py` — 추적 파일의 주석·docstring에
+  한글 없는 영어 산문이 없는지 스캔한다(Code Comment Policy의 한국어 요구 반영).
 
 ## `tests/core/test_secret_literal_guard.py` — 테스트 시크릿 리터럴
 

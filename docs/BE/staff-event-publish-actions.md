@@ -6,11 +6,11 @@ H2를 세 트랙으로 나눈 것 중 일괄(트랙 24)·단건(트랙 25) 목�
 
 ## 배경
 
-운영 기준 "만료 행사 처리"(`docs/event-operations-criteria.md:50-52`)는 종료된
+운영 기준 "만료 행사 처리"(`docs/event-operations-criteria.md:59-60`)는 종료된
 행사를 주 1회 스태프 콘솔에서 정리하라고만 정하고 수단은 정하지 않았다.
 재측정 [실측 2026-09-09 shell]: 이벤트 171건 전부 게시 상태, 그중 종료
 (`end_date < today`) 148건. 트랙 24 이전에는 단건 토글 뷰
-`staff_event_toggle_publish`(`staff/views/events.py:607`)만 있어 148건을
+`staff_event_toggle_publish`(`staff/views/events.py:599`)만 있어 148건을
 목록 → 수정 → 토글 3화면으로 하나씩 내려야 했다. 이 토글은 **읽은 상태를
 반전**하므로, 비공개 처리가 성공한 뒤 응답만 유실되면 재시도가 그 행사를
 다시 게시해 버린다. 이번 엔드포인트는 반전이 아니라 "비공개로 설정"이라는
@@ -252,7 +252,7 @@ grep])도 그 행의 검증·비공개 버튼을 `hidden`으로, 다시 게시 �
 `core/vocab.py`의 `EVENT_STATUS_LABELS`는 소비자 목록 표시용으로 `"all"`
 키가 나중에 추가돼 있다(`core/vocab.py:203`). 이 dict로 `?period=`
 멤버십을 검사하면 `"all"`이 유효 값으로 통과한다.
-`_STAFF_EVENT_PERIOD_VALUES = {slug for slug, _ in EVENT_STATUS}`(`staff/views/events.py:119`)처럼
+`_STAFF_EVENT_PERIOD_VALUES = {slug for slug, _ in EVENT_STATUS}`(`staff/views/events.py:111`)처럼
 튜플 자체에서 만든 집합으로 검사해야 한다.
 
 ## (p) `today` 기본값은 `_resolve_staff_today` 한 곳에서만 해석한다
@@ -267,7 +267,7 @@ as a query value`로 500이 났다(구현 중 두 번 재발).
 
 ## (q) 카테고리 칩 합계와 표 하단 건수는 기준이 다른 숫자다
 
-카테고리 "전체" 칩의 `category_chip_total`(`staff/views/events.py:303`)은
+카테고리 "전체" 칩의 `category_chip_total`(`staff/views/events.py:295`)은
 **category를 뺀** 나머지 필터 기준 합계(`count_staff_events_by_category`가
 `_filtered_staff_events`를 category 없이 공유해서 만든 값)다. 표 하단
 "N–M / total"은 `page_obj.paginator.count`로 **category를 포함한** 현재
@@ -390,8 +390,9 @@ picture만으로는 (p) 결함을 잡지 못했다 — 웹 계층 요청으로�
 로직과 `draft_bulk.js` 공용 모듈화(두 번째 사용처가 더 생긴 시점에 추출
 검토), succeeded의 "실제 전환/이미 그 상태" 구분, `staff/views/
 events.py` 인터페이스별 분리 완료(2026-10-27, `StaffEventBulkUnpublishView`를
-`events_actions.py`로 이동, `staff/views/events.py` 731줄 `[실측 wc -l 2026-10-27]`),
-**재검증("검증 완료") 운영 절차 정의 — `docs/event-operations-criteria.md`에
-아직 없음, 사용자 결정 필요**(백로그에도 기록), (r)의 `{% querystring %}`
+`events_actions.py`로 이동, `staff/views/events.py` 735줄 `[실측 wc -l 2026-11-12]`),
+**재검증("검증 완료") 운영 절차의 주기·담당 정의 — `docs/event-operations-criteria.md`
+§3에 배지·버튼 트리거(시작일 7일 전부터)만 있고, 스태프가 이를 얼마나 자주·누가
+확인할지는 아직 없음, 사용자 결정 필요**(백로그에도 기록), (r)의 `{% querystring %}`
 무효 값 잔존(BIR 사후 판정 Deviates, Low·비차단 — canonical 리다이렉트
 또는 툴바 링크의 검증값 통일 후보).

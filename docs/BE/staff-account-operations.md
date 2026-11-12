@@ -56,7 +56,7 @@ superuser 세션이 탈취되면 HTTP 요청만으로 비-superuser 계정을 �
 피하려는 의도적 설계다.
 
 이미 목표 상태와 같으면 `set_staff_flag`/`set_active_flag`가 저장 없이
-`False`를 반환하고(`accounts/services.py:147-148`, `:158-159`), 뷰는 이를
+`False`를 반환하고(`accounts/services.py:188-189`, `:200-201`), 뷰는 이를
 `messages.info`로만 안내하고 감사 로그를 남기지 않는다
 (`staff/views/accounts.py:145-148`). 멱등 재시도(같은 요청이 중복
 도착해도 상태·로그가 늘지 않음)가 이 계약의 목적이다.
@@ -69,7 +69,7 @@ superuser 세션이 탈취되면 HTTP 요청만으로 비-superuser 계정을 �
 대상 행을 잠그고, 서비스 호출과 `StaffActionLog.objects.create(...)`가 같은
 트랜잭션에서 실행된다(`staff/views/accounts.py:128-140`). 감사 로그 저장이
 실패하면 플래그 변경도 함께 롤백된다 — 삭제 확인 패턴
-(`staff/views/events.py:703` `confirmed` 검사, `:711-712` atomic +
+(`staff/views/events.py:695` `confirmed` 검사, `:707-708` atomic +
 select_for_update)과 같은 흐름이다.
 
 ## (e) 감사 대상은 `target_user`, 운영자 화면에는 이메일을 노출하지 않는다
@@ -121,11 +121,12 @@ superuser 경계를 감사 로그 화면이 우회해 노출하기 때문이다.
 반면, 이 화면의 비활성화는 `is_active` 변경 자체가 다음 요청을 막아 세션을
 직접 지울 필요가 없다.
 
-## (h) 대상 FK 3종 상호 배타는 독스트링 관례 — DB 제약 없음
+## (h) 대상 FK 4종 상호 배타는 독스트링 관례 — DB 제약 없음
 
-`StaffActionLog`는 `target_draft`·`target_event`·`target_user` 세 FK를
-동시에 가진다(`staff/models.py:43-58`). 한 로그 행이 셋 중 하나만
-채운다는 규칙은 `__str__`의 우선순위 처리(`staff/models.py:72-82`)와
+`StaffActionLog`는 `target_draft`·`target_event`·`target_user`·
+`target_category` 네 FK를 동시에 가진다(`staff/models.py:43-63`). 한 로그
+행이 넷 중 하나만 채운다는 규칙은 `__str__`의 우선순위 처리
+(`staff/models.py:72-82`)와
 호출부 관례로만 지켜지고, `CheckConstraint`는 없다
 (`[코드] rg CheckConstraint staff/` 결과 0건). 트랙 19에서 DB 제약 추가는
 스코프 밖으로 이연했다.
@@ -144,7 +145,7 @@ superuser 경계를 감사 로그 화면이 우회해 노출하기 때문이다.
 
 이 재전송이 무해한 이유는 페이지 안전장치가 아니라 서버 쪽 멱등이다.
 `set_staff_flag`/`set_active_flag`는 대상이 이미 목표 상태면 저장 없이
-`False`를 반환하고(`accounts/services.py:147-148`, `:158-159`), 뷰는
+`False`를 반환하고(`accounts/services.py:188-189`, `:200-201`), 뷰는
 이 경우 `messages.info`만 내고 감사 로그를 남기지 않는다
 (`staff/views/accounts.py:145-148`).
 

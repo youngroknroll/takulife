@@ -7,14 +7,14 @@
 
 | 모듈 | 담는 것 |
 |---|---|
-| `__init__.py` (51줄 `[실측 wc -l 2026-10-27]`) | **순수 재노출만.** 뷰 로직 0줄 |
-| `_helpers.py` (184줄 `[실측 wc -l 2026-10-27]`(작성 당시 178줄)) | 둘 이상의 그룹이 쓰는 범용 헬퍼 7개 |
-| `events.py` (665줄 `[실측 wc -l 2026-10-27]`(작성 당시 627줄), 2026-08-02 기록 456줄은 트랙 34 전 값) | `home`, `event_list`, `event_calendar`, `event_detail` + 홈 달력 조립 헬퍼(`_home_calendar_*`, `_events_by_date`, `_dedupe_category_slugs`) |
-| `archive.py` (706줄 `[실측 wc -l 2026-10-27]`(작성 당시 682줄)) | 상태·방문·직접등록·찜 뷰 11개 `[실측 rg -c '^def [a-z]' web/views/archive.py]`(상세·수정 포함) |
-| `activity.py` (414줄 `[실측 wc -l 2026-10-27]`(작성 당시 413줄)) | `activity_calendar` + 활동 전용 헬퍼·상수 |
-| `collection.py` (443줄 `[실측 wc -l 2026-10-27]`(작성 당시 427줄)) | 컬렉션 뷰 4개 + 카드 표시 헬퍼 + `SERIES_INK_*` |
-| `account.py` (225줄 `[실측 wc -l 2026-10-27]`(작성 당시 214줄)) | `mypage`, `delete_account` |
-| `legal.py` (10줄 `[실측]`) | 법적 페이지 2개(`legal_privacy`, `legal_terms`) |
+| `__init__.py` (52줄 `[실측 wc -l 2026-11-12]`) | **순수 재노출만.** 뷰 로직 0줄 |
+| `_helpers.py` (184줄 `[실측 wc -l 2026-11-12]`(작성 당시 178줄)) | 둘 이상의 그룹이 쓰는 범용 헬퍼 7개 |
+| `events.py` (646줄 `[실측 wc -l 2026-11-12]`(작성 당시 627줄), 2026-08-02 기록 456줄은 트랙 34 전 값) | `home`, `event_list`, `event_calendar`, `event_detail` + 홈 달력 조립 헬퍼(`_home_calendar_*`, `_events_by_date`, `_dedupe_category_slugs`) |
+| `archive.py` (701줄 `[실측 wc -l 2026-11-12]`(작성 당시 682줄)) | 상태·방문·직접등록·찜 뷰 11개 `[실측 rg -c '^def [a-z]' web/views/archive.py]`(상세·수정 포함) |
+| `activity.py` (411줄 `[실측 wc -l 2026-11-12]`(작성 당시 413줄)) | `activity_calendar` + 활동 전용 헬퍼·상수 |
+| `collection.py` (443줄 `[실측 wc -l 2026-11-12]`(작성 당시 427줄)) | 컬렉션 뷰 4개 + 카드 표시 헬퍼 + `SERIES_INK_*` |
+| `account.py` (225줄 `[실측 wc -l 2026-11-12]`(작성 당시 214줄)) | `mypage`, `delete_account` |
+| `legal.py` (11줄 `[실측 wc -l 2026-11-12]`) | 법적 페이지 2개(`legal_privacy`, `legal_terms`) |
 
 ⚠️ `api_root`·`robots_txt`·`health`는 이 패키지에 없다. `system.py`는 이번 이동으로
 사라지고 그 안의 법적 페이지 2개만 `legal.py`로 옮겨졌다 — `api_root`·
@@ -51,10 +51,11 @@
 
 ## Known gap — 정리하지 않은 것
 
-`__init__.py`가 아니라 **각 서브모듈**의 import 중 일부는 이제 안 쓰일 수 있다.
-이동을 순수 이동으로 유지하려고 **의도적으로 정리하지 않았다.** 정리할 때는
-`tests/events/test_home_view.py` 등이 `web.views.events.timezone.localdate`를
-몽키패치한다는 점을 먼저 확인하라 — 그 이름이 사라지면 패치가 깨진다.
+트랙 48(2026-10-29) 이후 `ruff`의 `F401`(미사용 임포트)이 CI 게이트로
+강제돼 미사용 임포트는 남아 있지 않다. 다른 서브모듈을 몽키패치하는
+임포트 이름을 지울 때는 `tests/events/test_home_view.py` 등이
+`web.views.events.timezone.localdate`를 몽키패치한다는 점을 먼저
+확인하라 — 그 이름이 사라지면 패치가 깨진다.
 
 ## Evidence — 행위 불변을 무엇으로 증명했나
 

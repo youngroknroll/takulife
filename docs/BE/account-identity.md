@@ -74,7 +74,7 @@ reverse는 `RunPython.noop`이다(백필 전 값과 이후 실사용자가 고�
 `accounts/forms.py`의 `_TERMS_AGREEMENT_LABEL`은 `mark_safe(format_lazy(...))`로
 쓴다. `'...'.format(terms=reverse_lazy(...))`처럼 문자열 `.format()`을 쓰면
 lazy 객체가 **즉시 평가**돼, `accounts/views.py`가 모듈 수준에서
-`from .forms import NicknameChangeForm`을 하는 순간 URLconf가 아직 로딩되지
+`from accounts.forms import NicknameChangeForm`을 하는 순간 URLconf가 아직 로딩되지
 않은 상태에서 `reverse_lazy`가 강제로 풀려 `config.urls has no patterns`로
 죽는다. `format_lazy`는 실제 렌더 시점까지 평가를 미루므로 이 순환을
 피한다 — forms.py에 새 URL 참조 라벨을 추가할 때 이 함정을 다시 만들지
@@ -114,5 +114,5 @@ Evidence: `tests/auth/test_nickname_signup.py`의 NICK-21
 (`test_가입_사전_중복_검사를_통과한_뒤_DB_제약에_걸리면_중복_오류로_안내된다`,
 `:96`), `tests/auth/test_account_nickname_change.py`의 NICK-20
 (`test_사전_중복_검사를_통과한_뒤_DB_제약에_걸리면_중복_오류로_안내된다`,
-`:90`) — 둘 다 폼의 `clean_nickname`을 `monkeypatch`로 우회해 사전 검사를
+`:94`) — 둘 다 폼의 `clean_nickname`을 `monkeypatch`로 우회해 사전 검사를
 건너뛴 경쟁 창을 재현한다.

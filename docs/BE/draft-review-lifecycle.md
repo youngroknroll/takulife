@@ -8,8 +8,8 @@
 
 `EventDraft.ReviewStatus`는 `pending`/`approved`/`rejected` 3상태 그대로다
 [코드]. 재오픈은 `rejected → pending` 전이일 뿐 새 상태값을 만들지 않는다.
-전이 함수는 `drafts/services.py`의 `approve_draft`(`:358`)·`reject_draft`
-(`:391`)·`reopen_draft`(`:410`) 셋뿐이고 [실측 `grep -n`], 셋 다 공통
+전이 함수는 `drafts/services.py`의 `approve_draft`(`:353`)·`reject_draft`
+(`:386`)·`reopen_draft`(`:405`) 셋뿐이고 [실측 `grep -n`], 셋 다 공통
 상태 가드 `_get_draft_for_update(draft_id, *, expected_status)`(`:297`,
 기본값 없음, `select_for_update` 사용)를 거친다.
 
@@ -32,7 +32,7 @@ PSO 기본값 수용): `reopened_at`이 있으면 그 값, 없으면 `created_at
 ## (d) 감사: `draft_reopen`은 승인·반려와 같은 트랜잭션·로그 규칙을 따른다
 
 `StaffActionLog.Action.DRAFT_REOPEN`("반려 재오픈")은
-`staff/views/drafts.py`의 `StaffDraftReopenView`(`:351`)의 `post`(`:357`) 안
+`staff/views/drafts.py`의 `StaffDraftReopenView`(`:341`)의 `post`(`:347`) 안
 `transaction.atomic()`에서 `reopen_draft` 호출과 함께 기록된다. 로그 기록
 자체가 실패하면 재오픈도 함께 롤백된다(승인·반려 선례, `docs/BE/staff-audit-log.md`
 (c)와 동일한 무로그 규칙). 400(`DraftStateError`)·403(권한 없음)·404
@@ -98,12 +98,12 @@ rejected면 `rejected_at`)의 `결정 시각 − 기산점` 평균과 반려 비
 (`decided_at__gte`/`decided_at__lt`)에서 자동으로 빠진다 — 로컬 DB에서는
 승인 4건·반려 4건 전부 이 경로였다 [실측 2026-09-08 shell]. 핀 테스트는
 `tests/drafts/test_drafts_queries.py::TestDraftReviewSla::test_결정_시각이_없는_레거시_승인_반려_건은_창_집계에서_제외된다`
-(`:201`) [실측 `grep -n`].
+(`:211`) [실측 `grep -n`].
 
 ## (k) 표시 규칙 — 값 없음은 하이픈, 단위는 48시간 기준
 
-`staff/views/__init__.py`의 `_build_review_sla_cards`(`:186`)와
-`_format_duration`(`:178`) [실측 `grep -n`]: `value`는 표시용 문자열이거나
+`staff/views/__init__.py`의 `_build_review_sla_cards`(`:193`)와
+`_format_duration`(`:185`) [실측 `grep -n`]: `value`는 표시용 문자열이거나
 None이다 — 정수 0을 그대로 넘기면 템플릿의 `is not None` 분기가 아니라
 진위값 분기로 오판할 위험이 있어 문자열로만 넘긴다. 시간 단위는
 `total_seconds()/3600`이 48 미만이면 "시간", 이상이면 "일"로 바꾸고,
