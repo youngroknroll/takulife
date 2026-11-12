@@ -118,7 +118,7 @@
               <label for="promote-url-{{ entry.id }}">{% translate "공식 URL" %}</label>
               <input id="promote-url-{{ entry.id }}" type="url" name="official_url" placeholder="https://" required aria-describedby="promote-note-{{ entry.id }}">
             </div>
-            <p class="form-error" data-promote-error="{{ entry.id }}"></p>
+            <p class="form-error" data-promote-error="{{ entry.id }}" aria-live="polite"></p>
             <button class="form-submit-btn" type="submit">{% translate "제보하기" %}</button>
           </form>
         {% endif %}
