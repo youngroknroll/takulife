@@ -38,65 +38,6 @@
     return Promise.resolve(window.confirm(message));
   }
 
-  // ── 방문 기록 등록 ──────────────────────────────────────────────────────
-
-  function bindCreateForm() {
-    var form = document.getElementById("visit-create-form");
-    if (!form) { return; }
-    var errorEl = document.getElementById("visit-create-error");
-    var submitBtn = form.querySelector('[type="submit"]');
-
-    form.addEventListener("submit", async function (evt) {
-      evt.preventDefault();
-      clearError(errorEl);
-
-      // subject 값은 "event:<id>"(공식) 또는 "personal:<id>"(비공식)
-      var subjectValue = form.elements["subject"].value;
-      var visitedOn = form.elements["visited_on"].value;
-      var shortReview = form.elements["short_review"].value;
-
-      if (!subjectValue || !visitedOn) {
-        setError(errorEl, gettext("대상과 방문 날짜를 모두 입력해 주세요."));
-        return;
-      }
-
-      var sep = subjectValue.indexOf(":");
-      var subjectType = subjectValue.slice(0, sep);
-      var subjectId = parseInt(subjectValue.slice(sep + 1), 10);
-
-      var payload = { visited_on: visitedOn, short_review: shortReview };
-      if (subjectType === "personal") {
-        payload.personal_entry = subjectId;
-      } else {
-        payload.event = subjectId;
-      }
-
-      window.TakuAPI.setLoading(submitBtn, true);
-
-      var result = await window.TakuAPI.post("/api/visit-records/", payload);
-
-      if (result.status === 201) {
-        // 새로고침과 같은 효과를 내도록 현재 URL로 다시 이동한다.
-        window.TakuAPI.commitAndNavigate(submitBtn, window.location.href);
-        return;
-      }
-
-      window.TakuAPI.setLoading(submitBtn, false);
-
-      if (result.status === 403) {
-        handle403(result, errorEl);
-        return;
-      }
-
-      if (result.status === 0) {
-        setError(errorEl, gettext("네트워크 오류가 발생했습니다. 다시 시도해 주세요."));
-        return;
-      }
-
-      setError(errorEl, window.TakuAPI.formatError(result));
-    });
-  }
-
   // ── 기록 삭제 버튼 ────────────────────────────────────────────────
 
   function bindRecordDeletes() {
@@ -155,7 +96,6 @@
   // ── 초기화 ─────────────────────────────────────────────────────────────────
 
   function init() {
-    bindCreateForm();
     bindRecordDeletes();
   }
 
