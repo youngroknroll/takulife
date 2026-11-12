@@ -42,3 +42,12 @@ def test_로봇_배제_파일은_달력의_월_날짜_쿼리_주소를_차단한
     assert "Disallow: /*&month=\n" in body
     assert "Disallow: /*?date=\n" in body
     assert "Disallow: /*&date=\n" in body
+
+
+def test_로봇_배제_파일은_이벤트_목록의_쿼리_주소를_차단한다(client):
+    response = client.get("/robots.txt")
+
+    body = response.content.decode("utf-8")
+    assert response.status_code == 200
+    assert "Disallow: /events/?\n" in body
+    assert "Disallow: /events/" not in body.splitlines()
