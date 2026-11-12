@@ -119,3 +119,39 @@ def test_헬스_확인은_점검_간격_30분이_지나면_DB를_다시_점검�
 
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+
+
+@pytest.mark.contract
+@pytest.mark.django_db
+def test_헬스_확인은_마지막_확인_뒤_정확히_30분이_되면_DB를_다시_점검한다(
+    client, django_assert_num_queries, monkeypatch
+):
+    clock = _FakeMonotonicClock(start=1000.0)
+    monkeypatch.setattr(core_views, "time", clock)
+    client.get("/api/health/")
+
+    clock.advance(30 * 60)
+
+    with django_assert_num_queries(1):
+        response = client.get("/api/health/")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+
+@pytest.mark.contract
+@pytest.mark.django_db
+def test_헬스_확인은_마지막_확인_뒤_30분이_안_됐으면_DB_점검을_건너뛴다(
+    client, django_assert_num_queries, monkeypatch
+):
+    clock = _FakeMonotonicClock(start=1000.0)
+    monkeypatch.setattr(core_views, "time", clock)
+    client.get("/api/health/")
+
+    clock.advance(30 * 60 - 1)
+
+    with django_assert_num_queries(0):
+        response = client.get("/api/health/")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
