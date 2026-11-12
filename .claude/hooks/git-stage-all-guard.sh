@@ -6,12 +6,18 @@
 # unstaged so it cannot end up in a commit by accident).
 #
 # Blocks, regardless of working-tree state:
-#   git add -A | git add --all | git add .   (exact token match only —
+#   git add -A | --all | . | -u | --update   (exact token match only —
 #     `./archive/`, `.env`, `archive/.gitignore` are unaffected)
 #   git add ... prompt_plan.md               (any positional argument)
 #   git commit -a | --all | -am | -qa ...    (any flag token combining `a`
 #     into a single-dash bundle); the `-m` message argument is never
 #     inspected, and `--amend` alone is not a target.
+#   git commit ... prompt_plan.md            (a positional pathspec, with or
+#     without a leading `--`, folds the file's working-tree changes into the
+#     commit even if it was never staged)
+#   a global option before the subcommand (`-C <dir>`, `-c <k=v>`,
+#     `--git-dir[=]<dir>`, `--work-tree[=]<dir>`, `--no-pager`, ...) no
+#     longer hides `add`/`commit` from the checks above.
 #
 # Segments are split on `(`, `)`, and backticks (outside quotes) too, so a
 # subshell `(git add -A)` or `` `git add -A` `` is still caught.
@@ -62,8 +68,69 @@ def program_tokens(segment):
     return tokens
 
 
-STAGE_ALL_TOKENS = {"-A", "--all", "."}
+STAGE_ALL_TOKENS = {"-A", "--all", ".", "-u", "--update"}
 COMMIT_ALL_RE = re.compile(r"-[A-Za-z]*a[A-Za-z]*")
+
+# `-C <dir>`과 `-c <k=v>`처럼 서브커맨드 앞에 오는 전역 옵션을 건너뛰어야
+# `git -C . add -A`도 `add`로 인식한다.
+GLOBAL_VALUE_OPTS = {"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--super-prefix"}
+GLOBAL_FLAG_OPTS = {
+    "--no-pager", "-p", "--paginate", "-P", "--bare", "--no-replace-objects",
+    "--literal-pathspecs", "--glob-pathspecs", "--noglob-pathspecs",
+    "--icase-pathspecs", "--no-optional-locks",
+}
+
+
+def skip_git_global_options(tokens):
+    i = 0
+    while i < len(tokens):
+        tok = tokens[i]
+        if not tok.startswith("-"):
+            break
+        if tok in GLOBAL_VALUE_OPTS:
+            i += 2
+            continue
+        if any(tok.startswith(opt + "=") for opt in GLOBAL_VALUE_OPTS):
+            i += 1
+            continue
+        if tok in GLOBAL_FLAG_OPTS:
+            i += 1
+            continue
+        break
+    return tokens[i:]
+
+
+# commit의 `-m`/`-F` 등은 다음 토큰을 메시지·파일 값으로 소비하므로, 그 값을
+# prompt_plan.md를 가리키는 포지셔널 경로로 오판하지 않게 건너뛴다.
+COMMIT_VALUE_FLAGS = {
+    "-m", "--message", "-F", "--file", "-C", "--reuse-message",
+    "-c", "--reedit-message", "--author", "--date", "--template",
+}
+
+
+def commit_positionals(tokens):
+    result = []
+    i = 0
+    after_dashdash = False
+    while i < len(tokens):
+        tok = tokens[i]
+        if after_dashdash:
+            result.append(tok)
+            i += 1
+            continue
+        if tok == "--":
+            after_dashdash = True
+            i += 1
+            continue
+        if tok.startswith("-"):
+            if tok in COMMIT_VALUE_FLAGS and "=" not in tok:
+                i += 2
+            else:
+                i += 1
+            continue
+        result.append(tok)
+        i += 1
+    return result
 
 
 def split_segments(text):
@@ -104,7 +171,11 @@ def split_segments(text):
     return [s for s in segments if s.strip()]
 
 
-HEREDOC_START = re.compile(r"<<-?\s*['\"]?(\w+)['\"]?")
+#  here-string `<<<` 은 heredoc `<<` 과 전혀 다른 연산자인데, 앞의 두 `<` 만 보면
+#  `<<<` 의 뒤쪽 두 글자가 heredoc 시작으로 오인되어 다음 줄들을 본문으로
+#  삼켜 버린다. 앞뒤에 `<` 가 없을 때만 heredoc으로 인정한다
+#  (plan-bash-write-guard.sh와 동일한 수정).
+HEREDOC_START = re.compile(r"(?<!<)<<-?(?!<)\s*['\"]?(\w+)['\"]?")
 
 
 def extract_heredocs(text):
@@ -146,12 +217,13 @@ def scan_segments(text, hits):
         prog = tokens[0].rsplit("/", 1)[-1]
         if prog != "git":
             continue
-        sub = tokens[1] if len(tokens) > 1 else ""
-        rest = tokens[2:]
+        after_global = skip_git_global_options(tokens[1:])
+        sub = after_global[0] if after_global else ""
+        rest = after_global[1:]
 
         if sub == "add":
             if any(t in STAGE_ALL_TOKENS for t in rest):
-                hits.append(("git add -A/--all/.", seg.strip()))
+                hits.append(("git add -A/--all/./-u/--update", seg.strip()))
             positionals = [t for t in rest if not t.startswith("-")]
             if any(basename(t) == TARGET for t in positionals):
                 hits.append(("git add prompt_plan.md", seg.strip()))
@@ -165,6 +237,8 @@ def scan_segments(text, hits):
                     if t == "-a" or COMMIT_ALL_RE.fullmatch(t):
                         hits.append(("git commit -a", seg.strip()))
                         break
+            if any(basename(t) == TARGET for t in commit_positionals(rest)):
+                hits.append(("git commit prompt_plan.md", seg.strip()))
 
 
 hits = []

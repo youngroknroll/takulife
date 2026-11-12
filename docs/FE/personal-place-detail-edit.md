@@ -63,7 +63,7 @@ Frontend Review Evidence이며, 이것 없이 다시 구현하면 게이트를 �
 | 2 | `1.5px` → **`2px solid var(--text)`** | 저장소에 1.5px이 없고 브라우저가 1px로 반올림해 의도한 두께가 안 나온다 |
 | 3 | 모바일 고정 바 = **`＋ 방문 기록 남기기` 단독** | 이 화면엔 핵심 루프 CTA가 있다. `수정`·`삭제`는 인플로우 |
 | 4 | **수정 화면에도 삭제를 둔다** | 시안은 침묵하지만 `collection_edit`·`visit_edit` 관례. 침묵을 배제로 읽지 않는다 |
-| 5 | 모바일에서 **`취소`를 숨기지 않는다** | `visit_edit.css`는 숨기지만 그 페이지만의 선례. 시안이 명시적으로 둘 다 요구 |
+| 5 | 모바일에서 **`취소`를 숨기지 않는다** | `archive_visit_edit.css`는 숨기지만 그 페이지만의 선례. 시안이 명시적으로 둘 다 요구 |
 | 6 | 안전 여백 **`6rem`** | 6파일이 6rem, 2파일이 5rem. 다수 관례를 따른다 |
 | 7 | 구분선은 `personal_create.html`의 `<h2>` 패턴 | 등록↔수정 시각 일치. `collection_edit`의 뱃지형 divider 금지 |
 | 8 | 카테고리 칩 6개 = 시안·저장소 **일치**, 변경 없음 | `core/vocab.py::PERSONAL_ENTRY_CATEGORY_SUGGESTIONS` |

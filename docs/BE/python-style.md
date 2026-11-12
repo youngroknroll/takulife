@@ -1,7 +1,7 @@
 # Python 스타일 가이드 적용 기록
 
-이 문서는 `AGENTS.md` "Python Style Guide" 절의 근거와 측정을 보관한다. 규칙 자체는
-`AGENTS.md`가 정본이고 여기에는 두지 않는다. 트랙 48(2026-10-29)에서 도입했다.
+이 문서는 `AGENTS.md` "Python Style Guide" 절의 근거와 측정을 보관한다. 규칙의 정본은
+`docs/BE/python-conventions.md`이고 여기에는 두지 않는다. 트랙 48(2026-10-29)에서 도입했다.
 
 ## 목적
 

@@ -116,6 +116,7 @@ def test_시스템_오류_요약은_상위_목록을_limit_개수로_자른다()
 
 
 @pytest.mark.django_db
+@pytest.mark.contract
 def test_시스템_오류_요약_쿼리_수는_묶음_유무와_무관하게_고정이다(django_assert_num_queries):
     from core.error_groups import system_error_summary
     from core.models import ErrorGroup

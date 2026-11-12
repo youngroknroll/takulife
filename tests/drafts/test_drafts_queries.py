@@ -685,6 +685,7 @@ class TestRecentDiscoveryRuns:
 
         assert all_reasons <= set(EVENT_OUTCOME_REASON_LABELS.keys())
 
+    @pytest.mark.contract
     def test_쿼리_수가_실행_건수와_무관하게_고정된다(self, django_assert_num_queries):
         """실행 3건 각각 후보·드래프트·결과 목록을 갖고 있어도 N+1 없이 1쿼리로
         끝나야 한다 — annotate 집계 결과와 event_outcomes JSON은 같은 행에서

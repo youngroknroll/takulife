@@ -345,6 +345,8 @@ PaaS의 ENTRYPOINT 우회 기능으로 등록하고, **등록 직후 반드시 �
 - **보장 범위**: 정상 종료·파이썬 예외·gunicorn 워커 타임아웃(기본 120초, `GUNICORN_TIMEOUT` `[코드 docker/entrypoint.sh]`)의
   SIGABRT 종료에서는 잠금이 풀린다. SIGKILL 뒤에는 TTL(600초 `[코드]`)까지
   잠금이 남는다.
+- 타임아웃 전후 요청이 실제로 들어왔는지는 같은 Render stdout 콘솔의 접근
+  로그 줄로도 확인할 수 있다(포맷·주의 사항은 §9 「접근 로그 읽는 법」 참고).
 - 잠금이 남았다고 의심되면 수동으로 해제한다.
   ```bash
   uv run python manage.py shell -c "from django.core.cache import cache; cache.delete('staff-draft-discovery-run-lock')"
@@ -552,6 +554,21 @@ PaaS의 ENTRYPOINT 우회 기능으로 등록하고, **등록 직후 반드시 �
   메시지 500자)만 보여준다. 예외의 전체 스택 트레이스는 여전히 PaaS
   콘솔의 Render 로그(stdout, `django.request` 로거의 `console` 핸들러
   출력)에서 확인한다.
+- **접근 로그 읽는 법**: 요청마다 한 줄이 같은 stdout 콘솔에 남는다
+  (`docker/entrypoint.sh` `--access-logfile -`, 포맷
+  `%(h)s %(t)s "%(m)s %(U)s" %(s)s %(b)s "%(a)s"`, 트랙 55-6). 예:
+  `127.0.0.1 [12/Nov/2026:19:56:18 +0900] "GET /health/" 404 12347
+  "Python-urllib/3.9"` `[실측 2026-11-12 로컬]`. 경로(`%(U)s`)만 남기고
+  쿼리 문자열은 기록하지 않는다.
+  - **주의 1**: Render 프록시 뒤에서 `%(h)s`는 실제 사용자 IP가 아니라
+    프록시 주소다 — gunicorn의 `forwarded_allow_ips`를 설정하지 않았다
+    (allauth `ip` 레이트리밋이 같은 이유로 프록시 IP를 본다,
+    `docs/BE/security-review-2026-09-27.md` 144-145행).
+  - **주의 2(사용자 결정 2026-11-12 — 위험 수용)**: allauth 이메일 인증 키
+    (`confirm-email/<key>/`)와 비밀번호 재설정 키
+    (`password/reset/key/<uidb36>-<key>/`)는 URL 경로라 접근 로그에 그대로
+    남는다. 로그를 외부로 내보내거나 공유하지 말 것. 헬스체크 요청도
+    로그에 쌓인다(Render 헬스체크 주기는 미확인).
 - **바로 아래 「저장소」 패널(트랙 37)**: 「최근 14일 처리량」 다음에 오는
   DB 용량 요약이다 — 전체 크기와 상위 5개 테이블 크기를 보여준다.
   Postgres가 아니거나 조회에 실패하면 헤더는 유지한 채 측정 불가 문구만

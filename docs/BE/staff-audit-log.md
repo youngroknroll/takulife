@@ -17,11 +17,11 @@
 `drafts/services.py`의 `create_draft_from_url`을 `prepare_draft_from_url`
 (`:126`, 네트워크·추출, DB 접근 0)과 `persist_prepared_draft`(`:191`, DB 저장 +
 `IntegrityError`→`DraftCreationDuplicateError`, 내부 `transaction.atomic()`)로
-나눴다. `staff/views/draft_api.py`의 `create()`(`:85`)는 `prepare_draft_from_url`을
+나눴다. `staff/views/draft_api.py`의 `create()`(`:88`)는 `prepare_draft_from_url`을
 트랜잭션 밖에서 먼저 호출하고, 성공하면 `with transaction.atomic():` 블록
-(`:111`) 안에서 `persist_prepared_draft` + `StaffActionLog.objects.create(...)`
-(`:113`)를 함께 실행한다. `update()`(`:163`)도 같은 패턴으로 `with
-transaction.atomic():`(`:169`) 안에서 `update_draft` + 로그 기록을 묶는다.
+(`:114`) 안에서 `persist_prepared_draft` + `StaffActionLog.objects.create(...)`
+(`:116`)를 함께 실행한다. `update()`(`:168`)도 같은 패턴으로 `with
+transaction.atomic():`(`:174`) 안에서 `update_draft` + 로그 기록을 묶는다.
 `fetch_html`이 최대 4홉·홉당 5.0초 [코드]로 DB 커넥션을 오래 붙잡지 않게
 막는 경계다.
 
@@ -43,7 +43,7 @@ API가 아닌 다른 곳에서 부르면 `StaffActionLog`가 남지 않는다. �
 추적하지 않는다.
 
 - `drafts/candidate_validation.py:352`(`decide_and_create_candidate` 호출) —
-  실제 생성 호출은 `drafts/candidate_intake.py:70` — 후보 URL 자동 검증
+  실제 생성 호출은 `drafts/candidate_intake.py:73` — 후보 URL 자동 검증
   러너가 제출.
 - `drafts/management/commands/discover_drafts.py:191` — 관리 명령이 소스를
   크롤링해 자동 생성(actor 없음).

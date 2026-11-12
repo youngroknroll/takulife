@@ -170,14 +170,17 @@
     return row ? row.dataset.draftId : null;
   }
 
-  function announce(row) {
+  // outcomeText가 있으면(판정 결과 직후 이동) "결과 절. 선택됨 절" 한 문장으로
+  // 합쳐 한 번만 대입한다 — 두 번 쓰면 스크린리더가 먼저 쓴 쪽을 잘라먹는다.
+  function announce(row, outcomeText) {
     var live = document.getElementById("queue-inspector-live");
     if (!live) {
       return;
     }
     var titleEl = row.querySelector(".queue-title");
     var title = titleEl ? titleEl.textContent : "";
-    live.textContent = "#" + row.dataset.draftId + " " + title + " 선택됨";
+    var nextText = "#" + row.dataset.draftId + " " + title + " 선택됨";
+    live.textContent = outcomeText ? outcomeText + ". " + nextText : nextText;
   }
 
   // 판정 결과를 "선택됨"과 구분해 알린다. 같은 문구를 재사용하면 방금 반려한
@@ -223,7 +226,7 @@
     var targetRow = getRowById(draftId);
     if (targetRow) {
       if (opts.announce !== false) {
-        announce(targetRow);
+        announce(targetRow, opts.outcome);
       }
       if (opts.focus) {
         var openBtn = targetRow.querySelector("[data-queue-row-open]");
@@ -234,7 +237,10 @@
     }
   }
 
-  function showEmptyState() {
+  // outcomeText가 있으면 결과 절을 먼저 붙인다. setCurrentRow와 같은 순서로
+  // 텍스트를 먼저 대입한 뒤 포커스를 옮긴다 — 순서가 반대면 스크린리더가
+  // 포커스 이동 직후의 빈 문구를 먼저 읽어버린다.
+  function showEmptyState(outcomeText) {
     document.querySelectorAll("[data-queue-row]").forEach(function (row) {
       row.classList.remove("is-current");
     });
@@ -243,15 +249,16 @@
       .forEach(function (panel) {
         panel.hidden = true;
       });
+    var live = document.getElementById("queue-inspector-live");
+    if (live) {
+      var doneText = "이 페이지의 드래프트를 모두 처리했습니다.";
+      live.textContent = outcomeText ? outcomeText + ". " + doneText : doneText;
+    }
     var emptyEl = document.getElementById("queue-inspector-empty");
     if (emptyEl) {
       emptyEl.hidden = false;
       // 판정 후 포커스를 body로 잃지 않고 빈 상태 문구로 보낸다(D6).
       emptyEl.focus();
-    }
-    var live = document.getElementById("queue-inspector-live");
-    if (live) {
-      live.textContent = "이 페이지의 드래프트를 모두 처리했습니다.";
     }
   }
 
@@ -279,16 +286,19 @@
 
   // 행이 판정으로 사라진 뒤 다음(없으면 이전) 행으로 넘어간다. 아무 행도
   // 남지 않으면 빈 상태 문구로 포커스를 보낸다 — <body>로 잃지 않는다(D6).
-  function advanceAfterRemoval(removedIndex, remainingRows) {
+  function advanceAfterRemoval(removedIndex, remainingRows, outcomeText) {
     if (remainingRows.length === 0) {
-      showEmptyState();
+      showEmptyState(outcomeText);
       return;
     }
     var nextIndex = Math.min(removedIndex, remainingRows.length - 1);
-    setCurrentRow(remainingRows[nextIndex].dataset.draftId, { focus: true });
+    setCurrentRow(remainingRows[nextIndex].dataset.draftId, {
+      focus: true,
+      outcome: outcomeText,
+    });
   }
 
-  function removeDraftRow(draftId) {
+  function removeDraftRow(draftId, outcomeText) {
     var rows = getRows();
     var index = rows.findIndex(function (row) {
       return row.dataset.draftId === String(draftId);
@@ -305,7 +315,7 @@
     }
 
     if (wasCurrent) {
-      advanceAfterRemoval(index, getRows());
+      advanceAfterRemoval(index, getRows(), outcomeText);
     }
   }
 
@@ -332,10 +342,12 @@
     var checkbox = document.querySelector(
       '[data-draft-select][data-draft-id="' + draftId + '"]'
     );
+    var stateLabel = STATUS_STATE_LABEL[targetStatus] || targetLabel;
 
     if (selectedStatus === "pending") {
       // 검토 대기 탭에서는 판정된 행이 더 이상 이 목록에 속하지 않는다.
-      removeDraftRow(draftId);
+      // 결과 절을 다음/빈 상태 절과 합쳐 한 번만 안내한다.
+      removeDraftRow(draftId, "#" + draftId + " " + stateLabel);
       return;
     }
 
@@ -343,7 +355,6 @@
     // 헤더의 배지가 따로 있어 둘 다 갱신하고, 더 이상 대기 상태가 아니므로
     // 승인/반려 버튼도 지운다(되돌릴 수 없는 판정이라 다시 누를 수 없어야
     // 한다).
-    var stateLabel = STATUS_STATE_LABEL[targetStatus] || targetLabel;
     var chip = document.querySelector(
       '[data-queue-row][data-draft-id="' + draftId + '"] [data-draft-status-chip]'
     );
@@ -521,6 +532,7 @@
                   errorEl.hidden = false;
                   errorEl.focus();
                 }
+                updateToolbarState();
                 return;
               }
 
@@ -538,6 +550,7 @@
               // bulk-approve/reject와 같은 이 분기를 공유한다(D7).
               void scope;
               applySucceededDraft(draftId, selectedStatus, targetStatus, targetLabel);
+              updateToolbarState();
             }
           );
         });

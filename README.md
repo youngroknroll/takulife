@@ -44,7 +44,7 @@
 | 인증 | django-allauth, django-axes | 이메일 인증, Google 로그인, 5회 실패 시 1시간 IP 잠금을 직접 구현하지 않았다 |
 | 공유 캐시 | PostgreSQL `DatabaseCache` | 요청 제한·로그인 잠금 카운터를 Gunicorn 워커 간에 공유해야 했고, Redis를 추가하지 않고 DB를 썼다 |
 | 프런트엔드 | 순수 CSS(OOCSS/BEM), 바닐라 JS | SSR 중심이라 빌드 체인 없이 유지비를 낮췄다 |
-| 테스트 | pytest, pytest-playwright | 백엔드 테스트가 기본이고 여정 e2e 10건은 `-m e2e`로만 실행한다 |
+| 테스트 | pytest, pytest-xdist, pytest-playwright | 백엔드 전체 회귀는 `-n auto`로 병렬 실행한다(트랙 49, PR #407, 2026-10-30). 여정 e2e 10건은 `-m e2e`로만 직렬 실행한다 |
 | 인프라 | Docker, GitHub Actions, Render, Supabase, Cloudflare R2 | CI에서 빌드한 이미지를 실제로 기동해 `/api/health/`를 폴링하는 스모크를 돌린다 |
 | 패키징 | uv | lockfile 기반 재현 환경, 빠른 CI 설치 |
 
@@ -92,7 +92,7 @@ flowchart TD
 
 의존 방향은 문서에만 적어 두면 지켜지지 않는다. `tests/core/test_architecture_boundaries.py`가 파일시스템을 순회해 정적 import와 `importlib.import_module`·`__import__`까지 스캔한다. 처음에는 검사 대상 모듈을 손으로 적은 목록으로 관리했다. 그런데 목록에 없는 모듈 22건에 금지 임포트를 넣어 봤더니 전부 통과했다. 목록을 손으로 유지하는 한 같은 누락이 반복될 것이라 보고 파일시스템 스캔으로 바꿨고, 스캔 대상이 0개면 조용히 통과하지 않고 실패하게 했다.
 
-테스트가 위반을 실제로 잡는지는 금지 임포트를 일부러 넣어 확인했다. 전환 후 뮤테이션 왕복 26회가 전부 Red였다. 이동 자체는 뷰 7파일이 바이트 단위로 동일하고 라우트 175건의 순회 순서가 바뀌지 않았음을 확인했다. `core` 팬아웃은 21→0, 순환은 3쌍→0이 됐다 `[실측 2026-08-02]`. 경계 테스트는 39건이다 `[실측 rg 2026-10-28]`.
+테스트가 위반을 실제로 잡는지는 금지 임포트를 일부러 넣어 확인했다. 전환 후 뮤테이션 왕복 26회가 전부 Red였다. 이동 자체는 뷰 7파일이 바이트 단위로 동일하고 라우트 175건의 순회 순서가 바뀌지 않았음을 확인했다. `core` 팬아웃은 21→0, 순환은 3쌍→0이 됐다 `[실측 2026-08-02]`. 경계 테스트는 테스트 함수 41개, 수집 기준 64건이다 `[실측 rg -c "def test_" tests/core/test_architecture_boundaries.py / uv run pytest --collect-only -q, 2026-11-12]`.
 
 이 가드는 import를 통한 결합만 본다. 변수나 f-string 인자를 쓰는 동적 임포트, 시그널처럼 import 없는 결합은 잡지 못한다. `web/views` 안의 서브모듈 단방향 규칙(`collection`은 `archive`를 임포트하지 않고 `_helpers`는 어떤 형제도 임포트하지 않는다)은 처음에 문서로만 지키다가 2026-10-29 별도 계약 테스트 `tests/core/test_web_views_package_boundaries.py`로 옮겼다. 이 테스트도 패키지 퍼사드를 거친 임포트와 동적 임포트는 잡지 못한다. [web/views 계약](docs/BE/web-views-package.md), [계약 가드 범위](docs/BE/contract-guards.md)
 
@@ -110,7 +110,7 @@ flowchart TD
 
 더 중요한 것은 이 과정에서 드러난 결함이다. 전역 캐시 초기화를 없애자 e2e의 연속 로그인 시나리오가 429로 실패했다. django-allauth 기본 로그인 rate limit이 성공한 로그인까지 세고 있었고, 매 테스트 캐시를 비우던 픽스처가 그 동작을 가려 왔다. 운영 설정은 그대로 두고 `tests/e2e/conftest.py`에 캐시 격리 픽스처를 두어 해소했으며, 이 동작을 고정하는 회귀 테스트를 `tests/auth/test_auth_rate_limit.py`에 추가했다.
 
-개선 효과는 2026-07-18의 같은 스위트 비교만 유효하다. 스위트는 그 뒤 4,284개로 늘어 2026-10-28에는 149.07초였다 `[실측 2026-10-28]`. 그래서 2차로 다시 쟀는데, 가장 느린 단일 테스트가 2.07초이고 픽스처·DB 셋업 비용도 작아 시간이 테스트 본문에 고르게 퍼져 있었다. 이번에는 줄일 작업량이 남지 않아 병렬 실행만 남았다. pytest-xdist 4워커로 돌리면 53.87초이고 전 테스트가 병렬에서도 통과했다 `[실측 2026-10-28, 8코어]`. 다만 새 테스트 패키지 도입은 별도 승인이 필요해 아직 반영하지 않았다. [상세](docs/BE/test-suite-speed.md)
+개선 효과는 2026-07-18의 같은 스위트 비교만 유효하다. 스위트는 그 뒤 4,284개로 늘어 2026-10-28에는 149.07초였다 `[실측 2026-10-28]`. 그래서 2차로 다시 쟀는데, 가장 느린 단일 테스트가 2.07초이고 픽스처·DB 셋업 비용도 작아 시간이 테스트 본문에 고르게 퍼져 있었다. 이번에는 줄일 작업량이 남지 않아 병렬 실행만 남았다. pytest-xdist 4워커로 돌리면 53.87초이고 전 테스트가 병렬에서도 통과했다 `[실측 2026-10-28, 8코어]`. 트랙 49(PR #407, 2026-10-30)에서 도입을 완료했다 — `pyproject.toml` dev 그룹에 `pytest-xdist`를 추가하고 CI `test` 잡이 `uv run pytest -q -n auto`를 쓴다. 도입 뒤 직렬 134.77초 → `-n auto` 41.72~44.14초였다 `[실측 2026-10-30]`. [상세](docs/BE/test-suite-speed.md)
 
 ## 5. 배포·운영 및 검증
 
@@ -122,7 +122,7 @@ flowchart TD
 | CI | `test`(PostgreSQL 서비스 + `check --deploy`), `lint`(ruff 검사·서식, Google 스타일 기준 + 프로젝트 예외), `e2e`(관측, non-blocking), `audit`(pip-audit), `docker`(이미지 실기동 후 `/api/health/` 폴링) |
 | 보안 | HSTS·secure 쿠키를 env로 전환, `TRUSTED_PROXY_COUNT`로 프록시 뒤 실제 IP 판별, 스로틀 12스코프, 공개 쓰기 API는 `/api/client-errors/` 하나 |
 | 상태 확인 | `/api/health/`가 DB 연결 실패 시 503, 처리되지 않은 500과 프론트 오류를 지문으로 묶어 대시보드에 표시 |
-| 테스트 | 백엔드 4,297 passed / 152.02초 `[실측 2026-10-29, main ce27ac2c]`, e2e 10 passed `[실측 2026-10-27]`. 테스트 작성 뒤 코드를 깨서 Red를 확인하는 뮤테이션 절차를 상시 적용한다 |
+| 테스트 | 백엔드 4,301 passed / 10 deselected, 직렬 134.77초·`-n auto` 41.72~44.14초 `[실측 2026-10-30, main 73900041]`, e2e 10 passed `[실측 2026-10-27]`. 테스트 작성 뒤 코드를 깨서 Red를 확인하는 뮤테이션 절차를 상시 적용한다 |
 
 운영하면서 찾아 고친 문제도 있다. 2026-09-27 보안 검토에서는 스태프가 입력한 `official_url`에 `javascript:` 스킴이 저장돼 공개 상세에서 실행될 수 있는 저장형 XSS(F1)와, allauth의 IP 기준 rate limit이 프록시 뒤에서 모든 사용자를 한 버킷으로 묶는 문제(F2)를 찾았다. http(s)만 허용하는 스킴 검증과 `ALLAUTH_TRUSTED_PROXY_COUNT` 배선으로 수정했다(PR #388, 2026-10-04). [검토 기록](docs/BE/security-review-2026-09-27.md)
 

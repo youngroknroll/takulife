@@ -142,7 +142,7 @@ class UserEventStatusQuerySerializer(serializers.Serializer):
     status = serializers.ChoiceField(required=False, choices=UserEventStatus.Status.choices)
 
 
-class VisitRecordSerializer(serializers.ModelSerializer):
+class VisitRecordSerializer(_SubjectScopedPersonalEntryMixin, serializers.ModelSerializer):
     # 대상은 게시된 event와 본인 소유 personal_entry 중 정확히 하나여야 한다.
     event = serializers.PrimaryKeyRelatedField(
         queryset=Event.objects.published(), required=False, allow_null=True
@@ -165,27 +165,6 @@ class VisitRecordSerializer(serializers.ModelSerializer):
             "client_token",
         ]
         read_only_fields = ["id"]
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # personal_entry를 요청자 소유로 한정해 다른 사람의 비공개 항목에
-        # 연결하지 못하게 한다.
-        request = self.context.get("request")
-        if request is not None and request.user.is_authenticated:
-            self.fields["personal_entry"].queryset = PersonalEntry.objects.filter(user=request.user)
-
-    def validate(self, attrs):
-        event = attrs.get("event")
-        personal_entry = attrs.get("personal_entry")
-        if bool(event) == bool(personal_entry):
-            raise serializers.ValidationError(
-                gettext("event 또는 personal_entry 중 정확히 하나를 지정해야 합니다.")
-            )
-        if personal_entry is not None and personal_entry.kind != PersonalEntry.Kind.PLACE:
-            raise serializers.ValidationError(
-                gettext("이 personal_entry는 이 작업의 대상이 될 수 없습니다.")
-            )
-        return attrs
 
 
 class VisitRecordUpdateSerializer(serializers.ModelSerializer):

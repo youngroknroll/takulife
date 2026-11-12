@@ -480,7 +480,7 @@ def test_수정_중_동시에_삭제되면_404가_된다(client, make_user, make
     archive.views가 임포트한 update_collection_item 참조를 몽키패치해
     시뮬레이션하는데, 그 패치 지점이 여기에만 존재하기 때문이다
     (test_visit_records_api.py의
-    test_upload_photo_race_with_concurrent_delete_returns_404 과 동일한
+    test_사진_업로드_중_방문_기록이_동시에_삭제되면_404가_반환된다 과 동일한
     구조). 이 경합에서 update_collection_item이 실제로
     CollectionItem.DoesNotExist를 던진다는 서비스 계층 사실은
     tests/archive/test_archive_services.py 에서 별도로 다루며, 그 파일은

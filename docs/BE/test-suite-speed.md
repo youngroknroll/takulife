@@ -36,7 +36,7 @@
 
 | 조치 | 내용 | 근거 |
 |---|---|---|
-| 테스트 전용 설정 | `config/settings_test.py`가 운영 설정을 그대로 불러온 뒤 `PASSWORD_HASHERS`만 MD5로 덮어쓴다. `CACHES`는 일부러 덮어쓰지 않아 `DatabaseCache` 계약을 운영과 동일하게 유지한다 | `config/settings_test.py` `[코드]` |
+| 테스트 전용 설정 | `config/settings_test.py`가 운영 설정을 그대로 불러온 뒤 `PASSWORD_HASHERS`를 MD5로, `DRAFT_DISCOVERY_ENABLED`를 `False`로 덮어쓴다. `CACHES`는 일부러 덮어쓰지 않아 `DatabaseCache` 계약을 운영과 동일하게 유지한다 | `config/settings_test.py` `[코드]` |
 | 설정 경계 가드 | `manage.py`·`config/wsgi.py`·CI·Docker가 테스트 설정을 참조하지 못하게 계약 테스트로 고정하고, `.dockerignore`로 이미지에서 제외한다 | `tests/core/test_test_settings_boundary.py` `[코드]` |
 | 픽스처 축소 | `clear_cache`의 autouse 해제, `make_user` 기본 비밀번호를 unusable로 바꿔 인증과 무관한 테스트가 해시 비용을 내지 않게 함 | 커밋 `37260451` 본문 `[코드]` |
 | 계층 marker | `unit`·`domain`·`web`·`contract`·`slow`·`e2e` 여섯 marker를 등록하고 `--strict-markers`로 오탈자를 막는다. 기본 실행은 `-m "not e2e"` | `pytest.ini` `[코드]` |
@@ -63,7 +63,7 @@
 - 테스트를 작성한 뒤 코드를 일부러 깨서(뮤테이션) 실제로 Red가 되는지
   확인하는 절차를 상시 적용한다. 반복 실패 유형과 판정 규칙은
   `docs/BE/contract-guards.md` "이 저장소에서 반복되는 실패 유형"에 있다.
-- CI `test` 잡은 PostgreSQL 서비스 컨테이너에서 `uv run pytest -q`를 실행한다.
+- CI `test` 잡은 PostgreSQL 서비스 컨테이너에서 `uv run pytest -q -n auto`를 실행한다.
   e2e 여정 10건은 별도 `e2e` 잡에서 `-m e2e`로만 실행하며 관측 모드
   (`continue-on-error`)다(`.github/workflows/ci.yml` `[코드]`).
 
@@ -71,8 +71,8 @@
 
 - 2026-10-27 기준 152초는 다시 120초를 넘었다. 시각 의존 테스트 2곳은 트랙
   45에서 고쳤지만(`docs/backlog.md` K절), 실행시간 자체의 2차 개선은
-  2026-10-28에 측정만 했다(§7). 단일 병목은 없고 병렬화만 남았으며 도입은
-  사용자 결정 대기다.
+  2026-10-28에 측정만 했다(§7). 단일 병목은 없고 병렬화만 남아 있었으며,
+  2026-10-30에 도입을 완료했다(§8).
 - marker 분류는 선언 기준이며 자동 검증이 없다. 잘못 분류된 테스트가 있어도
   기계가 잡지 못한다.
 

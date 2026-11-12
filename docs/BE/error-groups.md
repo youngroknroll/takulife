@@ -14,7 +14,8 @@
   `blank=True`), `first_seen`·`last_seen`(`last_seen`만 `db_index=True`),
   `count`. 필드 상한을 모두 채운 500행 기준 실측 테이블 크기는
   **819,200바이트**(`pg_total_relation_size`)이고, 같은 조건에서 트랜잭션을
-  롤백한 힙만의 크기는 **524,288바이트** `[실측 curl+psql, track36-evidence.md]`.
+  롤백한 힙만의 크기는 **524,288바이트** `[실측 curl+psql, 스크래치 산출물
+  track36-evidence.md, 저장소에 보존되지 않음]`.
   출처별 상한(아래)이 있어 이 크기를 넘지 않는다.
 - `core/error_groups.py`의 `record_error(*, source, error_type, location,
   message)`가 유일한 기록 진입점이다(`core/error_groups.py:112-148`). HTTP나
@@ -74,8 +75,8 @@
 ## 핸들러(`core/logging.py`)
 
 - `ErrorGroupHandler`(`core/logging.py:10-43`)는 `django.request` 로거에만
-  붙는다(`LOGGING`, `config/settings.py:654-690`, `"django.request"` 항목은
-  `:689-693`의 `handlers: ["console", "error_groups"]`, `level: "ERROR"`) —
+  붙는다(`LOGGING`, `config/settings.py:654-689`, `"django.request"` 항목은
+  `:683-687`의 `handlers: ["console", "error_groups"]`, `level: "ERROR"`) —
   root에는
   붙이지 않는다. 다른 경로의 의도된 WARNING이 오류 묶음으로 새는 것을
   막기 위해서다.
@@ -185,7 +186,7 @@
   전체 건수, 24시간·7일 창 안 `last_seen` 묶음 수, 출처별 건수, 상위
   5개(`last_seen` 내림차순)를 계산한다. "종" 표기(`templates/staff/
   dashboard.html:363`)는 **묶음 수**이지 발생 횟수 합이 아니다.
-- `staff/views/__init__.py:288`가 이 결과를 `system_errors` 컨텍스트로
+- `staff/views/__init__.py:293`가 이 결과를 `system_errors` 컨텍스트로
   대시보드에 넘긴다. 템플릿(`templates/staff/dashboard.html:354-380`)은
   Django 기본 자동 이스케이프만 쓴다 — `|safe`·`innerHTML` 없음(SRR F6),
   `error_type`에 `<script>`가 들어와도 텍스트로 렌더된다.
@@ -211,7 +212,7 @@
 
 ## Evidence
 
-`[실측 track36-evidence.md, 2026-09-18]` 뮤테이션 검출: 정제 7종(제어
+`[실측 스크래치 산출물 track36-evidence.md, 저장소에 보존되지 않음, 2026-09-18]` 뮤테이션 검출: 정제 7종(제어
 문자·시크릿·빈 시크릿·이메일·URL·절단·DB 비밀번호), 세이브포인트 제거·
 `IntegrityError` 재시도 제거·출처 필터 제거, 핸들러 DB 오류 건너뜀
 제거·settings 배선 제거·`unresolved`/`exc_info` 분기, 수집 API 허용

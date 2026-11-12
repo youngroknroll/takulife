@@ -31,7 +31,7 @@ cleanup. Anything that must not be lost belongs here.
 - Event operations criteria: `docs/event-operations-criteria.md`
 - Backend technical records: `docs/BE/` (and `docs/DB/`, `docs/FE/` as they are
   needed) — a record that states a guardrail belongs here, not in `.docs/`
-- Product direction: the Binding Product Decisions section in `CLAUDE.md`
+- Product direction: the Binding Product Decisions section below in this guide
 
 Working notes (`.docs/`). **This tree is git-ignored.** Treat every file in it as
 disposable: a file that is missing is routine housekeeping, not a lost artifact,
@@ -75,9 +75,11 @@ from older projects.
 
 ## Binding Product Decisions
 
-The following decisions summarize the current approved direction. The linked
-proposal and re-review remain the detailed sources. These are target contracts,
-not claims that the current application already implements them.
+The following decisions summarize the current approved direction. This
+section is the detailed source for product direction; `CLAUDE.md` carries only
+a short summary that points back here and is not the canonical copy. These are
+target contracts, not claims that the current application already implements
+them.
 
 ### Core User Loop
 
@@ -248,6 +250,14 @@ sales, payment, shipping, escrow, or marketplace guarantees.
    - Implementers must not expand scope, silently repair unrelated issues, or
      reverse user changes.
    - Larger improvements belong in a Deferred Refactoring Note unless approved.
+   - Exception: a small defect of the same kind as the track's approved work,
+     found while doing that work, is not an unrelated issue to repair
+     silently. Report the finding first, then fix it inside the same track
+     and the same pull request before merge. Route it to a Deferred
+     Refactoring Note instead only when it is a different kind of work or
+     exceeds the track's scale (standing user decision, 2026-08-25 —
+     avoiding work accumulation outranks strict scope minimalism here, and
+     the report-first step keeps this compatible with this directive).
 
 3. **Role activation is risk-based.**
    - The 11 roles form a role library, not a mandatory committee.
@@ -296,9 +306,10 @@ before any of it is written or spoken.
    (`python3 -c`, `date`), never in prose.
 4. Paths, file names, test locations, and section numbers are written only
    after an existence check (`ls`, `rg`, `sed -n`).
-5. Before recommending a change, search `prompt_plan.md` Deferred sections and
-   the memory index for a recorded user hold on that subject; a recorded hold
-   is not re-raised as a recommendation without the user's re-approval.
+5. Before recommending a change, search `prompt_plan.md` Deferred sections,
+   the Deferred sections of closed tracks under `docs/plan-archive/`, and the
+   memory index for a recorded user hold on that subject; a recorded hold is
+   not re-raised as a recommendation without the user's re-approval.
 6. A subagent's factual claim (file:line, count, "X is absent") is unverified
    until the orchestrator re-checks it against source; conflicting reviewer
    claims are settled by measurement, not by picking one. A worker's "done"
@@ -314,6 +325,11 @@ before any of it is written or spoken.
 9. Parallel workers get disjoint file sets. While a worker is editing a module
    every test imports (`config/settings.py`, `config/urls.py`, models), the
    orchestrator does not start pytest.
+10. Test execution and pass/fail verdicts belong to the orchestrator alone
+    (the single-runner rule): implementation and review subagents must not
+    run pytest or the regression suite, even to self-check, and must not
+    state a pass/fail verdict. They report changed files; the orchestrator
+    runs and reads the verification commands named in its own brief.
 
 A violation of these rules that a reviewer catches is recorded as a defect
 (a correction record), never treated as "the review caught it, so it was
@@ -616,6 +632,13 @@ is separately approved.
      time-ordered PR history, not a subject document, so the "no routine work
      log" rule above does not exempt it — the rolling entry is the required
      record for this file specifically.
+   - At every PR merge that closes a `prompt_plan.md` track section, cut that
+     section verbatim into `docs/plan-archive/track-<id>.md` (one section per
+     file) and commit it alongside the `docs/pr-log.md` update. The archive
+     is a fixed historical record — `docs/backlog.md` and `docs/pr-log.md`
+     stay the current-state sources, and the archived text is never edited.
+     This is the same exception to the "no routine work log" rule as the
+     pr-log rolling entry above.
    - Review-only tasks do not edit files. They report findings in chat or in a
      separately approved review artifact.
 
@@ -747,6 +770,9 @@ bound by six admission criteria; nothing else is a test target.
   6. The suite started with 8 journey files (10 tests as of 2026-10-27
      `[실측 rg -c '^def test_' tests/e2e/*.py]`); a new journey is admitted only when
      a real defect that satisfies criteria 1-2 needs it.
+- CI also runs this suite in its own `e2e` job (`.github/workflows/ci.yml`) as
+  a non-blocking observation run (`continue-on-error: true`); it does not gate
+  a merge until `docs/backlog.md` records a green streak and promotes it.
 - Do not test templates, CSS, browser JavaScript, layout, spacing, sizing,
   visual state, transition, animation, or touch-target geometry as a browser
   or end-to-end test.
@@ -781,7 +807,7 @@ suite written up front. Each entry carries at least these fields:
 | Given | State relevant to the behavior |
 | When | The one behavior under test |
 | Then | The externally observable result |
-| Verification boundary | One of `unit`, `domain`, `web`, `contract`, `slow` |
+| Verification boundary | One of `unit`, `domain`, `web`, `contract`, `slow`, `e2e` |
 | Boundary rationale | Why a higher-cost boundary is required, or why a lower boundary suffices |
 | Test name | The actual Korean pytest function name or parametrized case ID |
 | Status | `Pending`, `Red`, `Green`, `Refactored`, `Deferred` |
@@ -962,16 +988,21 @@ wiring are exempt from the backend TDD cycle.
   frontend work still follows the Backend TDD Cycle.
 - Every frontend review includes both the Web Experience Designer and Browser
   Interaction Reviewer.
+- `docs/FE/design-principles.md` is the canonical design-direction record
+  (track 50: approved token set, flat geometry, zero border-radius). Read it
+  before any new frontend visual decision.
 - The shared design-rule protocol is abolished (2026-07-22 user decision; the
   former `.docs/design-rules.md` §1-§3, since deleted). Brand contrast ratios,
   the 44px touch-target
   duty layer, and the motion pause contract are no longer compliance gates, and
   no reviewer may require a documented "user-approved exception" to build what
-  the design intent specifies. Design intent - the mock and the user's
-  instruction - is the standard. Reviewers may still note these topics as
-  information, and functional defects such as broken layout, overflow,
-  keyboard-unreachable controls, focus traps, and unreadable text remain
-  defects.
+  the design intent specifies. Design intent - `docs/FE/design-principles.md`
+  and the user's instruction - is the standard. Local design sample files used
+  during that track were deleted afterward (2026-11-05 user decision); do not
+  recreate them as the design reference. Reviewers may still note abolished
+  topics as information, and functional defects such as broken layout,
+  overflow, keyboard-unreachable controls, focus traps, and unreadable text
+  remain defects.
 - Frontend implementation requires an approved plan and a technical record
   under `docs/FE/` when it states a guardrail (working notes may stay in
   `.docs/FE/`), unless the user explicitly approves a different document
@@ -1073,25 +1104,38 @@ variable substitution) is a known, accepted gap.
 
 | File | Matcher | Enforces | Known gaps |
 |---|---|---|---|
-| `.claude/hooks/uv-only-guard.sh` | `Bash` | bare `pytest`, `pip`/`pip3`, `python -m pip`, `python(3) manage.py`, `python -m pytest` go through `uv` | segment splitting treats `&&`, `;`, `\|` inside quotes or heredoc bodies as separators too, which can false-block a later `pytest`, `pip`, or `python manage.py` word (e.g. inside a quoted `rg` pattern); a program name hidden in a variable or string is not detected |
-| `.claude/hooks/git-destructive-guard.sh` | `Bash` | blocks `git reset --hard`, `git clean -f/-d/-x`, `git checkout -- <path>`, `git checkout .`, and `git restore <path>` only on a dirty tree (by design); blocks `git stash clear` always | does not inspect a nested `bash -c` |
+| `.claude/hooks/uv-only-guard.sh` | `Bash` | bare `pytest`, `pip`/`pip3`, `python -m pip`, `python(3) manage.py`, `python -m pytest` go through `uv`; an interpreter option in front of `manage.py`/`-m pytest`/`-m pip` (`-u`, `-B`, `-X <opt>`, `-W <arg>`, combined single-dash flags) no longer hides the real program word; a version-suffixed interpreter (`python3.13`), a relative-path direct execution (`./manage.py`), and the same forms wrapped in `env [VAR=...] ...` or `time ...` are also caught | segment splitting treats `&&`, `;`, `\|` inside quotes or heredoc bodies as separators too, which can false-block a later `pytest`, `pip`, or `python manage.py` word (e.g. inside a quoted `rg` pattern); a program name hidden in a variable or string, or an option-taking `env` (`-i`, `-u NAME`) or external `time` (`/usr/bin/time -p`) wrapper, is not detected |
+| `.claude/hooks/git-destructive-guard.sh` | `Bash` | on a dirty tree: blocks `git reset --hard`, `git clean -f/-d/-x` (not `-n`/`--dry-run`), `git checkout <path>` (with or without a leading `--`; a positional with no `--` counts as a path only when it names something that exists on disk at the process's cwd — an unknown name is treated as a branch), and `git restore <path>` (not `git restore --staged`); blocks `git stash clear` always; a global option before the subcommand (`-C <dir>`, `-c <k=v>`, `--git-dir`, …) no longer hides the subcommand from these checks | a global option outside the recognized list still hides the subcommand (shared by all three `git` hooks below); the disk-exists path judgment over-blocks when a branch and a file share a name; dry-run recognition is limited to `-n`/`--dry-run` (plain or combined, e.g. `-nd`); does not inspect a nested `bash -c`; string concatenation and variable substitution are not detected |
 | `.claude/hooks/plan-overwrite-guard.sh` | `Write` | blocks overwriting `prompt_plan.md` via the Write tool | Bash-tool overwrites are closed by the Bash write guard instead |
 | `.claude/hooks/plan-number-tag-guard.sh` | `Edit\|Write` | a paragraph added to `prompt_plan.md` that carries a count with a unit (value 2 or more) must also carry a source tag (`[실측]`, `[코드]`, `[계산]`, `[문서]`, `[대시보드]`) — the Numbers In Documents rule | only fires on the Edit/Write tools (Bash writes are closed by the Bash write guard); `docs/**` coverage is deferred |
-| `.claude/hooks/plan-bash-write-guard.sh` | `Bash` | blocks Bash-tool writes to `prompt_plan.md` | does not check string concatenation, `bash -c` nesting, variable substitution, or `cp -t`/`--target-directory` argument order |
-| `.claude/hooks/git-stage-all-guard.sh` | `Bash` | blocks `git add -A`/`--all`/`.`, staging `prompt_plan.md`, and `git commit -a`/`-am` | scoped to these command shapes; `git commit --amend` and other paths are out of scope |
+| `.claude/hooks/plan-bash-write-guard.sh` | `Bash` | blocks Bash-tool writes to `prompt_plan.md`: redirection, `tee`, `cp`/`mv` (`mv` also on the source side), `sed -i`/`perl -i` (including a combined flag with `i`, e.g. `-pi`)/`awk -i inplace`, `dd of=`, `install`, a `python`/`python3`/`uv -c` write, a heredoc body handed to a shell or interpreter, `rm`/`unlink`/`git rm` (global `git` options included), and a `<<<` here-string no longer mistaken for a heredoc start that swallows the next line | string concatenation, a write hidden inside `bash -c "..."`, variable-hidden filenames, `cp -t`/`--target-directory` argument order, and a perl combined flag whose value happens to contain `i` (e.g. `-I<path>`) can over- or under-match when it also names the plan file |
+| `.claude/hooks/git-stage-all-guard.sh` | `Bash` | blocks `git add -A`/`--all`/`.`/`-u`/`--update`, staging `prompt_plan.md` by any positional argument, `git commit -a`/`-am`/`--all`, `git commit` naming `prompt_plan.md` as a positional pathspec (with or without `--`), a global option before the subcommand no longer hiding `add`/`commit`, and the same `<<<` here-string fix as the plan-bash-write guard | a global option outside the recognized list still hides the subcommand (shared with the other `git` hooks); `git commit --amend` and other command shapes are out of scope; string concatenation and variable substitution are not detected |
 | `.claude/hooks/python-style-guard.sh` | `Edit\|Write` (PostToolUse) | right after a `.py` file inside the repository is edited, runs `ruff check` and `ruff format --check` on that file and feeds violations back to the model (exit 2 = feedback, the file is not modified) | passes when ruff is missing; git-ignored, `migrations/`, and out-of-repository files are not checked |
-| `.claude/hooks/git-commit-style-guard.sh` | `Bash` | blocks a `git commit` segment when a staged `.py` file, or a `.py` named by a `git add`/`git commit <path>` in the same command, has ruff violations | checks the working-tree file (may differ from the staged content); a `.py` created and committed in the same command does not exist yet at PreToolUse time and is not checked; `bash -c` nesting and variable substitution are not detected; passes when ruff is missing |
+| `.claude/hooks/git-commit-style-guard.sh` | `Bash` | blocks a `git commit` segment when a staged `.py` file, or a `.py` named by a `git add`/`git commit <path>` in the same command, has ruff violations | checks the working-tree file (may differ from the staged content); a `.py` created and committed in the same command does not exist yet at PreToolUse time and is not checked; `bash -c` nesting and variable substitution are not detected; passes when ruff is missing; a global `git` option in front of `commit` is not recognized here the way the other three `git` hooks now recognize it |
 
 - PostToolUse hooks give feedback after the tool ran; only PreToolUse hooks block.
 - A new hook ships only after it is proven with a crafted payload set (at
   least 6 blocking cases and 6 allowed cases) and one live violation that the
-  hook actually stops.
+  hook actually stops. The 4 Bash `PreToolUse` hooks above (`uv-only`,
+  `git-destructive`, `plan-bash-write`, `git-stage-all`) now also carry that
+  payload set as a pinned contract test, 79 cases `[실측
+  tests/core/test_harness_hooks_contract.py]`; the `Write`/`Edit|Write` hooks
+  and the two ruff-backed hooks are out of scope for that test file.
 - Hooks run in a clone of this repository (`.claude/settings.json` is tracked)
   and are not applied in CI.
 - When one command trips two hooks, the harness may surface only one hook's
   message (`git add -A && echo x > prompt_plan.md` showed only the Bash write
   guard, 2026-09-28 `[실측]`); the command is still blocked.
+- `.claude/settings.json`'s `timeout` is in seconds (Claude Code hook
+  configuration reference). Whether a hook that exceeds its timeout blocks or
+  allows the tool call is not stated in that reference and is unverified here.
 - `prompt_plan.md` is edited only with the Edit tool.
+- Moving a closed section out to `docs/plan-archive/` uses the Edit tool to
+  cut the section from `prompt_plan.md` and the Write tool to create the new
+  archive file; this is not a `prompt_plan.md` overwrite. Track 55's one-time
+  bulk move of 40 closed sections used a script under explicit user
+  assignment and was verified by a SHA-256 round-trip comparison against the
+  original content.
 - Rolling a hook back means removing its entry from `.claude/settings.json`.
 
 ## Domain And Design Policies
@@ -1234,6 +1278,10 @@ Before the next task, confirm:
 
 ## Deferred Refactoring Note
 
+Use this note for an improvement that is unrelated to the current track or
+exceeds its scale. A same-kind, in-track defect follows Prime Directive 2's
+exception instead and does not go here.
+
 ```text
 Deferred Refactoring Note
 
@@ -1247,6 +1295,9 @@ Deferred Refactoring Note
 
 ## Reporting Rules
 
+- Write reports in Korean unless the task explicitly asks for another
+  language; lead with the conclusion, then the facts; and do not use analogies
+  (standing user decision, 2026-08-20).
 - State exactly what was verified and with which command.
 - State what was not verified.
 - Do not claim tests, builds, lint, browser behavior, or deployment pass without
@@ -1342,3 +1393,9 @@ Convention source: https://nohack.tistory.com/17
 - `prompt_plan.md` and other pre-existing uncommitted changes not produced by
   the current task stay unstaged; stage files explicitly, never `git add -A`
   (enforced by `.claude/hooks/git-stage-all-guard.sh`).
+- A defect found after a pull request has merged is fixed with a direct
+  commit to `main`, not a new pull request (standing user decision,
+  2026-10-21). Rolling documentation updates use the same direct-commit path:
+  the `docs/pr-log.md` entry, `docs/backlog.md` current-state edits, and the
+  `docs/plan-archive/` move described in Operating Workflow step 8. Reserve a
+  new pull request for newly approved scope.
