@@ -171,7 +171,11 @@ def split_segments(text):
     return [s for s in segments if s.strip()]
 
 
-HEREDOC_START = re.compile(r"<<-?\s*['\"]?(\w+)['\"]?")
+#  here-string `<<<` 은 heredoc `<<` 과 전혀 다른 연산자인데, 앞의 두 `<` 만 보면
+#  `<<<` 의 뒤쪽 두 글자가 heredoc 시작으로 오인되어 다음 줄들을 본문으로
+#  삼켜 버린다. 앞뒤에 `<` 가 없을 때만 heredoc으로 인정한다
+#  (plan-bash-write-guard.sh와 동일한 수정).
+HEREDOC_START = re.compile(r"(?<!<)<<-?(?!<)\s*['\"]?(\w+)['\"]?")
 
 
 def extract_heredocs(text):

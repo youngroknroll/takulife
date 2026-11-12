@@ -86,6 +86,35 @@ def program_tokens(segment):
     return tokens
 
 
+# `-C <dir>`과 `-c <k=v>`처럼 `rm` 앞에 오는 전역 옵션을 건너뛰어야
+# `git -C . rm prompt_plan.md`도 `rm`으로 인식한다(다른 git 훅과 동일한 함수).
+GLOBAL_VALUE_OPTS = {"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--super-prefix"}
+GLOBAL_FLAG_OPTS = {
+    "--no-pager", "-p", "--paginate", "-P", "--bare", "--no-replace-objects",
+    "--literal-pathspecs", "--glob-pathspecs", "--noglob-pathspecs",
+    "--icase-pathspecs", "--no-optional-locks",
+}
+
+
+def skip_git_global_options(tokens):
+    i = 0
+    while i < len(tokens):
+        tok = tokens[i]
+        if not tok.startswith("-"):
+            break
+        if tok in GLOBAL_VALUE_OPTS:
+            i += 2
+            continue
+        if any(tok.startswith(opt + "=") for opt in GLOBAL_VALUE_OPTS):
+            i += 1
+            continue
+        if tok in GLOBAL_FLAG_OPTS:
+            i += 1
+            continue
+        break
+    return tokens[i:]
+
+
 def program_name(tokens):
     return tokens[0].rsplit("/", 1)[-1] if tokens else ""
 
@@ -189,11 +218,14 @@ def scan_segments(text, hits):
             if any(is_target(t) for t in positionals):
                 hits.append((prog, seg.strip()))
 
-        # (b3) git rm: same positional check, after the `rm` subcommand.
-        elif prog == "git" and tokens[1:2] == ["rm"]:
-            positionals = [t for t in tokens[2:] if not t.startswith("-")]
-            if any(is_target(t) for t in positionals):
-                hits.append(("git rm", seg.strip()))
+        # (b3) git rm: same positional check, after skipping any global
+        # option in front of the `rm` subcommand.
+        elif prog == "git":
+            after_global = skip_git_global_options(tokens[1:])
+            if after_global[:1] == ["rm"]:
+                positionals = [t for t in after_global[1:] if not t.startswith("-")]
+                if any(is_target(t) for t in positionals):
+                    hits.append(("git rm", seg.strip()))
 
         # (c) cp/mv: last positional argument, unless retargeted with -t/--target-directory.
         # mv additionally blocks on a source positional — moving the
