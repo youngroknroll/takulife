@@ -8,6 +8,8 @@
 #   - bare `pytest ...`            -> must be `uv run pytest ...`
 #   - `python|python3 manage.py`   -> must be `uv run python manage.py ...`
 #   - `pip install`, `python -m pip`, `pip3 ...`
+#   - the same three forms with an interpreter option in front
+#     (e.g. `python3 -u manage.py check`, `python3 -X dev -m pytest -q`)
 # Allows:
 #   - anything starting with `uv`
 #   - `python3 -c '...'` one-liners (date/JSON utilities, not project runtime)
@@ -43,6 +45,27 @@ def first_tokens(segment):
         tokens.pop(0)
     return tokens
 
+# `-W <arg>`/`-X <opt>` consume the next token; other single-dash flags
+# (bare or combined, e.g. `-u`, `-OO`) take none. `-m`/`-c`/`--` end option
+# parsing, so `python3 -u manage.py` and `python3 -u -c '...'` both resolve
+# to the real program word after skipping only the interpreter options.
+VALUE_OPTS = ("-W", "-X")
+
+def skip_interpreter_options(tokens):
+    i = 0
+    while i < len(tokens):
+        tok = tokens[i]
+        if tok in ("-m", "-c", "--"):
+            break
+        if tok in VALUE_OPTS:
+            i += 2
+            continue
+        if re.fullmatch(r"-[A-Za-z]+", tok):
+            i += 1
+            continue
+        break
+    return tokens[i:]
+
 violations = []
 for seg in segments:
     tokens = first_tokens(seg)
@@ -59,6 +82,7 @@ for seg in segments:
     elif prog in ("pip", "pip3"):
         violations.append((seg.strip(), f"`{prog}`", "uv add / uv remove"))
     elif prog in ("python", "python3"):
+        rest = skip_interpreter_options(rest)
         if rest[:2] == ["-m", "pip"]:
             violations.append((seg.strip(), "`python -m pip`", "uv add / uv remove"))
         elif any(t.endswith("manage.py") for t in rest[:1]):
