@@ -65,6 +65,40 @@ UV_ONLY_CASES = [
         "python3 -X dev -m pytest -q",
         BLOCK,
     ),
+    # 신규: 버전 접미 인터프리터, 상대경로 실행, env/time으로 감싸진 형태.
+    (
+        "버전_접미_인터프리터_python3_13_manage_py도_차단된다",
+        "python3.13 manage.py check",
+        BLOCK,
+    ),
+    (
+        "상대경로_dot_슬래시_manage_py_실행도_차단된다",
+        "./manage.py check",
+        BLOCK,
+    ),
+    (
+        "env_로_감싸진_python3_manage_py도_차단된다",
+        "env FOO=1 python3 manage.py check",
+        BLOCK,
+    ),
+    (
+        "time으로_감싸진_python_manage_py도_차단된다",
+        "time python manage.py check",
+        BLOCK,
+    ),
+    # 허용 회귀 확인: uv run 뒤에는 -m pytest도, manage.py 직접 실행도
+    # 여전히 uv 경로이므로 허용된다(이미 있는 "uv run python manage.py" 케이스는
+    # 아래 허용 목록에 그대로 둔다).
+    (
+        "uv_run_python_dash_m_pytest는_허용된다",
+        "uv run python -m pytest",
+        ALLOW,
+    ),
+    (
+        "uv_run_상대경로_manage_py_직접_실행은_허용된다",
+        "uv run ./manage.py check",
+        ALLOW,
+    ),
     # 허용되어야 하는 형태.
     ("uv_run_pytest는_허용된다", "uv run pytest -q", ALLOW),
     ("uv_run_python_manage_py는_허용된다", "uv run python manage.py check", ALLOW),

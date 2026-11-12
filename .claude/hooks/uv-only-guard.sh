@@ -10,8 +10,12 @@
 #   - `pip install`, `python -m pip`, `pip3 ...`
 #   - the same three forms with an interpreter option in front
 #     (e.g. `python3 -u manage.py check`, `python3 -X dev -m pytest -q`)
+#   - a version-suffixed interpreter (`python3.13 manage.py check`), a
+#     relative-path direct execution (`./manage.py check`), or the same
+#     forms wrapped in `env [VAR=...] ...` / `time ...`
 # Allows:
-#   - anything starting with `uv`
+#   - anything starting with `uv` (including `uv run ./manage.py ...` and
+#     `uv run python manage.py ...`)
 #   - `python3 -c '...'` one-liners (date/JSON utilities, not project runtime)
 #   - commands where the python/pytest word is an argument, not the program
 #
@@ -40,9 +44,16 @@ def first_tokens(segment):
         tokens = shlex.split(segment)
     except ValueError:
         tokens = segment.split()
-    # skip leading env assignments like FOO=bar cmd
-    while tokens and re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*=.*", tokens[0]):
-        tokens.pop(0)
+    # 실제 실행 프로그램을 가리는 선두 접두를 전부 건너뛴다: `FOO=bar cmd`의
+    # 대입, `env FOO=bar cmd`의 env(그 뒤에 또 대입이 올 수 있어 반복),
+    # `time cmd`(인자를 받지 않고 바로 다음 명령을 실행).
+    while tokens:
+        if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*=.*", tokens[0]):
+            tokens.pop(0)
+        elif tokens[0] in ("env", "time"):
+            tokens.pop(0)
+        else:
+            break
     return tokens
 
 # `-W <arg>`/`-X <opt>` consume the next token; other single-dash flags
@@ -81,7 +92,7 @@ for seg in segments:
         violations.append((seg.strip(), "bare `pytest`", "uv run pytest ..."))
     elif prog in ("pip", "pip3"):
         violations.append((seg.strip(), f"`{prog}`", "uv add / uv remove"))
-    elif prog in ("python", "python3"):
+    elif re.fullmatch(r"python3?(\.\d+)?", prog):
         rest = skip_interpreter_options(rest)
         if rest[:2] == ["-m", "pip"]:
             violations.append((seg.strip(), "`python -m pip`", "uv add / uv remove"))
@@ -91,6 +102,9 @@ for seg in segments:
         elif rest[:1] == ["-m"] and rest[1:2] == ["pytest"]:
             violations.append((seg.strip(), "bare `python -m pytest`",
                                "uv run pytest ..."))
+    elif prog == "manage.py":
+        violations.append((seg.strip(), "direct `manage.py` execution",
+                           "uv run python manage.py ..."))
 
 if violations:
     print("BLOCKED by uv-only guard (AGENTS.md: Package And Command Policy)",
