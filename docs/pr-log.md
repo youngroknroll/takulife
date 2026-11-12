@@ -21,41 +21,35 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 402건(`gh pr list --state merged --limit 500`,
 2026-11-05 `[실측]`; 2026-08-17에는 289건)이 전부 들어가지 않으므로 최신부터 채우고 줄 수
 예산에서 끊는다 — 컷오프는 "재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래
-목록은 PR #408부터 #269까지다(#409는 위 상세 항목). 그보다 오래된 PR은 `gh pr list
+목록은 PR #409부터 #269까지다(#410은 위 상세 항목). 그보다 오래된 PR은 `gh pr list
 --state merged --limit 500 --json number,title` 으로 언제든 다시 조회할 수 있다.
 
 ---
 
 ## 최신 PR
 
-### PR #409 — docs: Track 50 design principles — A4 black-and-grey direction and the Track B token input
+### PR #410 — deploy: main → production
 
-**무엇을 바꿨나**: `docs/FE/design-principles.md`(신규 379줄)를 추가했다. 트랙 50(디자인
-시스템 A단계) 계획의 13절 그대로 — 브랜드 성격, 원칙 3개, 시그니처 요소 판정표(티켓 은유·
-바코드·배경 그라디언트 폐기), 쓰지 않는 것 19항목(현 코드 위치 포함), 색 역할과 라이트·다크
-쌍 규칙, 타이포, 형태·모션 방향, 레퍼런스, 선택 시안 A4(사용자 확정 2026-11-03), 토큰 부채
-표(시안 토큰 39개 + 구→신 대응 = 트랙 B 입력), 화면 우선순위(트랙 D 입력), 결정 이력, 미결
-21건. `docs/backlog.md` 현재 상태 표에 트랙 50 행과 트랙 B~E 예약을 넣었다. 운영 코드 0파일.
-시안 `.docs/FE/design-samples/a4-*`는 git-ignored라 저장소에 없다(보존 여부는 문서 ⑬-13).
-커밋 4개, 머지 `ddda6586`(2026-11-03, merge commit, 사용자 "순차 머지 승인"; 직전에 #408
-`a8a7fc3f` 머지).
+**무엇을 바꿨나**: `main`을 `production`으로 배포하는 머지 커밋이다. 커밋 4개 —
+docs 2건(#402 production 배포·시안 보존 안 함 결정 기록, 시안 로컬 파일 삭제 기록),
+`chore`(러너 env 파일·`.DS_Store`를 `.gitignore`에 추가), `build(deps)`(의존성
+잠금에서 `oauthlib`을 4.0.0→4.0.1로 올려 GHSA-3jp2-3mrg-2vxc 해소, allauth가
+끌어오는 전이 의존성이라 다른 잠금 패키지는 바뀌지 않음). 머지 완료
+2026-11-12T09:44:18Z, merge commit `0b4f76cb` `[실측 gh]`. 이로써
+`origin/production`과 `origin/main`의 차이가 0커밋이 됐다 `[실측 git 2026-11-12]`.
 
-**왜**: 사용자 지시 "디자인 토큰과 디자인 시스템을 문서로 정립하고 나만의 브랜드 사이트를
-운영. 지금은 그저그런 AI 사이트"(2026-11-02). 시안 A·B·A2·A3는 기존 템플릿 위의 재도색이라
-화면 문법이 AI 기본값 그대로였고, A4는 자체 토큰·자체 CSS로 처음부터 짜서 블랙앤그레이
-바탕 + 액션 파랑·링크 틸·카테고리 점·오류 빨강만 색으로 두고 괘선과 32px 행으로 위계를
-만들었다. 이 문서가 트랙 B(토큰 재정립)~E의 입력이다.
+**왜**: main push CI에서 새 오류 자문(advisory)으로 의존성 감사 게이트가 실패해
+(2026-11-06, 커밋만으로는 코드 변경 없이 발생) 오류 수정 커밋이 main에 먼저
+쌓였고, 그 main을 production에 반영하는 정기 배포다.
 
-**검증**: 시안 A4를 Chrome 156에서 320·375(터치)·768·1024·1440 × 라이트·다크로 실측 —
-가로 오버플로 0, 1440×800 첫 화면 목록 20행 가시, 포커스 링 12지점, 링크 hover·포커스
-반전이 줄마다, 터치 44px, `<details>` 키보드, 테마 토글 1클릭 1전환, 콘솔 오류 0
-`[실측 2026-11-03]`. 사전 WED(Standard)·BIR(Light), 사후 WED Deviates → 14건 수정 → 재판정
-Conforms, BIR 사후 Conforms + 델타 Conforms, WED 문서 검토 Deviates(26건) → 반영 → 잔여
-8건 → Conforms, QVL 2차 종결 가능. 문서 게이트: 절 13개(`rg -n '^## [①-⑬]'`), 태그 없는
-숫자 0줄, 파일:줄 인용 전수 대조(`static/` 줄 번호는 #408 브랜치 기준이라 머리에 명시).
-CI 6잡 pass `[실측 gh]`.
+**검증**: 커밋 `b89cae8c` 본문에 적힌 2026-11-06 로컬 측정 — `pip-audit 2.9.0
+--no-deps --strict`(내보낸 잠금 기준) 취약점 0건, `uv run pytest -q -n auto`
+4301 passed, `manage.py check` 이상 없음, `makemigrations --check` 변경 없음.
+PR CI 6잡(Test suite·Lint and format·Dependency vulnerability audit·Docker
+build·E2E journey suite·GitGuardian) 전부 success `[실측 gh]`.
 
 ## 이전 PR (번호 — 실제 PR 제목)
+- #409 — docs: Track 50 design principles — A4 black-and-grey direction and the Track B token input
 - #408 — style(home): Replace the neon highlighter with a dark emphasis block
 - #407 — test: Adopt pytest-xdist for the regression run and fix the launchd runner wrapper PATH (track 49)
 - #405 — style: Adopt the Google Python style guide with ruff in CI
