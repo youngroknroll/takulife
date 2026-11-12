@@ -29,3 +29,16 @@ def test_로봇_배제_파일은_비제품_경로는_계속_차단한다(client)
     assert "Disallow: /api/" in body
     assert "Disallow: /accounts/" in body
     assert "Disallow: /staff/" in body
+
+
+def test_로봇_배제_파일은_달력의_월_날짜_쿼리_주소를_차단한다(client):
+    response = client.get("/robots.txt")
+
+    body = response.content.decode("utf-8")
+    assert response.status_code == 200
+    assert "Disallow: /events/calendar/?\n" in body
+    assert "Disallow: /?month=\n" in body
+    assert "Disallow: /*?month=\n" in body
+    assert "Disallow: /*&month=\n" in body
+    assert "Disallow: /*?date=\n" in body
+    assert "Disallow: /*&date=\n" in body

@@ -19,7 +19,8 @@ def api_root(request):
 
 
 def robots_txt(request):
-    # 비제품 경로만 차단하고 나머지 전체 크롤링은 허용한다.
+    # 비제품 경로와 달력의 월·날짜 쿼리 주소를 막는다. 달력의 이전·다음 달 링크가
+    # 끝없이 이어져 크롤러가 계속 따라가기 때문이다. 앞 2줄은 와일드카드를 모르는 크롤러용이다.
     sitemap_url = request.build_absolute_uri("/sitemap.xml")
     return HttpResponse(
         "User-agent: *\n"
@@ -27,6 +28,12 @@ def robots_txt(request):
         "Disallow: /api/\n"
         "Disallow: /accounts/\n"
         "Disallow: /staff/\n"
+        "Disallow: /events/calendar/?\n"
+        "Disallow: /?month=\n"
+        "Disallow: /*?month=\n"
+        "Disallow: /*&month=\n"
+        "Disallow: /*?date=\n"
+        "Disallow: /*&date=\n"
         f"Sitemap: {sitemap_url}\n",
         content_type="text/plain",
     )
