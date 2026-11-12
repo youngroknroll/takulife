@@ -57,7 +57,7 @@ def robots_txt(request):
 
 @extend_schema(
     tags=["core"],
-    summary="데이터베이스 연결 상태를 확인한다",
+    summary="서버 상태를 확인한다(DB 연결은 30분에 한 번 확인한다)",
     responses={
         200: inline_serializer("HealthOkResponse", {"status": serializers.CharField()}),
         503: inline_serializer("HealthErrorResponse", {"status": serializers.CharField()}),
