@@ -110,6 +110,76 @@ def test_DATABASE_URL의_sslmode_쿼리파라미터를_OPTIONS에_반영한다(m
     assert config["OPTIONS"] == {"sslmode": "require"}
 
 
+def test_DATABASE_URL이_postgres이면_연결_재사용_시간_기본값_600초가_적용된다(
+    monkeypatch, tmp_path
+):
+    db_password = secrets.token_hex(4)
+    monkeypatch.setenv("DATABASE_URL", f"postgresql://taku:{db_password}@localhost:5432/taku")
+    monkeypatch.delenv("DB_CONN_MAX_AGE", raising=False)
+
+    settings_module = importlib.import_module("config.settings")
+    monkeypatch.setattr(settings_module, "BASE_DIR", tmp_path)
+
+    config = settings_module.load_database_config()
+
+    assert config["CONN_MAX_AGE"] == 600
+
+
+def test_DB_CONN_MAX_AGE를_0으로_지정하면_연결재사용을_끈다(monkeypatch, tmp_path):
+    db_password = secrets.token_hex(4)
+    monkeypatch.setenv("DATABASE_URL", f"postgresql://taku:{db_password}@localhost:5432/taku")
+    monkeypatch.setenv("DB_CONN_MAX_AGE", "0")
+
+    settings_module = importlib.import_module("config.settings")
+    monkeypatch.setattr(settings_module, "BASE_DIR", tmp_path)
+
+    config = settings_module.load_database_config()
+
+    assert config["CONN_MAX_AGE"] == 0
+
+
+def test_DB_CONN_MAX_AGE가_정수가_아니면_설정_오류로_실행을_막는다(monkeypatch, tmp_path):
+    db_password = secrets.token_hex(4)
+    monkeypatch.setenv("DATABASE_URL", f"postgresql://taku:{db_password}@localhost:5432/taku")
+    monkeypatch.setenv("DB_CONN_MAX_AGE", "abc")
+
+    settings_module = importlib.import_module("config.settings")
+    monkeypatch.setattr(settings_module, "BASE_DIR", tmp_path)
+
+    with pytest.raises(ImproperlyConfigured):
+        settings_module.load_database_config()
+
+
+def test_DATABASE_URL이_postgres이면_연결_상태_확인이_켜진다(monkeypatch, tmp_path):
+    db_password = secrets.token_hex(4)
+    monkeypatch.setenv("DATABASE_URL", f"postgresql://taku:{db_password}@localhost:5432/taku")
+    monkeypatch.delenv("DB_CONN_MAX_AGE", raising=False)
+
+    settings_module = importlib.import_module("config.settings")
+    monkeypatch.setattr(settings_module, "BASE_DIR", tmp_path)
+
+    config = settings_module.load_database_config()
+
+    assert config["CONN_HEALTH_CHECKS"] is True
+
+
+def test_DATABASE_URL이_미설정이면_sqlite_폴백에는_연결재사용_설정이_섞이지_않는다(
+    monkeypatch, tmp_path
+):
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.setenv("DB_CONN_MAX_AGE", "77")
+
+    settings_module = importlib.import_module("config.settings")
+    monkeypatch.setattr(settings_module, "BASE_DIR", tmp_path)
+
+    config = settings_module.load_database_config()
+
+    assert config == {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": tmp_path / "db.sqlite3",
+    }
+
+
 def test_DEBUG가_미설정이면_기본값_True를_사용한다(monkeypatch):
     monkeypatch.delenv("DEBUG", raising=False)
 

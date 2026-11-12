@@ -46,6 +46,16 @@ def load_draft_fetch_contact():
     return _get_env("DRAFT_FETCH_CONTACT", "")
 
 
+def load_db_conn_max_age():
+    """DB_CONN_MAX_AGE env를 정수로 캐스팅한다. 정수가 아니면 조용히 무시하지
+    않고 실행을 막는다(load_email_port와 같은 방어 관용구)."""
+    raw = _get_env("DB_CONN_MAX_AGE", "600")
+    try:
+        return int(raw)
+    except ValueError:
+        raise ImproperlyConfigured(f"DB_CONN_MAX_AGE must be an integer, got {raw!r}.")
+
+
 def load_database_config():
     """DATABASE_URL로 Django DATABASES["default"] 값을 만든다.
 
@@ -60,7 +70,9 @@ def load_database_config():
             "NAME": BASE_DIR / "db.sqlite3",
         }
 
-    config = dj_database_url.parse(database_url)
+    config = dj_database_url.parse(
+        database_url, conn_max_age=load_db_conn_max_age(), conn_health_checks=True
+    )
     if config["ENGINE"] != "django.db.backends.postgresql":
         scheme = urlsplit(database_url).scheme
         raise ValueError(f"Unsupported DATABASE_URL scheme: {scheme!r}")
