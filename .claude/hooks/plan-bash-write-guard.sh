@@ -10,9 +10,13 @@
 #   - shell redirection: >, >>, 1>, 1>>, 2>, 2>>, &> (target token only,
 #     not a source argument earlier in the same command)
 #   - `tee` with `prompt_plan.md` as any positional (non-flag) argument
+#   - `rm`/`unlink`/`git rm` naming `prompt_plan.md` as any positional argument
 #   - `cp`/`mv` with `prompt_plan.md` as the last positional argument
-#     (skipped when `-t`/`--target-directory` names another destination)
-#   - `sed -i`/`perl -i`/`awk -i inplace` naming `prompt_plan.md`
+#     (skipped when `-t`/`--target-directory` names another destination);
+#     `mv` also blocks when `prompt_plan.md` is a *source* argument, since
+#     moving the original away deletes it from its plan location
+#   - `sed -i`/`perl -i` (including a combined flag with `i`, e.g. `-pi`)/
+#     `awk -i inplace` naming `prompt_plan.md`
 #   - `python`/`python3`/`uv ... -c "<code>"` whose code string mentions
 #     `prompt_plan.md` together with a write pattern (`write_text(`,
 #     `.write(`, or `open(..., "w"/"a")`)
@@ -179,15 +183,31 @@ def scan_segments(text, hits):
                 if not t.startswith("-") and is_target(t):
                     hits.append(("tee", seg.strip()))
 
+        # (b2) rm/unlink: any positional (non-flag) argument.
+        elif prog in ("rm", "unlink"):
+            positionals = [t for t in tokens[1:] if not t.startswith("-")]
+            if any(is_target(t) for t in positionals):
+                hits.append((prog, seg.strip()))
+
+        # (b3) git rm: same positional check, after the `rm` subcommand.
+        elif prog == "git" and tokens[1:2] == ["rm"]:
+            positionals = [t for t in tokens[2:] if not t.startswith("-")]
+            if any(is_target(t) for t in positionals):
+                hits.append(("git rm", seg.strip()))
+
         # (c) cp/mv: last positional argument, unless retargeted with -t/--target-directory.
+        # mv additionally blocks on a source positional — moving the
+        # original away deletes it just as surely as overwriting it.
         elif prog in ("cp", "mv"):
             has_target_flag = any(
                 t == "-t" or t.startswith("--target-directory") for t in tokens[1:]
             )
-            if not has_target_flag:
-                positionals = [t for t in tokens[1:] if not t.startswith("-")]
-                if positionals and is_target(positionals[-1]):
-                    hits.append((f"{prog} last arg", seg.strip()))
+            positionals = [t for t in tokens[1:] if not t.startswith("-")]
+            sources = positionals if has_target_flag else positionals[:-1]
+            if not has_target_flag and positionals and is_target(positionals[-1]):
+                hits.append((f"{prog} last arg", seg.strip()))
+            if prog == "mv" and any(is_target(t) for t in sources):
+                hits.append(("mv source", seg.strip()))
 
         # (d) sed/perl/awk in-place edit naming the target.
         if prog == "sed":
@@ -196,7 +216,14 @@ def scan_segments(text, hits):
                 if any(is_target(t) for t in positionals):
                     hits.append(("sed -i", seg.strip()))
         elif prog == "perl":
-            if any(t == "-i" or t.startswith("-i.") for t in tokens[1:]):
+            # `-i`/`-i.bak` on its own token, or bundled into a combined
+            # single-dash flag (e.g. `-pi`) alongside other switches.
+            def names_in_place(t):
+                if t == "-i" or t.startswith("-i."):
+                    return True
+                return bool(re.fullmatch(r"-[A-Za-z]+", t) and "i" in t[1:])
+
+            if any(names_in_place(t) for t in tokens[1:]):
                 positionals = [t for t in tokens[1:] if not t.startswith("-")]
                 if any(is_target(t) for t in positionals):
                     hits.append(("perl -i", seg.strip()))
@@ -232,7 +259,10 @@ def scan_segments(text, hits):
                     hits.append(("python -c write", seg.strip()))
 
 
-HEREDOC_START = re.compile(r"<<-?\s*['\"]?(\w+)['\"]?")
+#  here-string `<<<` 은 heredoc `<<` 과 전혀 다른 연산자인데, 앞의 두 `<` 만 보면
+#  `<<<` 의 뒤쪽 두 글자가 heredoc 시작으로 오인되어 다음 줄들을 본문으로
+#  삼켜 버린다. 앞뒤에 `<` 가 없을 때만 heredoc으로 인정한다.
+HEREDOC_START = re.compile(r"(?<!<)<<-?(?!<)\s*['\"]?(\w+)['\"]?")
 
 
 def extract_heredocs(text):
