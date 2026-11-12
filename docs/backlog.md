@@ -27,7 +27,7 @@ main `e3d3448` 분기)는 머지됐다.
 
 | 항목 | 값 |
 |---|---|
-| 백엔드 회귀 | **4,391 passed**, `uv run pytest -q -n auto`, 58.50초 `[실측 2026-11-12, 브랜치 fix/track-55-review-residuals 3f0f9750, 머지 전]`(위 기준일 문장과 같은 값, 중복 기재하지 않음). 기존 4,301 대비 +90건(훅 계약 85·B1 3·B4 1·entrypoint 1) `[계산]`. e2e 10 passed `[실측 2026-09-09]`(이번 측정값은 별도 제공 예정, 현재는 기존 값 유지) |
+| 백엔드 회귀 | **4,391 passed**, `uv run pytest -q -n auto`, 58.50초 `[실측 2026-11-12, 브랜치 fix/track-55-review-residuals 3f0f9750, 머지 전]`(위 기준일 문장과 같은 값, 중복 기재하지 않음). 기존 4,301 대비 +90건(훅 계약 85·B1 3·B4 1·entrypoint 1) `[계산]`. e2e 10 passed / 11.89초 `[실측 2026-11-12, uv run pytest -q -m e2e tests/e2e, 브랜치 fix/track-55-review-residuals]` |
 | Django check | 0 issues |
 | 마이그레이션 드리프트 | 없음 |
 | 배포 차단 | **0건**(G1 해결 — 배포 시점 버킷 확인은 `docs/deploy-runbook.md` §3 체크리스트 ⑦-2로 이관) |
