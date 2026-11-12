@@ -3,7 +3,7 @@
 기준일: 2026-11-03 · 트랙 50
 대상: `static/css/tokens.css`, `static/css/base.css`, `static/css/components/`, `static/css/pages/`, `templates/`. 스태프 콘솔(`static/css/staff/`, `templates/staff/`)은 제외한다.
 시안 정본: `.docs/FE/design-samples/a4.css`, `a4-home.html`, `a4-events.html` (`.docs/`는 git 무시 영역이라 새 clone에는 없다. 저장소에 보존하지 않으며 로컬 파일도 2026-11-05에 삭제했다 `[문서 사용자 결정 2026-11-05, ⑬-13]` — 시안 파일은 이제 어디에도 없고, 아래 `[코드 시안 a4.css]` 인용과 시안 줄 번호는 다시 대조할 수 없는 삭제 전 기록이다. 이 문서의 `a4.css`·`a4-events.html` 줄 번호는 286줄·388줄 판 `[실측 wc -l 2026-11-03]` 기준이고 시안이 바뀌면 어긋난다).
-파일:줄 기준: `static/`·`templates/` 줄 번호는 PR #408 브랜치(`design/emphasis-block`, 커밋 `624102bc`) 기준이다. main(`73cb7d80`)과는 `tokens.css` 22~189행 구간이 1줄(main이 +1), `text.css`·`home.css`·`home.html`의 `.emphasis` 관련 줄이 다르다 `[실측 git diff 2026-11-03]`. PR #408 머지 뒤 재대조한다.
+파일:줄 기준: PR #408은 2026-11-02에 머지됐다(`a8a7fc3f`) `[실측 gh 2026-11-12]`. `static/`·`templates/` 줄 번호는 이 문서가 인용한 범위를 현재 작업 트리(main, 기준 커밋 `d0b75213`, `git rev-parse --short HEAD` 2026-11-12 측정)에서 전부 다시 대조했고 일치했다 `[실측 2026-11-12]`. 어긋난 곳이 남아 있던 ③·④ 표의 경로 오기 2건(`templates/events/list.html` → `templates/core/events/list.html`)만 고쳤다.
 
 이 문서는 방향과 가드레일만 담는다. 값의 정본은 `static/css/tokens.css`이고 바꿀 값은 ⑩에만 적는다.
 
@@ -61,12 +61,12 @@
 | 바코드 `repeating-linear-gradient` | 폐기 | 장식 그라디언트이고 ④와 충돌한다 | `static/css/pages/home.css:134-147` |
 | 큰 D-day 숫자 | 폐기 | 숫자를 장식으로 키우지 않고 텍스트 "오픈 D-3"으로 쓴다 | `static/css/pages/home.css:125-132`(`.hero-ticket-dday`) |
 | eyebrow 라벨(작은 글자 + 넓은 자간) | 폐기 | 위계를 자간 장식으로 만든다. 제목 하나로 족하다 | `static/css/pages/home.css:32-38`, `:387` |
-| h1 굵기 300 대 강조 800 | 폐기 | h1은 한 가지 크기·굵기 하나로 통일한다 | 300은 `static/css/pages/home.css:41-42`, 800은 같은 파일 `.hero .emphasis` 규칙(PR #408 브랜치) [코드 2026-11-03] |
-| `.emphasis` 블록 | 유지(이름·토큰 쌍) + **재정의, 경고·제약 문구 전용** | 짙은 배경 반전은 색 없이 강조하는 유일한 면이다. 현 규칙은 인라인·`padding 0 0.25em`·반경 0.2em이고 소비처는 홈 히어로 h1 안 `<span>` 하나뿐이라 경고도 요약도 아니다 → 시안처럼 블록·반경 0으로 재정의하고 현 소비처는 제거한다. 홈 요약에는 쓰지 않는다 `[문서 사용자 결정 2026-11-03]`. 경고 문구의 실제 사용처는 트랙 C가 정한다 | `static/css/components/text.css:21-31`, `templates/core/home.html:22`, `static/css/pages/home.css` `.hero .emphasis`, `static/css/tokens.css:17-20,189-190` (PR #408 브랜치) |
+| h1 굵기 300 대 강조 800 | 폐기 | h1은 한 가지 크기·굵기 하나로 통일한다 | 300은 `static/css/pages/home.css:41-42`, 800은 같은 파일 `.hero .emphasis` 규칙(:47-49) [코드 2026-11-12 재대조] |
+| `.emphasis` 블록 | 유지(이름·토큰 쌍) + **재정의, 경고·제약 문구 전용** | 짙은 배경 반전은 색 없이 강조하는 유일한 면이다. 현 규칙은 인라인·`padding 0 0.25em`·반경 0.2em이고 소비처는 홈 히어로 h1 안 `<span>` 하나뿐이라 경고도 요약도 아니다 → 시안처럼 블록·반경 0으로 재정의하고 현 소비처는 제거한다. 홈 요약에는 쓰지 않는다 `[문서 사용자 결정 2026-11-03]`. 경고 문구의 실제 사용처는 트랙 C가 정한다 | `static/css/components/text.css:21-31`, `templates/core/home.html:22`, `static/css/pages/home.css` `.hero .emphasis`(:47-49), `static/css/tokens.css:17-20,189-190` [코드 2026-11-12 재대조] |
 | 브랜드 레드 | 폐기 | 라이트 `#d8432a`, 다크 `#c63d24`, 글자용 `--brand-ink` 다크 `#da8474`. 액션 파랑으로 대체한다 | `static/css/tokens.css:183-187` |
 | 캡슐 칩(알약 반경) | 폐기 | 반경은 0이다. 칩은 사각형이다 | `static/css/tokens.css:73`, `static/css/pages/event_list.css:119,464-465` [코드 2026-11-03] |
 | 텍스트 전용 헤어라인 행 `.event-compact-row` | 유지 | 면 없이 괘선과 밀도로 만든 이 사이트 고유의 행이다. 시안의 32px 한 줄 행(≥70rem)·3줄 행(<70rem)으로 발전시킨다 | `templates/core/partials/_event_compact_row.html`, `static/css/components/cards.css:248-370`(주석 248행부터 모바일 미디어 블록 끝 370행까지) [코드 2026-11-03] |
-| 점선 빈 상태·안내 박스 | 폐기 | 텍스트 + 액션 링크로 대체한다. 이모지 아이콘도 함께 폐기한다 | `templates/events/list.html:228`, `static/css/components/cards.css:151` |
+| 점선 빈 상태·안내 박스 | 폐기 | 텍스트 + 액션 링크로 대체한다. 이모지 아이콘도 함께 폐기한다 | 공유 클래스 `.empty-icon`(`static/css/components/cards.css:151`)의 소비처는 9개 템플릿이다 `[실측 rg -l 'empty-icon' templates/ 2026-11-12]`: `templates/core/events/list.html:228`, `core/archive/calendar.html`, `core/partials/_archive_results_{record,personal,interests,collection,statuses,visits}.html`, `core/partials/_home_collection_snapshot.html` |
 | 카테고리 컬러 점 | 유지 | 색을 쓰는 유일한 표지다. 점에만 쓴다 | `static/css/tokens.css:97-110` |
 | `mono-num` | 유지 | 숫자 정렬이 열 읽기의 핵심이다. `tabular-nums`를 전역으로 올린다 | 현 `static/css/components/text.css:15`, 시안 `a4.css` body 규칙 |
 | 본문 `radial-gradient` 배경 | 폐기 | 장식 그라디언트이고 바탕은 단색 `--bg`다 | `static/css/base.css:38-39` |
@@ -89,13 +89,13 @@
 | 4 | 알약·원형 컨트롤 | 유: `event_list.css:119,464-465,475-486`, `home.css:225` | 반경 0 사각 칩, 글리프 찜 |
 | 5 | 카테고리 soft/ink 쌍 배경·글자 | 유 [코드]: `tokens.css:97-110,118-141`, `event_list.css:442-446` | 작은 점만. 글자는 `--ink` |
 | 6 | 상태 칩 무지개 | 유 [코드]: `components/controls.css:14-42` | 파랑·회색의 형태 차이 3개 상태 |
-| 7 | 이모지 빈 상태 아이콘 | 유: `events/list.html:228`, `cards.css:151` | 텍스트 + 링크 |
+| 7 | 이모지 빈 상태 아이콘 | 유: `core/events/list.html:228`, `cards.css:151`. 공유 클래스 `.empty-icon`의 소비처는 9개 템플릿이다(목록은 ③ "점선 빈 상태·안내 박스" 행) `[실측 rg -l 'empty-icon' templates/ 2026-11-12]` | 텍스트 + 링크 |
 | 8 | 3:4 이미지 타일 | 유: `archive_collection.css:612,1091`, `home.css:674`, `archive_collection_detail.css:57` | 미결(⑬-15, 시안 범위 밖) |
 | 9 | 배경 그라디언트·바코드 | 유: `base.css:38-39`, `home.css:137` | 단색 `--bg` |
 | 10 | 티켓 메타포(노치·ADMIT ONE) | 유: `templates/core/home.html:21,45,75` (시안 A3에도 있었음) | 쓰지 않음 |
 | 11 | 임의 반경·반경 3종 이상 | 유 [코드]: `archive_collection.css:613`(임의 반경) 외 | 반경 0, 예외는 점 하나 |
 | 12 | 카테고리 슬롯 12색·시리즈 12색 팔레트 | 유: `tokens.css:118-141,150-161` | 점 7색 외 처리는 ⑬-6 미결 |
-| 13 | 형광·네온 하이라이트 | 유(제거 예정): `--hl`·`.hl`은 PR #408(OPEN)이 `--emphasis-*`·`.emphasis`로 바꾼다 `[문서 PR #408]` | 짙은 배경 반전 블록(경고 전용) |
+| 13 | 형광·네온 하이라이트 | 제거됨(PR #408 머지, `a8a7fc3f` 2026-11-02): `--hl`·`.hl`은 `static/css` 전체에서 0건이고 `--emphasis-*`·`.emphasis`로 이미 바뀌었다 `[실측 rg -e '--hl\b|\.hl\b' static/css 2026-11-12, 매치 0]` | 짙은 배경 반전 블록(경고 전용) |
 | 14 | 강조용 그라디언트 | 유: 위 9번과 같은 위치 | 쓰지 않음 |
 | 15 | 글래스모피즘 | 유: 위 3번과 같은 위치 | 쓰지 않음 |
 | 16 | 새 서체·유료 자산 | 무: Pretendard 단일 | 서체 유지 `[문서 사용자 결정 2026-11-02]` |
@@ -128,7 +128,7 @@
 
 ### 라이트·다크 쌍 규칙
 
-1. 다크 블록은 `:root[data-theme="dark"]` 한 곳이고, 라이트 색 키를 **전부** 재선언한다. 한쪽만 바꾸면 조용히 깨진다는 `tokens.css`의 주석 규약을 규칙으로 승격한다 `[코드 static/css/tokens.css:17-18(emphasis 쌍 주석), :234-236(시리즈 다크값 누락 주석), :169 다크 블록 — PR #408 브랜치]`.
+1. 다크 블록은 `:root[data-theme="dark"]` 한 곳이고, 라이트 색 키를 **전부** 재선언한다. 한쪽만 바꾸면 조용히 깨진다는 `tokens.css`의 주석 규약을 규칙으로 승격한다 `[코드 static/css/tokens.css:17-18(emphasis 쌍 주석), :234-236(시리즈 다크값 누락 주석), :169 다크 블록 — 2026-11-12 재대조]`.
 2. 색 리터럴은 두 토큰 블록(라이트·다크)에만 둔다. 컴포넌트·페이지 CSS에서 `#hex`·`rgb()`를 쓰지 않는다. 현재 우회 사례(예시, 전수 아님): `button.css:29`의 `#fff`, `cards.css:98`의 `#46617f`, `:142`의 `#fafcff`, `:219`의 `#25508a` `[코드 2026-11-02 계획서 기준선]`, 같은 `#fff`가 `archive_collection.css:102,242,455,1206,1275`·`archive_collection_detail.css:155`·`cards.css:193`에도 있다 `[실측 rg 2026-11-03]`. 전수는 트랙 D가 `rg -n '#[0-9a-fA-F]{3,6}\b|rgba?\(' static/css --glob '!tokens.css' --glob '!dist/**' --glob '!staff/**'`로 만든다.
 3. 컴포넌트별 다크 규칙(`[data-theme="dark"] .foo {…}`)을 만들지 않는다. 토큰이 뒤집히면 컴포넌트는 따라온다. 시안은 이 방식으로 다크를 구현했다.
 4. 대비 하한: 글자 AA 4.5:1, 비텍스트(괘선·점·포커스 링) 3:1 `[문서 WCAG 2.2 AA SC 1.4.3·1.4.11]`. 터치 타깃은 터치 조건(≤44.99rem 또는 `pointer: coarse`)에서 44px `[문서 AGENTS.md:965-968(폐지된 규칙이라 정보 항목); 코드 button.css:12-16]`, WCAG 2.2 AA(SC 2.5.8) 하한은 24px이고 데스크톱 행 안 찜 24px·컨트롤 32px는 이 하한 이상이다.
@@ -254,7 +254,7 @@ WED 사후 판정 요지: 토큰 값이 사양과 100% 일치, 사용자 결정 
 | `--shadow`, `--shadow-cta`, `--shadow-dropdown` | 삭제 | 그림자 0 |
 | `--chrome-glass`, `--chrome-glass-cta` | `--surface` | 유리 0 |
 | `--backdrop` | 보류 | 모달 뒤 반투명 오버레이(`tokens.css:67-68`, rgba 0.45)다. 유리 계열이 아니라 불투명으로 바꾸면 모달 뒤 페이지가 가려진다. 반투명 금지(④-3)와의 충돌은 ⑬-17 |
-| `--page-pad-x` | `--space-3`(<45rem), `--space-4`(≥45rem) | 현 3단(1/1.5/2rem, `tokens.css:292-303` PR #408 브랜치)에서 2단으로. 데스크톱 32px → 24px, 64rem 단 삭제. 참조 27줄 16파일 `[실측 rg -c 2026-11-03]` |
+| `--page-pad-x` | `--space-3`(<45rem), `--space-4`(≥45rem) | 현 3단(1/1.5/2rem, `tokens.css:292-303` [코드 2026-11-12 재대조])에서 2단으로. 데스크톱 32px → 24px, 64rem 단 삭제. 참조 27줄 16파일 `[실측 rg -c 2026-11-03]` |
 | `--radius-card`, `--radius-control`, `--radius-chip` | 삭제 | 직각. 규칙으로 막는다 |
 | `--fs-xs`~`--fs-xl`, `--fs-xl-mobile` | `--fs-1`~`--fs-5` | 7단 → 5단 `[코드 tokens.css:78-85; a4.css:12]` |
 | `--cat-<slug>-soft` (7개) | 삭제 | 참조 0, 점 전용으로 단순화 `[문서 계획서 2026-11-02: 참조 0]` |
