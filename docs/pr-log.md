@@ -18,8 +18,8 @@ state" 절 참고).
 number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴다 — 제목 앞의
 `feat:`/`fix:`/`docs:` 같은 접두어도 변경 성격을 알려주는 정보이므로 유지한다.
 
-이 문서는 200줄을 넘기지 않는다. 머지된 PR 399건(`gh pr list --state merged --limit 500`,
-2026-10-31 `[실측]`; 2026-08-17에는 289건)이 전부 들어가지 않으므로 최신부터 채우고 줄 수
+이 문서는 200줄을 넘기지 않는다. 머지된 PR 402건(`gh pr list --state merged --limit 500`,
+2026-11-05 `[실측]`; 2026-08-17에는 289건)이 전부 들어가지 않으므로 최신부터 채우고 줄 수
 예산에서 끊는다 — 컷오프는 "재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래
 목록은 PR #408부터 #269까지다(#409는 위 상세 항목). 그보다 오래된 PR은 `gh pr list
 --state merged --limit 500 --json number,title` 으로 언제든 다시 조회할 수 있다.
@@ -61,6 +61,7 @@ CI 6잡 pass `[실측 gh]`.
 - #405 — style: Adopt the Google Python style guide with ruff in CI
 - #404 — test: Track 47 — web/views sibling-import guard and second test-speed measurement
 - #403 — ops: Track 46 — gunicorn timeout, multi-worker rate-limit measurement, backup rehearsal, runner launchd
+- #402 — deploy: main → production
 - #401 — deploy: main → production
 - #400 — fix: Raise brotli to 1.2.1 to clear the new advisories
 - #399 — feat(i18n): 행사 텍스트 자동 번역 서버 저장·검증과 러너 번역 단계 — 트랙 44-1
