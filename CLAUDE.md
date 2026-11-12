@@ -18,6 +18,8 @@ Core loop: discover an event, record the experience, add acquired or independent
 goods, maintain intent, then find exchange candidates. Collection drives return.
 
 ## Binding Product Decisions
+Summary only — `AGENTS.md`'s own "Binding Product Decisions" section is the
+canonical, detailed source and wins on conflict.
 - Create a dedicated `CollectionItem`; do not keep expanding `PersonalEntry`
   into the goods collection aggregate.
 - `archive` may reference `events`; future `trade` depends on stable `archive`
@@ -80,7 +82,8 @@ goods, maintain intent, then find exchange candidates. Collection drives return.
   `staff/urls.py`, `staff/api_urls.py`, `core/urls.py`, `core/views.py`
   (only `api_root`, `robots_txt`, `health`)
 - Frontend: `templates/base.html`, `templates/core/`, `templates/staff/`,
-  `static/css/`, `static/js/`
+  `static/css/`, `static/js/`, `docs/FE/design-principles.md` (canonical
+  design-direction record)
 - Backlog, PR history, runbooks, technical records (version-controlled):
   `docs/backlog.md`, `docs/pr-log.md`, `docs/deploy-runbook.md`,
   `docs/operations-runbook.md`, `docs/event-operations-criteria.md`,
@@ -141,12 +144,9 @@ test. During Red-Green, run the targeted test before broad regression.
 - After planned verification, commit, push, and PR creation are automatic.
   Merge needs per-PR user approval unless an expressly recorded standing
   automatic-merge approval applies. `AGENTS.md` owns the detailed contract.
-- Small defects of the same kind found mid-track are not deferred to the
-  backlog: report the finding, then fix it inside the same track (and the same
-  PR) before merge. Open a backlog item only when the finding is a different
-  kind of work or exceeds the track's scale. Standing user decision
-  (2026-08-25) — avoiding work accumulation outranks strict scope minimalism
-  here, and the report-first step keeps this compatible with the surgical rule.
+- Small, same-kind defects found mid-track are fixed inside the same track and
+  PR after reporting, not deferred to the backlog; `AGENTS.md` Prime Directive
+  2 carries the binding rule and its approval scope.
 - Report failed and unverified checks directly; confidence is not evidence.
 - Every number written into a document must name its unit and say whether it
   was measured or read, and must be re-measured before it sizes any work.
@@ -160,6 +160,8 @@ test. During Red-Green, run the targeted test before broad regression.
 - `docs/`: the only durable document tree — backlog, the rolling merged-PR log
   (`docs/pr-log.md`), runbooks, and any technical record stating a guardrail
   (`docs/BE/`, and `DB/`/`FE/` when needed)
+- `docs/plan-archive/`: closed `prompt_plan.md` track sections, moved verbatim
+  at merge; a fixed historical record, not current state
 - `.docs/BE/`, `.docs/DB/`, `.docs/FE/`: drafts and working measurements.
   **`.docs/` is git-ignored**; a missing file there is housekeeping, not a loss
 - `.claude/hooks/uv-only-guard.sh`, `.claude/hooks/git-destructive-guard.sh`,
@@ -181,4 +183,5 @@ records only handoff-critical facts: update `docs/backlog.md` when durable
 current state changes and the existing relevant technical document when a later
 worker could otherwise make a mistake. Do not create routine work logs; read
 only the needed section.
-Recover a fresh session from the plan, Git diff, status, and verification logs.
+Recover a fresh session from the plan (or `docs/plan-archive/` for a closed
+track), Git diff, status, and verification logs.

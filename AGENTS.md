@@ -31,7 +31,7 @@ cleanup. Anything that must not be lost belongs here.
 - Event operations criteria: `docs/event-operations-criteria.md`
 - Backend technical records: `docs/BE/` (and `docs/DB/`, `docs/FE/` as they are
   needed) — a record that states a guardrail belongs here, not in `.docs/`
-- Product direction: the Binding Product Decisions section in `CLAUDE.md`
+- Product direction: the Binding Product Decisions section below in this guide
 
 Working notes (`.docs/`). **This tree is git-ignored.** Treat every file in it as
 disposable: a file that is missing is routine housekeeping, not a lost artifact,
@@ -75,9 +75,11 @@ from older projects.
 
 ## Binding Product Decisions
 
-The following decisions summarize the current approved direction. The linked
-proposal and re-review remain the detailed sources. These are target contracts,
-not claims that the current application already implements them.
+The following decisions summarize the current approved direction. This
+section is the detailed source for product direction; `CLAUDE.md` carries only
+a short summary that points back here and is not the canonical copy. These are
+target contracts, not claims that the current application already implements
+them.
 
 ### Core User Loop
 
@@ -248,6 +250,14 @@ sales, payment, shipping, escrow, or marketplace guarantees.
    - Implementers must not expand scope, silently repair unrelated issues, or
      reverse user changes.
    - Larger improvements belong in a Deferred Refactoring Note unless approved.
+   - Exception: a small defect of the same kind as the track's approved work,
+     found while doing that work, is not an unrelated issue to repair
+     silently. Report the finding first, then fix it inside the same track
+     and the same pull request before merge. Route it to a Deferred
+     Refactoring Note instead only when it is a different kind of work or
+     exceeds the track's scale (standing user decision, 2026-08-25 —
+     avoiding work accumulation outranks strict scope minimalism here, and
+     the report-first step keeps this compatible with this directive).
 
 3. **Role activation is risk-based.**
    - The 11 roles form a role library, not a mandatory committee.
@@ -296,9 +306,10 @@ before any of it is written or spoken.
    (`python3 -c`, `date`), never in prose.
 4. Paths, file names, test locations, and section numbers are written only
    after an existence check (`ls`, `rg`, `sed -n`).
-5. Before recommending a change, search `prompt_plan.md` Deferred sections and
-   the memory index for a recorded user hold on that subject; a recorded hold
-   is not re-raised as a recommendation without the user's re-approval.
+5. Before recommending a change, search `prompt_plan.md` Deferred sections,
+   the Deferred sections of closed tracks under `docs/plan-archive/`, and the
+   memory index for a recorded user hold on that subject; a recorded hold is
+   not re-raised as a recommendation without the user's re-approval.
 6. A subagent's factual claim (file:line, count, "X is absent") is unverified
    until the orchestrator re-checks it against source; conflicting reviewer
    claims are settled by measurement, not by picking one. A worker's "done"
@@ -314,6 +325,11 @@ before any of it is written or spoken.
 9. Parallel workers get disjoint file sets. While a worker is editing a module
    every test imports (`config/settings.py`, `config/urls.py`, models), the
    orchestrator does not start pytest.
+10. Test execution and pass/fail verdicts belong to the orchestrator alone
+    (the single-runner rule): implementation and review subagents must not
+    run pytest or the regression suite, even to self-check, and must not
+    state a pass/fail verdict. They report changed files; the orchestrator
+    runs and reads the verification commands named in its own brief.
 
 A violation of these rules that a reviewer catches is recorded as a defect
 (a correction record), never treated as "the review caught it, so it was
@@ -616,6 +632,13 @@ is separately approved.
      time-ordered PR history, not a subject document, so the "no routine work
      log" rule above does not exempt it — the rolling entry is the required
      record for this file specifically.
+   - At every PR merge that closes a `prompt_plan.md` track section, cut that
+     section verbatim into `docs/plan-archive/track-<id>.md` (one section per
+     file) and commit it alongside the `docs/pr-log.md` update. The archive
+     is a fixed historical record — `docs/backlog.md` and `docs/pr-log.md`
+     stay the current-state sources, and the archived text is never edited.
+     This is the same exception to the "no routine work log" rule as the
+     pr-log rolling entry above.
    - Review-only tasks do not edit files. They report findings in chat or in a
      separately approved review artifact.
 
@@ -747,6 +770,9 @@ bound by six admission criteria; nothing else is a test target.
   6. The suite started with 8 journey files (10 tests as of 2026-10-27
      `[실측 rg -c '^def test_' tests/e2e/*.py]`); a new journey is admitted only when
      a real defect that satisfies criteria 1-2 needs it.
+- CI also runs this suite in its own `e2e` job (`.github/workflows/ci.yml`) as
+  a non-blocking observation run (`continue-on-error: true`); it does not gate
+  a merge until `docs/backlog.md` records a green streak and promotes it.
 - Do not test templates, CSS, browser JavaScript, layout, spacing, sizing,
   visual state, transition, animation, or touch-target geometry as a browser
   or end-to-end test.
@@ -781,7 +807,7 @@ suite written up front. Each entry carries at least these fields:
 | Given | State relevant to the behavior |
 | When | The one behavior under test |
 | Then | The externally observable result |
-| Verification boundary | One of `unit`, `domain`, `web`, `contract`, `slow` |
+| Verification boundary | One of `unit`, `domain`, `web`, `contract`, `slow`, `e2e` |
 | Boundary rationale | Why a higher-cost boundary is required, or why a lower boundary suffices |
 | Test name | The actual Korean pytest function name or parametrized case ID |
 | Status | `Pending`, `Red`, `Green`, `Refactored`, `Deferred` |
@@ -962,16 +988,21 @@ wiring are exempt from the backend TDD cycle.
   frontend work still follows the Backend TDD Cycle.
 - Every frontend review includes both the Web Experience Designer and Browser
   Interaction Reviewer.
+- `docs/FE/design-principles.md` is the canonical design-direction record
+  (track 50: approved token set, flat geometry, zero border-radius). Read it
+  before any new frontend visual decision.
 - The shared design-rule protocol is abolished (2026-07-22 user decision; the
   former `.docs/design-rules.md` §1-§3, since deleted). Brand contrast ratios,
   the 44px touch-target
   duty layer, and the motion pause contract are no longer compliance gates, and
   no reviewer may require a documented "user-approved exception" to build what
-  the design intent specifies. Design intent - the mock and the user's
-  instruction - is the standard. Reviewers may still note these topics as
-  information, and functional defects such as broken layout, overflow,
-  keyboard-unreachable controls, focus traps, and unreadable text remain
-  defects.
+  the design intent specifies. Design intent - `docs/FE/design-principles.md`
+  and the user's instruction - is the standard. Local design sample files used
+  during that track were deleted afterward (2026-11-05 user decision); do not
+  recreate them as the design reference. Reviewers may still note abolished
+  topics as information, and functional defects such as broken layout,
+  overflow, keyboard-unreachable controls, focus traps, and unreadable text
+  remain defects.
 - Frontend implementation requires an approved plan and a technical record
   under `docs/FE/` when it states a guardrail (working notes may stay in
   `.docs/FE/`), unless the user explicitly approves a different document
@@ -1092,6 +1123,12 @@ variable substitution) is a known, accepted gap.
   message (`git add -A && echo x > prompt_plan.md` showed only the Bash write
   guard, 2026-09-28 `[실측]`); the command is still blocked.
 - `prompt_plan.md` is edited only with the Edit tool.
+- Moving a closed section out to `docs/plan-archive/` uses the Edit tool to
+  cut the section from `prompt_plan.md` and the Write tool to create the new
+  archive file; this is not a `prompt_plan.md` overwrite. Track 55's one-time
+  bulk move of 40 closed sections used a script under explicit user
+  assignment and was verified by a SHA-256 round-trip comparison against the
+  original content.
 - Rolling a hook back means removing its entry from `.claude/settings.json`.
 
 ## Domain And Design Policies
@@ -1234,6 +1271,10 @@ Before the next task, confirm:
 
 ## Deferred Refactoring Note
 
+Use this note for an improvement that is unrelated to the current track or
+exceeds its scale. A same-kind, in-track defect follows Prime Directive 2's
+exception instead and does not go here.
+
 ```text
 Deferred Refactoring Note
 
@@ -1247,6 +1288,9 @@ Deferred Refactoring Note
 
 ## Reporting Rules
 
+- Write reports in Korean unless the task explicitly asks for another
+  language; lead with the conclusion, then the facts; and do not use analogies
+  (standing user decision, 2026-08-20).
 - State exactly what was verified and with which command.
 - State what was not verified.
 - Do not claim tests, builds, lint, browser behavior, or deployment pass without
@@ -1342,3 +1386,9 @@ Convention source: https://nohack.tistory.com/17
 - `prompt_plan.md` and other pre-existing uncommitted changes not produced by
   the current task stay unstaged; stage files explicitly, never `git add -A`
   (enforced by `.claude/hooks/git-stage-all-guard.sh`).
+- A defect found after a pull request has merged is fixed with a direct
+  commit to `main`, not a new pull request (standing user decision,
+  2026-10-21). Rolling documentation updates use the same direct-commit path:
+  the `docs/pr-log.md` entry, `docs/backlog.md` current-state edits, and the
+  `docs/plan-archive/` move described in Operating Workflow step 8. Reserve a
+  new pull request for newly approved scope.
