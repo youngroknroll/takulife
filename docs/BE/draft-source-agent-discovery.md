@@ -2,7 +2,8 @@
 
 상태: 서버 경계·로컬 러너 구현됨(2026-08-20), 트랙 30(2026-09-12)·33·35·39(2026-09-20)
 반영. 러너의 번역 단계(트랙 44-1, 2026-10-27)는 아래 '번역 단계' 문단과
-`docs/BE/i18n.md` 참조. 정기 실행·자동 시작은 미구현.
+`docs/BE/i18n.md` 참조. 정기 실행 스케줄러는 미구현. 자동 시작(launchd)은
+템플릿·래퍼 `local_runner/launchd/`(트랙 46)가 있고 설치는 사용자 액션이다.
 사용자 결정: 2026-08-20, 2026-09-11(트랙 30 재편)
 
 ## Current fact
@@ -191,7 +192,8 @@ LLM 응답을 `EventDraft` 필드에 직접 복사하지 않는다.
 - 개인 맥이 켜져 있지 않으면 에이전트 탐색을 사용할 수 없다는 제약을 정상 운영
   상태로 취급한다. 가용성 장애로 PaaS 앱을 실패시키지 않는다.
 - 최초 공급자는 Claude Code로 확정됐다(`local_runner/claude_code_adapter.py`).
-  러너 자동 시작 방식과 토큰 저장·회전 절차는 아직 미결이다.
+  러너 자동 시작(launchd)은 템플릿·래퍼 `local_runner/launchd/`(트랙 46)가
+  있고 설치는 사용자 액션이다. 토큰 저장·회전 절차는 아직 미결이다.
 - 기본 소스 수집은 서버 기능 플래그와 활성 `DraftSource`만으로 계속 동작한다.
 - PaaS 배포에는 LLM API 키나 에이전트 런타임을 추가하지 않는다.
 - 운영 화면은 러너 최근 heartbeat, 탐색 실행 상태, 후보별 실패 단계, 승격된 소스와
@@ -408,7 +410,7 @@ LLM 응답을 `EventDraft` 필드에 직접 복사하지 않는다.
    데이터로만 받아 공식 여부와 행사 필드를 구조화 JSON으로 낸다 `[코드]`
    `local_runner/caption_interpreter.py:1-3, 16-77`
    (`build_interpretation_prompt`). `--tools TodoWrite,TodoWrite`는
-   `local_runner/caption_interpreter.py`(`run_agent_interpretation`, 약 163행)와
+   `local_runner/caption_interpreter.py`(`run_agent_interpretation`, 약 157행)와
    `local_runner/translation_flow.py`(`run_agent_translation`, 약 90행)에서 고정한다
    `[코드]`.
 
@@ -418,24 +420,24 @@ LLM 응답을 `EventDraft` 필드에 직접 복사하지 않는다.
 낼 수 없다. 그래서 탐색 프롬프트는 "공식 여부는 이 단계에서 판단하지
 않는다. … 행사가 공식인지 비공식인지, 그 근거가 무엇인지는 본문을 직접
 읽는 다음 해석 단계가 정한다"고 명시적으로 금지한다 `[코드]`
-`local_runner/claude_code_adapter.py:106-109`. 판단(`judgment`:
+`local_runner/claude_code_adapter.py:111-113`. 판단(`judgment`:
 official/unofficial/unclear)과 본문 인용 근거(`official_basis`, ≤200자)는
 해석 단계 프롬프트에서만 요구한다 `[코드]`
 `local_runner/caption_interpreter.py:50-55`. 서버는 이 판단값을 그대로
 믿지 않고, `unofficial`·`unclear`일 때만 검토 메모 앞머리에 판단과 근거를
 붙여 운영자가 보게 한다(그 외에는 접두를 붙이지 않는다) `[코드]`
-`_JUDGMENT_NOTE_PREFIXES`(약 60행)·`_build_intake_note`(약 181-190행)
+`_JUDGMENT_NOTE_PREFIXES`(약 70행)·`_build_intake_note`(약 186-195행)
 `drafts/agent_drafts.py`.
 
 ### 서버는 인스타·X를 절대 가져오지 않는다
 
 계정형 후보 URL이 제출돼도 서버는 목록형 8단계 검증(가져오기 포함)을
 타지 않고, `SNS_HOSTNAMES`에 속한 호스트는 존재 재확인 자체를 건너뛴다
-`[코드]` `drafts/agent_drafts.py`(`submit_agent_draft`, 약 235행 이하, SNS 분기
-약 259행) — 일반 웹
+`[코드]` `drafts/agent_drafts.py`(`submit_agent_draft`, 약 240행 이하, SNS 분기
+약 264행) — 일반 웹
 호스트만 `validate_fetch_url`·`RobotsChecker`·`fetch_html`을 탄다. 이
 계약은 호출 여부를 직접 단언하는 테스트로 고정돼 있다 `[코드]`
-`tests/drafts/test_agent_drafts.py:513`
+`tests/drafts/test_agent_drafts.py:521`
 (`test_일반_웹_URL_제출은_서버가_존재를_재확인하고_인스타_URL_제출은_fetch를_호출하지_않으며_안전하지_않은_URL은_거부된다`).
 
 ### 계정형 소스는 비활성으로 등록된다
@@ -443,10 +445,10 @@ official/unofficial/unclear)과 본문 인용 근거(`official_basis`, ≤200자
 인스타·X 계정을 새 수집처로 제안하면 호스트 allowlist·핸들 경로 형식·
 중복만 검사하고, 가져오기·robots.txt 확인 없이 `DraftSource(enabled=False)`
 로 만든다 `[코드]` `drafts/candidate_validation.py`(`register_account_source`,
-약 395행, 호스트 검사 약 416행). 스태프가 대시보드에서 직접 활성화해야 실제
+약 399행, 호스트 검사 약 420행). 스태프가 대시보드에서 직접 활성화해야 실제
 수집이 시작된다. 목록형·계정형 분기는 러너가 아니라 서버가 결정한다
-`[코드]` `drafts/runner_views.py`(`RunnerCandidateSubmitView.post`, 약 94-127행,
-분기 약 106-110행 — `source_type`이
+`[코드]` `drafts/runner_views.py`(`RunnerCandidateSubmitView.post`, 약 98-134행,
+분기 약 114-118행 — `source_type`이
 `DraftSource.ACCOUNT_SOURCE_TYPES`면 `register_account_source`, 아니면
 기존 `submit_candidate`).
 
@@ -601,7 +603,7 @@ OS 시간대가 UTC 등 다른 값이어도 종료 판정이 서버와 갈리지
 `latest_mentioned_date(text)`가 본문 전체에서 가장 늦은 날짜 하나를
 고르는 방식이다 — 규칙 추출기가 뽑는 시작·종료일에는 게시일이 섞여
 믿을 수 없어 본문 전체를 다시 본다는 실측 근거가 있다(사용자 결정 기록
-D9, `prompt_plan.md` 트랙 33 참고). 스태프가 URL을 직접 골라 추가하는
+D9, `docs/plan-archive/track-33.md` 참고). 스태프가 URL을 직접 골라 추가하는
 경로(`staff/views/draft_api.py`)에는 이 필터를 적용하지 않는다 — 사람이
 이미 골라 확인한 URL이기 때문이다.
 
@@ -649,8 +651,8 @@ reason 집합은 서버 `EVENT_OUTCOME_REASONS`
 `[코드 drafts/discovery_runs.py:20]` × `MAX_LEASES=2`
 `[코드 drafts/discovery_runs.py:23]` 동안 새 탐색이 막히기 때문이다.
 url은 `sanitize_text` 적용·http(s) 스킴·200자 이하만 통과하고
-(`_clean_event_outcomes` 74~78행), `outcome=="created"`인 항목은 이
-실행이 실제로 만든 드래프트 source_url과 대조해 없으면 버린다(87행,
+(`_clean_event_outcomes` 81-83행), `outcome=="created"`인 항목은 이
+실행이 실제로 만든 드래프트 source_url과 대조해 없으면 버린다(94행,
 러너 문자열을 그대로 믿지 않는다). 최대 20건까지만 남기고 초과분은
 절단한다 — `_MAX_EVENT_OUTCOMES = 20`
 `[코드]` `drafts/discovery_runs.py`(약 52행).
@@ -659,7 +661,7 @@ url은 `sanitize_text` 적용·http(s) 스킴·200자 이하만 통과하고
 
 `events_excluded` 정의(`drafts/models.py:141`)와 일치시키고, 차단
 호스트를 건너뛸 때 이미 attempted+failed로 세는 기존 패턴(`
-local_runner/exploration_flow.py:206-212`)과 대칭을 맞춘다.
+local_runner/exploration_flow.py:199-205`)과 대칭을 맞춘다.
 
 ### 건너뛰기는 코드가 재확인할 수 있는 두 사유만 믿는다
 
@@ -686,7 +688,7 @@ local_runner/exploration_flow.py:206-212`)과 대칭을 맞춘다.
 
 기준선 실기동(2026-09-18, 실행 16)에서 행사 하나의 읽기 예외가 실행
 전체를 `exploration_error`로 죽여 결과 4건만 남고 5번째 항목은 예외
-클래스명 로그조차 없었다 `[문서 prompt_plan.md 트랙 35 S1c, 원 실측
+클래스명 로그조차 없었다 `[문서 docs/plan-archive/track-35.md S1c, 원 실측
 2026-09-18]`. 지금은 읽기 단계에서 예상되는 예외
 (`httpx.HTTPError`·`InvalidFetchUrlError`·`UnsafeFetchUrlError`·
 `ResponseTooLargeError`·`EmptyExtractionError`·`OSError`)를
@@ -708,7 +710,7 @@ x.com·twitter.com의 `/<handle>/status/<숫자 id>` 경로만
 `[코드]` `local_runner/page_fetch.py:60-62,128-185`(정규식
 `_X_STATUS_PATH_RE`, 토큰 계산 `_x_syndication_token` 127~147행, 요청·응답
 처리 `_fetch_x_post` 150~184행). 토큰 없이
-호출하면 빈 본문(2바이트 `{}`)이 온다 `[문서 prompt_plan.md 트랙 35 S5,
+호출하면 빈 본문(2바이트 `{}`)이 온다 `[문서 docs/plan-archive/track-35.md S5,
 원 실측 2026-09-18 curl]`; 실 게시물 URL 2건은 200으로 응답했다(같은
 출처). 인스타 캡션 경로는 이 트랙에서 바꾸지 않았다.
 
@@ -751,7 +753,7 @@ robots.txt를 가져오지 못하면(네트워크·인증서 오류) 새
 
 ### 실기동 대조
 
-`[문서 prompt_plan.md 트랙 35 검증절, 원 실측 2026-09-18, 검색어
+`[문서 docs/plan-archive/track-35.md 검증절, 원 실측 2026-09-18, 검색어
 "치이카와 팝업스토어"]` — 기준선(수정 전, 실행 16): 결과
 `exploration_error`로 실패, 소요 7분 39초, attempted 5건 / failed 1건 /
 excluded 3건, 결과 4건 기록. 수정 후(실행 17): `partially_failed`(후보
@@ -773,8 +775,8 @@ excluded 3건, 결과 4건 기록. 수정 후(실행 17): `partially_failed`(후
 
 대시보드 새로고침 없이 러너 진행 상태(검색 중·행사 확인 중·소스 후보
 제출 중·완료 보고 정리 중)를 보여주고, 러너 종료 시 120초 신선도 대기
-없이 즉시 오프라인으로 반영한다. 계획 정본은 `prompt_plan.md` 트랙
-39(v1.1, 사용자 결정 1~6 확정)이며, 아래는 이 트랙이 코드에 새로 고정한
+없이 즉시 오프라인으로 반영한다. 계획 정본은 `docs/plan-archive/track-39.md`
+(v1.1, 사용자 결정 1~6 확정)이며, 아래는 이 트랙이 코드에 새로 고정한
 가드레일이다. **갱신(구현 완료, 2026-09-20)**: 착수 절 작성 시점에
 "아직 없다"고 적었던 `runner_live_summary()`·`DISCOVERY_PHASE_LABELS`
 (`drafts/queries.py`)와 `local_runner/progress.py`는 모두 구현·회귀
@@ -934,10 +936,9 @@ events_attempted=progress.last_index or 0)`를 보낸 뒤
 - `runner_shutdown`으로 종료된 run의 이벤트 집계는 정확한 tally가 아니라
   마지막 처리 인덱스 근사다(결정 D4) — 정확한 집계가 필요해지면 별도
   트랙.
-- G2(gunicorn `--timeout` 미설정)는 이 트랙에서 다루지 않는다.
-  `docs/backlog.md` G2는 2026-09-20 프로덕션 `DRAFT_DISCOVERY_ENABLED=true`
-  전환으로 트리거가 발동한 상태이며, 이 트랙 종료 직후 별도 트랙으로
-  진행하기로 사용자가 결정했다(2026-09-20).
+- G2(gunicorn `--timeout` 미설정)는 이 트랙에서 다루지 않았다. 트랙
+  46에서 해소됐다(`docker/entrypoint.sh:18`,
+  `--timeout "${GUNICORN_TIMEOUT:-120}"`).
 - `docs/backlog.md` H8(알림 메일)은 이연 유지 — 이 트랙은 대시보드·러너
   터미널 표시만 다룬다.
 - SSE/WebSocket, 정기 스케줄러/자동 시작은 이 트랙 범위 밖이다(계획서
@@ -972,7 +973,7 @@ events_attempted=progress.last_index or 0)`를 보낸 뒤
   `local_runner/exploration_flow.py`, `local_runner/page_fetch.py`,
   `local_runner/caption_interpreter.py`, `local_runner/url_safety.py`. 전체
   회귀 2680건 통과 `[실측]`(오케스트레이터 실행).
-- 트랙 39 사용자 결정(2026-09-20): 계획서 `prompt_plan.md` 트랙 39 절의 결정
+- 트랙 39 사용자 결정(2026-09-20): 계획서 `docs/plan-archive/track-39.md`의 결정
   D1~D12, 계획서 사용자 결정 1~6.
   - 전체 회귀: `uv run pytest -q` 3181 passed / 10 deselected / 91.80초
     `[실측 2026-09-20, 오케스트레이터 실행]`. `manage.py check` 이상 없음,

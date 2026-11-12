@@ -407,7 +407,11 @@ class UserEventStatusDetailView(RetrieveUpdateDestroyAPIView):
             serializer.save()
             return
         try:
-            transition(user_event_status=serializer.instance)
+            # mark_visited/mark_missed/revert_to_planned는 select_for_update()로
+            # 자기 행을 다시 조회해서 그 최신 인스턴스를 반환하며,
+            # serializer.instance를 직접 수정하지 않는다(update_collection_item과
+            # 같은 이유) — 응답은 반드시 이 반환값으로 구성해야 한다.
+            serializer.instance = transition(user_event_status=serializer.instance)
         except VisitRecordExistsError:
             raise ValidationError(
                 {"status": gettext("이미 방문 기록이 있는 항목은 이 상태로 되돌릴 수 없습니다.")}

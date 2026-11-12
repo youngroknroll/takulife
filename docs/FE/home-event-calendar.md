@@ -24,7 +24,7 @@
   `next_month`("YYYY-MM"), `legend`(`[{slug, label}]`).
 - 앵커 규칙: 월내비·날짜 칸은 `#home-calendar-agenda`로 돌아오고, "이 날짜의
   이벤트 N개 모두 보기" 링크는 `/events/calendar/?month=…&date=…#selected-date`
-  (행사 달력)로 이동한다 [코드 `templates/core/partials/_home_event_calendar.html:140`].
+  (행사 달력)로 이동한다 [코드 `templates/core/partials/_home_event_calendar.html:141`].
   섹션 루트 `id="home-calendar"`는 랜드마크일 뿐 앵커 대상이 아니다.
 
 ## Decision
@@ -71,7 +71,7 @@
 `.date-detail-section`)에는 2026-10-27에 `scroll-margin-top`을 보완했다.
 홈 `#home-calendar-agenda` [코드 `home_calendar.css`
 `.home-cal-agenda`], 행사 달력 `#selected-date` [코드 `event_calendar.css`
-`.date-detail-section`, `calendar.html:161`]. 새 앵커 대상을 만들 때 세 짝 중
+`.date-detail-section`, `templates/core/events/calendar.html:161`]. 새 앵커 대상을 만들 때 세 짝 중
 하나라도 빠뜨리면 리뷰에서 재발한다(트랙 34에서 행사 달력 쪽
 `tabindex`·`scroll-margin-top`·`:focus` 3종이 모두 빠져 있던 것을 이번에
 채웠다).

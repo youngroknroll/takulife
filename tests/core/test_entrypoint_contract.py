@@ -47,3 +47,23 @@ def test_컨테이너_기동_명령은_GUNICORN_TIMEOUT_환경변수와_문서�
     match = re.search(r'--timeout\s+"?\$\{GUNICORN_TIMEOUT:-(\d+)\}"?', gunicorn_lines[0])
     assert match is not None
     assert int(match.group(1)) == DOCUMENTED_GUNICORN_TIMEOUT_SECONDS
+
+
+def test_컨테이너_기동_명령은_접근_로그를_표준출력으로_보내고_경로만_남기는_형식을_쓴다():
+    """gunicorn 기동 명령이 접근 로그를 표준출력(`-`)으로 보내고,
+    쿼리 문자열(`%(q)s`)이나 전체 요청 라인(`%(r)s`)이 아니라 경로(`%(U)s`)만
+    담는 로그 포맷을 유지해야 한다 — 쿼리 문자열에 토큰·개인정보가 실릴 수
+    있다."""
+    text = (PROJECT_ROOT / "docker" / "entrypoint.sh").read_text(encoding="utf-8")
+
+    gunicorn_lines = [line for line in _logical_lines(text) if line.startswith("exec gunicorn")]
+    assert len(gunicorn_lines) == 1
+
+    assert "--access-logfile -" in gunicorn_lines[0]
+
+    match = re.search(r"--access-logformat\s+'([^']*)'", gunicorn_lines[0])
+    assert match is not None
+    log_format = match.group(1)
+    assert "%(U)s" in log_format
+    assert "%(r)s" not in log_format
+    assert "%(q)s" not in log_format

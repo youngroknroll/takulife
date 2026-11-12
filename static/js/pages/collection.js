@@ -199,6 +199,7 @@
 
       if (!form.elements["name"].value.trim()) {
         setText(errorEl, gettext("이름을 입력해 주세요."));
+        form.elements["name"].focus();
         return;
       }
 
@@ -361,6 +362,7 @@
 
       if (!form.elements["name"].value.trim()) {
         setText(errorEl, gettext("이름을 입력해 주세요."));
+        form.elements["name"].focus();
         return;
       }
 

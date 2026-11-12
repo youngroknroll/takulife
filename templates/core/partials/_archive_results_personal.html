@@ -119,7 +119,7 @@ status.js/personal_entries.js 바인딩을 그대로 쓰도록 수정 없이 이
               <label for="promote-url-{{ row.entry.id }}">{% translate "공식 URL" %}</label>
               <input id="promote-url-{{ row.entry.id }}" type="url" name="official_url" placeholder="https://" required aria-describedby="promote-note-{{ row.entry.id }}">
             </div>
-            <p class="form-error" data-promote-error="{{ row.entry.id }}"></p>
+            <p class="form-error" data-promote-error="{{ row.entry.id }}" aria-live="polite"></p>
             <button class="form-submit-btn" type="submit">{% translate "제보하기" %}</button>
           </form>
         {% endif %}

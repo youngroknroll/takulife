@@ -94,7 +94,8 @@ django-axes 8.3.1 기준 `[실측 uv.lock]`). 별도 관리 명령이 개입할 
 
 ## Evidence
 
-로컬 실 DB 실측(`track37-evidence.md`, 2026-09-18) `[실측]`:
+로컬 실 DB 실측(스크래치 산출물 `track37-evidence.md`, 저장소에 보존되지
+않음, 2026-09-18) `[실측]`:
 
 - `--dry-run`: 세션 266건 / `access_logs` 0건 / `access_failure_logs` 0건
   / `error_groups` 0건, 종료 코드 0.

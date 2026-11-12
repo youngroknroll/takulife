@@ -105,9 +105,15 @@
     if (!marker) { return; }
     var count = parseInt(marker.getAttribute("data-result-count"), 10);
     if (isNaN(count)) { return; }
-    var message = count > 0
-      ? interpolate(ngettext("%(n)s건 검색됨", "%(n)s건 검색됨", count), { n: count }, true)
-      : gettext("검색 결과가 없습니다");
+    var message;
+    if (count > 0) {
+      message = interpolate(ngettext("%(n)s건 검색됨", "%(n)s건 검색됨", count), { n: count }, true);
+    } else {
+      // 0건 조각마다 안내 문구가 달라질 수 있어(필터별 empty-state), 서버가
+      // 이미 렌더링한 .empty-title을 그대로 읽는다. 못 찾을 때만 일반 문구로 돌아간다.
+      var emptyTitle = results.querySelector(".empty-title");
+      message = emptyTitle ? emptyTitle.textContent : gettext("검색 결과가 없습니다");
+    }
 
     // 같은 메시지를 다시 알릴 때도 스크린리더가 변화를 감지하도록 일단 비운다.
     searchStatus.textContent = "";

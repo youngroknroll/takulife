@@ -74,9 +74,10 @@ else 분기와 테스트 상수 `_SHELL_CSS_RELATIVE_PATHS`를 **함께** 갱신
 효율을 높여 전송량도 준다. 셸 CSS는 어차피 모든 페이지가 항상 같은 세트를
 함께 로드하므로 세분화 손실은 수용 가능하다고 판단했다(WED 판정).
 
-트랙 43(다국어) 이후 재측정: 소스는 여전히 16개, 번들 원본 70,786B·
-`gzip -9` 19,833B`[실측 2026-10-27 uv run python manage.py bundle_shell_css
---output <tmp> 후 wc -c·gzip -9 -c <tmp> | wc -c]`(작성 당시 67,401B·18,908B).
+트랙 43(다국어) 이후 재측정: 소스는 여전히 16개, 번들 원본 70,608B·
+`gzip -9` 19,746B`[실측 2026-11-12 uv run python manage.py bundle_shell_css
+--output <tmp> 후 wc -c·gzip -9 -c <tmp> | wc -c]`(작성 당시 67,401B·18,908B,
+2026-10-27 측정 70,786B·19,833B에서 디자인 토큰 변경으로 줄었다).
 
 ## 검증 근거
 

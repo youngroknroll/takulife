@@ -209,9 +209,13 @@ def mark_visited(*, user_event_status):
     """상태 행을 방문(예: '실제로 다녀왔다')으로 바꾼다.
 
     상태 저장과 활동 기록은 한 트랜잭션 — 기록 실패 시 상태도 되돌아간다.
+    호출자가 들고 있는 인스턴스가 낡았을 수 있어(update_collection_item과
+    같은 이유), 잠금 아래에서 다시 조회해야 "from"이 실제 직전 상태를
+    가리킨다.
     """
-    previous_status = user_event_status.status
     with transaction.atomic():
+        user_event_status = UserEventStatus.objects.select_for_update().get(pk=user_event_status.pk)
+        previous_status = user_event_status.status
         user_event_status.status = UserEventStatus.Status.VISITED
         user_event_status.save(update_fields=["status", "updated_at"])
         if previous_status != UserEventStatus.Status.VISITED:
@@ -259,9 +263,11 @@ def mark_missed(*, user_event_status):
         personal_entry=user_event_status.personal_entry,
     ):
         raise VisitRecordExistsError
-    previous_status = user_event_status.status
     # 상태 저장과 활동 기록은 같은 트랜잭션 계약을 따른다(mark_visited 참고).
+    # 재조회도 같은 이유 — 호출자가 들고 있는 인스턴스가 낡았을 수 있다.
     with transaction.atomic():
+        user_event_status = UserEventStatus.objects.select_for_update().get(pk=user_event_status.pk)
+        previous_status = user_event_status.status
         user_event_status.status = UserEventStatus.Status.MISSED
         user_event_status.save(update_fields=["status", "updated_at"])
         if previous_status != UserEventStatus.Status.MISSED:
@@ -289,9 +295,11 @@ def revert_to_planned(*, user_event_status):
         personal_entry=user_event_status.personal_entry,
     ):
         raise VisitRecordExistsError
-    previous_status = user_event_status.status
     # 상태 저장과 활동 기록은 같은 트랜잭션 계약을 따른다(mark_visited 참고).
+    # 재조회도 같은 이유 — 호출자가 들고 있는 인스턴스가 낡았을 수 있다.
     with transaction.atomic():
+        user_event_status = UserEventStatus.objects.select_for_update().get(pk=user_event_status.pk)
+        previous_status = user_event_status.status
         user_event_status.status = UserEventStatus.Status.PLANNED
         user_event_status.missed_overridden = True
         user_event_status.save(update_fields=["status", "missed_overridden", "updated_at"])

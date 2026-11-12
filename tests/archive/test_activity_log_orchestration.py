@@ -148,6 +148,65 @@ def test_상태_전환_함수를_호출하면_status_changed_활동_이력이_�
 
 
 # ---------------------------------------------------------------------------
+# T55-B1 — 호출자가 들고 있는 UserEventStatus 인스턴스가 DB 현재 상태보다
+# 낡아도(다른 요청이 먼저 상태를 바꿔 커밋한 뒤), 상태 전환 함수가 남기는
+# status_changed의 "from"은 그 낡은 메모리 값이 아니라 DB에 실제로 있던
+# 값이어야 한다.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.domain
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "starting_status, transition_name, concurrent_status, expected_from",
+    [
+        (
+            UserEventStatus.Status.PLANNED,
+            "mark_visited",
+            UserEventStatus.Status.MISSED,
+            "missed",
+        ),
+        (
+            UserEventStatus.Status.PLANNED,
+            "mark_missed",
+            UserEventStatus.Status.VISITED,
+            "visited",
+        ),
+        (
+            UserEventStatus.Status.MISSED,
+            "revert_to_planned",
+            UserEventStatus.Status.VISITED,
+            "visited",
+        ),
+    ],
+    ids=["방문완료전환", "불참전환", "예정복귀전환"],
+)
+def test_낡은_인스턴스로_상태_전환_함수를_호출하면_활동_이력의_from이_DB_현재_상태로_기록된다(
+    make_user,
+    make_event,
+    make_status,
+    starting_status,
+    transition_name,
+    concurrent_status,
+    expected_from,
+):
+    user = make_user()
+    event = make_event(title=f"낡은 인스턴스 전환 이벤트 {transition_name}")
+    status_row = make_status(user, event, status=starting_status)
+    stale_status_row = UserEventStatus.objects.get(pk=status_row.pk)
+
+    # 호출 사이에 다른 요청이 먼저 DB 상태를 바꿔 커밋한 상황을 재현한다.
+    # stale_status_row는 이 변경 이후에도 원래 값을 그대로 들고 있다.
+    UserEventStatus.objects.filter(pk=status_row.pk).update(status=concurrent_status)
+
+    _TRANSITION_FUNCTIONS[transition_name](user_event_status=stale_status_row)
+
+    entries = ActivityLogEntry.objects.filter(user=user, kind=ActivityLogEntry.Kind.STATUS_CHANGED)
+    assert entries.count() == 1
+    assert entries.get().change_summary["from"] == expected_from
+
+
+# ---------------------------------------------------------------------------
 # CAL-2-06 — 이미 방문완료 상태에 mark_visited를 다시 호출해도(무동작 전환)
 # 아무것도 기록되지 않는다
 # ---------------------------------------------------------------------------
