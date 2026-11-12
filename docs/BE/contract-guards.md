@@ -215,6 +215,9 @@ partial이 합쳐진 것이다. `<form`을 앵커로 골랐다가 `_topbar.html`
 
 - `tests/core/test_entrypoint_contract.py` — `docker/entrypoint.sh`의 gunicorn
   타임아웃이 `GUNICORN_TIMEOUT` 환경변수와 문서화된 기본값으로 정해지는지 고정한다.
+  같은 파일의 또 다른 테스트는 접근 로그가 표준출력으로 가고(`--access-logfile
+  -`), 포맷이 경로(`%(U)s`)만 남기며 전체 요청 라인(`%(r)s`)·쿼리 문자열(`%(q)s`)은
+  쓰지 않는지 고정한다(트랙 55-6).
 - `tests/core/test_run_runner_wrapper_contract.py` — 로컬 러너 launchd 래퍼가
   환경파일의 `PATH_PREPEND` 디렉터리에 있는 `claude` 스텁을 찾는지 고정한다.
 - `tests/core/test_ci_command_policy.py` — CI·운영 문서가 Python/Django 명령을

@@ -75,7 +75,14 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
    `manage.py collectstatic --noinput`을 자동 실행(docker/entrypoint.sh:9-11) —
    별도 수동 절차 불필요. `set -e`라 번들 실패는 기동을 그대로 중단시킨다
    (`docs/FE/css-delivery.md` C2·C3 참고).
-5. **헬스체크 연결**: `/api/health/`(`core/urls.py`, `core/views.py`의 `health()`)는
+5. **접근 로그**: gunicorn이 요청마다 접근 로그 한 줄을 표준출력으로 남긴다
+   (`docker/entrypoint.sh` `--access-logfile -`). 포맷은
+   `%(h)s %(t)s "%(m)s %(U)s" %(s)s %(b)s "%(a)s"`로, 경로(`%(U)s`)만 남기고
+   전체 요청 라인(`%(r)s`)이나 쿼리 문자열(`%(q)s`)은 쓰지 않는다 — 쿼리
+   문자열에 토큰 등 민감정보가 실릴 수 있기 때문이다(트랙 55-6). PaaS에서
+   로그를 읽는 법과 주의 사항은 `docs/operations-runbook.md` 로그 판독
+   절 참고.
+6. **헬스체크 연결**: `/api/health/`(`core/urls.py`, `core/views.py`의 `health()`)는
    무인증 200을 반환하되 **`connection.ensure_connection()`으로 DB 접속을
    확인**하고, 실패 시 503을 반환한다. PaaS의 **liveness**(실패 시 컨테이너
    재시작) 프로브로 이 엔드포인트를 그대로 쓰면, DB 자체 장애 시 앱은 멀쩡한데도
