@@ -18,8 +18,8 @@
       <h1>{% translate "이벤트 달력" %}</h1>
       {% translate "목록·달력 전환" as tabs_label %}
       <nav class="events-tabs" aria-label="{{ tabs_label }}">
-        <a href="/events/?{{ request.GET.urlencode }}">{% translate "목록" %}</a>
-        <a class="active" aria-current="page" href="/events/calendar/?{{ request.GET.urlencode }}">{% translate "달력" %}</a>
+        <a href="/events/?{{ request.GET.urlencode }}"{% if request.GET %} rel="nofollow"{% endif %}>{% translate "목록" %}</a>
+        <a class="active" aria-current="page" href="/events/calendar/?{{ request.GET.urlencode }}"{% if request.GET %} rel="nofollow"{% endif %}>{% translate "달력" %}</a>
       </nav>
     </div>
 
@@ -136,9 +136,17 @@
             <span class="calendar-month-year">{{ selected_date|date:"Y" }}</span><span class="calendar-month-sep">·</span><span class="calendar-month-name">{{ selected_date|date:"F" }}</span>
           </h2>
           <div class="calendar-month-controls">
-            <a class="calendar-month-glyph" href="?month={{ prev_month }}{{ extra_query }}" aria-label="{{ prev_month_label }}">‹</a>
+            {% if prev_month %}
+              <a class="calendar-month-glyph" href="?month={{ prev_month }}{{ extra_query }}" rel="nofollow" aria-label="{{ prev_month_label }}">‹</a>
+            {% else %}
+              <a class="calendar-month-glyph is-off" role="link" aria-disabled="true" aria-label="{{ prev_month_label }}">‹</a>
+            {% endif %}
             <a class="calendar-month-today" href="?{{ extra_query }}">{% translate "이번 달" %}</a>
-            <a class="calendar-month-glyph" href="?month={{ next_month }}{{ extra_query }}" aria-label="{{ next_month_label }}">›</a>
+            {% if next_month %}
+              <a class="calendar-month-glyph" href="?month={{ next_month }}{{ extra_query }}" rel="nofollow" aria-label="{{ next_month_label }}">›</a>
+            {% else %}
+              <a class="calendar-month-glyph is-off" role="link" aria-disabled="true" aria-label="{{ next_month_label }}">›</a>
+            {% endif %}
           </div>
         </nav>
 

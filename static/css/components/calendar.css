@@ -218,3 +218,11 @@
     transition: none;
   }
 }
+
+/* 범위 밖 월 이동 글리프: 자리는 유지하되 흐리게 하고 상호작용을 끈다.
+   pointer-events: none이 마우스 hover 발생 자체를 막아, 페이지별 스킨의
+   :hover 색 전환 규칙과 충돌하지 않는다. */
+.calendar-month-glyph.is-off {
+  opacity: 0.4;
+  pointer-events: none;
+}

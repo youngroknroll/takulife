@@ -17,6 +17,7 @@ import pytest
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 _PRODUCTION_SETTINGS_MODULE = "config.settings"
+_TEST_SETTINGS_MODULE = "config.settings_test"
 
 # 프로덕션 코드 진입점은 DJANGO_SETTINGS_MODULE을 다른 기본값에 기대지
 # 않고 프로덕션 모듈로 명시적으로 설정해야 한다.
@@ -92,6 +93,17 @@ def test_비밀번호가_필요없는_사용자는_실해시를_만들지_않는
 
     # Then: unusable password이므로 실제 password hasher 비용이 들지 않는다.
     assert 비밀번호_미지정_사용자.has_usable_password() is False
+
+
+@pytest.mark.contract
+def test_테스트_설정_모듈은_공개_데이터_캐시_별칭_public만_DummyCache로_덮는다():
+    # Given: 운영 설정과 테스트 설정 모듈을 각각 독립적으로 로드한다.
+    운영_설정 = Settings(_PRODUCTION_SETTINGS_MODULE)
+    테스트_설정 = Settings(_TEST_SETTINGS_MODULE)
+
+    # When/Then: public만 DummyCache로 격리되고, default는 운영과 그대로 같다.
+    assert 테스트_설정.CACHES["public"]["BACKEND"] == "django.core.cache.backends.dummy.DummyCache"
+    assert 테스트_설정.CACHES["default"] == 운영_설정.CACHES["default"]
 
 
 @pytest.mark.contract

@@ -503,3 +503,140 @@ class TestHomeCollectionSnapshotContext:
         status.refresh_from_db()
         assert UserEventStatus.objects.count() == 1
         assert status.updated_at == original_updated_at
+
+
+@pytest.mark.django_db
+class TestHomeDisplayQueryMerge:
+    """홈 화면 다섯 구간(진행중/마감임박/신규/대표/다가오는 예정)이 각자
+    사용자 상태·관심을 따로 조회하면 쿼리 수가 구간 수만큼 늘어난다는
+    회귀 가드."""
+
+    @pytest.mark.contract
+    def test_로그인_홈은_구간이_다섯_개여도_사용자_상태와_관심을_한_번씩만_조회한다(
+        self, make_user, make_event, django_assert_max_num_queries
+    ):
+        """다섯 구간이 각자 상태·관심을 조회하면 쿼리가 구간 수만큼
+        늘어난다. 이 반복은 다섯 구간이 모두 비어 있지 않을 때만
+        드러나므로, 각 구간에 최소 한 건씩 채워 둔다."""
+        from archive.models import EventInterest, UserEventStatus
+
+        today = date(2026, 3, 10)
+        event_a = make_event(
+            title="진행중 마감임박",
+            start_date=today - timedelta(days=1),
+            end_date=today + timedelta(days=5),
+        )
+        event_b = make_event(
+            title="다가오는 예정",
+            start_date=today + timedelta(days=10),
+            end_date=today + timedelta(days=11),
+        )
+        event_c = make_event(title="최근")
+
+        user = make_user()
+        UserEventStatus.objects.create(
+            user=user, event=event_a, status=UserEventStatus.Status.PLANNED
+        )
+        UserEventStatus.objects.create(
+            user=user, event=event_b, status=UserEventStatus.Status.PLANNED
+        )
+        EventInterest.objects.create(user=user, event=event_c)
+
+        client = Client()
+        client.force_login(user)
+        with patch("web.views.events.timezone.localdate", return_value=today):
+            # 병합 전 29회에서 구간별 상태·관심 조회 10회가 2회로 줄어든 값이다.
+            with django_assert_max_num_queries(21):
+                resp = client.get("/")
+
+        assert resp.status_code == 200
+        assert resp.context["ongoing_rows"] != []
+        assert resp.context["closing_rows"] != []
+        assert resp.context["recent_rows"] != []
+        assert resp.context["featured_event_rows"] != []
+        assert resp.context["upcoming_planned"] != []
+
+    @pytest.mark.contract
+    def test_비로그인_홈은_구간_병합_뒤에도_쿼리_수가_늘지_않는다(
+        self, make_event, django_assert_max_num_queries
+    ):
+        """비로그인 응답은 이미 통과하는 경로지만, 병합 뒤에도 쿼리 수가
+        늘지 않는지 확인하는 안전핀이다."""
+        today = date(2026, 3, 10)
+        make_event(
+            title="진행중 마감임박",
+            start_date=today - timedelta(days=1),
+            end_date=today + timedelta(days=5),
+        )
+        make_event(title="최근")
+
+        client = Client()
+        with patch("web.views.events.timezone.localdate", return_value=today):
+            # 병합 전에 잰 값이다. 비로그인은 상태·관심을 조회하지 않는다.
+            with django_assert_max_num_queries(11):
+                resp = client.get("/")
+
+        assert resp.status_code == 200
+        assert resp.context["ongoing_rows"] != []
+        assert resp.context["closing_rows"] != []
+        assert resp.context["recent_rows"] != []
+        assert resp.context["featured_event_rows"] != []
+        assert "upcoming_planned" not in resp.context
+
+    @pytest.mark.contract
+    def test_같은_행사는_어느_구간에서도_사용자_상태와_관심_표시가_같다(
+        self, make_user, make_event
+    ):
+        """상태와 관심을 서로 다르게 둬서 두 조회 결과가 뒤섞이면 값이
+        달라지게 한다. event_c는 첫 구간이 아니라 recent_rows에만 있는
+        행사로 둬서, 첫 구간 행사만 조회하는 퇴행을 잡는다."""
+        from archive.models import EventInterest, UserEventStatus
+
+        today = date(2026, 3, 10)
+        event_a = make_event(
+            title="진행중 마감임박",
+            start_date=today - timedelta(days=1),
+            end_date=today + timedelta(days=5),
+        )
+        event_b = make_event(
+            title="다가오는 예정",
+            start_date=today + timedelta(days=10),
+            end_date=today + timedelta(days=11),
+        )
+        event_c = make_event(title="최근")
+
+        user = make_user()
+        UserEventStatus.objects.create(
+            user=user, event=event_a, status=UserEventStatus.Status.PLANNED
+        )
+        UserEventStatus.objects.create(
+            user=user, event=event_b, status=UserEventStatus.Status.PLANNED
+        )
+        EventInterest.objects.create(user=user, event=event_c)
+
+        client = Client()
+        client.force_login(user)
+        with patch("web.views.events.timezone.localdate", return_value=today):
+            resp = client.get("/")
+
+        def _row_for(rows, event_id):
+            return next(row for row in rows if row["event"].id == event_id)
+
+        ongoing_row = _row_for(resp.context["ongoing_rows"], event_a.id)
+        assert ongoing_row["user_status"] == "planned"
+        assert ongoing_row["user_interested"] is False
+
+        closing_row = _row_for(resp.context["closing_rows"], event_a.id)
+        assert closing_row["user_status"] == "planned"
+        assert closing_row["user_interested"] is False
+
+        recent_row = _row_for(resp.context["recent_rows"], event_c.id)
+        assert recent_row["user_status"] == ""
+        assert recent_row["user_interested"] is True
+
+        upcoming_row = _row_for(resp.context["upcoming_planned"], event_b.id)
+        assert upcoming_row["user_status"] == "planned"
+
+        featured_row = _row_for(resp.context["featured_event_rows"], event_a.id)
+        assert featured_row["user_status"] == "planned"
+        assert featured_row["user_interested"] is False

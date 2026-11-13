@@ -40,7 +40,8 @@ def test_핸들러가_예외를_던지면_요청_컨텍스트_없이도_커스�
         calls.append(1)
         raise RuntimeError("simulated view failure")
 
-    monkeypatch.setattr("web.views.events.list_published_events", _boom)
+    # 홈은 공개 구간을 이 함수 하나로 받으므로 여기서 실패를 일으킨다.
+    monkeypatch.setattr("web.views.events.home_public_sections", _boom)
     client.raise_request_exception = False
 
     resp = client.get("/")
@@ -77,7 +78,8 @@ def test_언어_쿠키가_일본어여도_500_페이지는_일본어_html_lang�
     def _boom(*args, **kwargs):
         raise RuntimeError("simulated view failure")
 
-    monkeypatch.setattr("web.views.events.list_published_events", _boom)
+    # 홈은 공개 구간을 이 함수 하나로 받으므로 여기서 실패를 일으킨다.
+    monkeypatch.setattr("web.views.events.home_public_sections", _boom)
     client.raise_request_exception = False
 
     resp = client.get("/")

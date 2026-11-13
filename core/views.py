@@ -1,11 +1,25 @@
 """인프라 헬스체크와 API 루트 뷰. 도메인 결합이 없다."""
 
+import time
+
 from django.db import OperationalError, connection
 from django.http import HttpResponse
 from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+
+# 마지막으로 DB 확인에 성공한 시각을 워커 메모리에 둔다.
+_last_db_check_at = None
+
+# 헬스 체크가 5초마다 오므로 DB 확인은 30분에 한 번만 한다.
+HEALTH_DB_CHECK_INTERVAL_SECONDS = 30 * 60
+
+
+def _db_check_is_due():
+    if _last_db_check_at is None:
+        return True
+    return time.monotonic() - _last_db_check_at >= HEALTH_DB_CHECK_INTERVAL_SECONDS
 
 
 @extend_schema(
@@ -43,7 +57,7 @@ def robots_txt(request):
 
 @extend_schema(
     tags=["core"],
-    summary="데이터베이스 연결 상태를 확인한다",
+    summary="서버 상태를 확인한다(DB 연결은 30분에 한 번 확인한다)",
     responses={
         200: inline_serializer("HealthOkResponse", {"status": serializers.CharField()}),
         503: inline_serializer("HealthErrorResponse", {"status": serializers.CharField()}),
@@ -51,8 +65,12 @@ def robots_txt(request):
 )
 @api_view(["GET"])
 def health(request):
-    try:
-        connection.ensure_connection()
-    except OperationalError:
-        return Response({"status": "error"}, status=503)
+    global _last_db_check_at
+    if _db_check_is_due():
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT 1")
+        except OperationalError:
+            return Response({"status": "error"}, status=503)
+        _last_db_check_at = time.monotonic()
     return Response({"status": "ok"})
