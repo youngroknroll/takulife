@@ -171,6 +171,22 @@ class TestParsePublicListingParams:
             parse_public_listing_params({"sort": "not_a_real_sort"})
         assert "sort" in str(exc_info.value.detail)
 
+    def test_검색어가_100자면_그대로_통과한다(self):
+        """상한 100은 로그인 화면 검색어 자르기(web/views/_helpers.py:27)와 같은 숫자다."""
+        from events.queries import parse_public_listing_params
+
+        result = parse_public_listing_params({"q": "a" * 100})
+        assert result["q"] == "a" * 100
+
+    def test_검색어가_101자면_거부된다(self):
+        from rest_framework.exceptions import ValidationError
+
+        from events.queries import parse_public_listing_params
+
+        with pytest.raises(ValidationError) as exc_info:
+            parse_public_listing_params({"q": "a" * 101})
+        assert "q" in str(exc_info.value.detail)
+
 
 @pytest.mark.domain
 @pytest.mark.django_db
