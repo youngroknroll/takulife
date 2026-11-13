@@ -5,8 +5,15 @@
 
 from django.conf import settings
 from django.core.cache import caches
+from django.db.models import Count
 
-from events.queries import list_published_events_for_month
+from core.models import HomeConfig
+from events.models import Event
+from events.queries import (
+    consumer_category_choices,
+    list_published_events,
+    list_published_events_for_month,
+)
 
 CACHE_ALIAS = "public"
 
@@ -26,3 +33,62 @@ def public_month_events(*, year, month, today):
     events = list(list_published_events_for_month({}, year=year, month=month, today=today))
     cache.set(cache_key, events, timeout=settings.PUBLIC_CACHE_TTL_SECONDS)
     return events
+
+
+def _load_home_public_sections(*, today):
+    return {
+        "ongoing_rows": list(list_published_events({"status": "ongoing"}, today=today)[:15]),
+        "closing_rows": list(Event.objects.published().ending_within_days(5, today=today)[:15]),
+        # 슬라이더는 기간이 이미 끝난 행사(end_date < today)를 제외한다.
+        # end_date가 없는 행사는 "종료"가 될 수 없으므로 그대로 남긴다.
+        "recent_rows": list(
+            Event.objects.published().exclude(end_date__lt=today).order_by("-id")[:15]
+        ),
+        # 홈 대표 행사: 인기(조회수) 슬라이더 대신 공개 목록 기본 우선순위
+        # (진행중 -> 예정 -> 종료, "active"는 종료 행사를 제외)의 최대 5건을
+        # 로테이터로 노출한다.
+        "featured_event_rows": list(list_published_events({"status": "active"}, today=today)[:5]),
+        # "카테고리로 둘러보기" 집계: HomeConfig로 스태프가 순서/선택을
+        # 큐레이션한 카테고리와 게시 건수를 함께 담는다.
+        "category_counts": {
+            row["category"]: row["count"]
+            for row in Event.objects.published().values("category").annotate(count=Count("id"))
+        },
+        "featured_category_pairs": list(HomeConfig.get_solo().featured_category_pairs()),
+    }
+
+
+def home_public_sections(*, today):
+    """홈의 공개 섹션을 날짜별로 담는다. 사용자별 상태와 로그인 사용자의
+    예정 구간은 담지 않는다."""
+    # 운영자가 0으로 캐시를 끄면 캐시 저장소를 아예 부르지 않는다(캐시 장애 때도 끌 수 있게).
+    if settings.PUBLIC_CACHE_TTL_SECONDS == 0:
+        return _load_home_public_sections(today=today)
+
+    cache = caches[CACHE_ALIAS]
+    cache_key = f"home_public_sections:{today.isoformat()}"
+    sections = cache.get(cache_key)
+    if sections is not None:
+        return sections
+
+    sections = _load_home_public_sections(today=today)
+    cache.set(cache_key, sections, timeout=settings.PUBLIC_CACHE_TTL_SECONDS)
+    return sections
+
+
+def public_category_choices():
+    """행사 필터의 카테고리 (slug, 원문 라벨) 목록을 담는다. 번역은 화면이
+    요청마다 한다."""
+    # 운영자가 0으로 캐시를 끄면 캐시 저장소를 아예 부르지 않는다(캐시 장애 때도 끌 수 있게).
+    if settings.PUBLIC_CACHE_TTL_SECONDS == 0:
+        return consumer_category_choices()
+
+    cache = caches[CACHE_ALIAS]
+    cache_key = "public_category_choices"
+    choices = cache.get(cache_key)
+    if choices is not None:
+        return choices
+
+    choices = consumer_category_choices()
+    cache.set(cache_key, choices, timeout=settings.PUBLIC_CACHE_TTL_SECONDS)
+    return choices
