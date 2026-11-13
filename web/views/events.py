@@ -313,9 +313,10 @@ def event_list(request):
         if not params.get("status"):
             params = {**params, "status": "active"}
         qs = list_published_events(params)
-        total_count = qs.count()
         paginator = Paginator(qs, PUBLIC_LISTING_PAGE_SIZE)
         page_obj = paginator.get_page(request.GET.get("page"))
+        # 페이지 나누기가 이미 센 전체 건수를 다시 쓴다 — 따로 세면 같은 COUNT가 두 번 나간다.
+        total_count = paginator.count
         event_rows = _attach_display(page_obj.object_list, user=request.user)
     except ValidationError:
         pass
