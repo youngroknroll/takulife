@@ -51,9 +51,10 @@ from events.queries import (
     parse_public_listing_params,
 )
 from web.views._helpers import (
-    _adjacent_month,
     _attach_display,
     _attach_display_many,
+    _bounded_month_param,
+    _is_public_calendar_month,
     _parse_public_calendar_date,
     _parse_public_calendar_month,
     _redirect_without_calendar_params,
@@ -107,6 +108,7 @@ def _home_calendar_cell(cell, events_by_date, *, today, selected_date):
         "categories": _dedupe_category_slugs(
             [event.category for event in cell_events], limit=HOME_CALENDAR_DOT_LIMIT
         ),
+        "linkable": cell.date is not None and _is_public_calendar_month(cell.date, today=today),
     }
 
 
@@ -142,8 +144,6 @@ def _home_calendar_context(year, month, calendar_error, raw_date, *, today):
 
     grid = month_grid(year, month)
     weeks = _home_calendar_weeks(grid, events_by_date, today=today, selected_date=selected_date)
-    prev_year, prev_month = _adjacent_month(year, month, -1)
-    next_year, next_month = _adjacent_month(year, month, 1)
     selected_events = events_by_date.get(selected_date, [])
     month_categories = {event.category for event in events if event.category}
     legend = [
@@ -154,8 +154,8 @@ def _home_calendar_context(year, month, calendar_error, raw_date, *, today):
         "month": month,
         "month_start": date(year, month, 1),
         "month_param": f"{year:04d}-{month:02d}",
-        "prev_month": f"{prev_year:04d}-{prev_month:02d}",
-        "next_month": f"{next_year:04d}-{next_month:02d}",
+        "prev_month": _bounded_month_param(year, month, -1, today=today),
+        "next_month": _bounded_month_param(year, month, 1, today=today),
         "selected_date": selected_date,
         "selected_is_today": selected_date == today,
         "selected_count": len(selected_events),
@@ -512,6 +512,8 @@ def event_calendar(request):
                 ],
                 "more_count": max(len(events_by_date.get(cell.date, [])) - 2, 0),
                 "count": len(events_by_date.get(cell.date, [])),
+                "linkable": cell.date is not None
+                and _is_public_calendar_month(cell.date, today=today),
             }
             for cell in week
         ]
@@ -521,9 +523,6 @@ def event_calendar(request):
     selected_events = _attach_display(
         events_by_date.get(selected_date, []), today=today, user=request.user
     )
-
-    prev_year, prev_month_num = _adjacent_month(year, month, -1)
-    next_year, next_month_num = _adjacent_month(year, month, 1)
 
     selected_region = request.GET.getlist("region")
     selected_category = request.GET.getlist("category")
@@ -538,8 +537,8 @@ def event_calendar(request):
         "weeks": weeks,
         "selected_date": selected_date,
         "selected_events": selected_events,
-        "prev_month": f"{prev_year:04d}-{prev_month_num:02d}",
-        "next_month": f"{next_year:04d}-{next_month_num:02d}",
+        "prev_month": _bounded_month_param(year, month, -1, today=today),
+        "next_month": _bounded_month_param(year, month, 1, today=today),
         "extra_query": _calendar_extra_query(request),
         "active_filter_chips": _active_filter_chips(
             q=q,

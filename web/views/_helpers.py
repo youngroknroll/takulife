@@ -142,11 +142,35 @@ def _parse_public_calendar_month(raw_month, *, today):
     year, month, error = _parse_calendar_month(raw_month, today=today)
     if error is not None:
         return year, month, error
-    lower = _adjacent_month(today.year, today.month, -PUBLIC_CALENDAR_PAST_MONTHS)
-    upper = _adjacent_month(today.year, today.month, PUBLIC_CALENDAR_FUTURE_MONTHS)
+    lower, upper = _public_calendar_bounds(today)
     if not lower <= (year, month) <= upper:
         return year, month, "out_of_range"
     return year, month, None
+
+
+def _public_calendar_bounds(today):
+    """공개 달력이 보여주는 첫 달과 마지막 달 (year, month) 쌍."""
+    return (
+        _adjacent_month(today.year, today.month, -PUBLIC_CALENDAR_PAST_MONTHS),
+        _adjacent_month(today.year, today.month, PUBLIC_CALENDAR_FUTURE_MONTHS),
+    )
+
+
+def _bounded_month_param(year, month, delta, *, today):
+    """(year, month)에서 delta개월 떨어진 달의 "YYYY-MM"을 돌려주되,
+    공개 범위 밖이면 None.
+    """
+    lower, upper = _public_calendar_bounds(today)
+    target = _adjacent_month(year, month, delta)
+    if not lower <= target <= upper:
+        return None
+    return f"{target[0]:04d}-{target[1]:02d}"
+
+
+def _is_public_calendar_month(day, *, today):
+    """그 날짜의 달이 공개 범위 안인가 — 달력 칸을 링크로 낼지 정한다."""
+    lower, upper = _public_calendar_bounds(today)
+    return lower <= (day.year, day.month) <= upper
 
 
 def _redirect_without_calendar_params(request):

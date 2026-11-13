@@ -375,6 +375,91 @@ def test_카테고리가_없는_행사는_건수와_아젠다에는_남고_점�
 @pytest.mark.django_db
 @pytest.mark.contract
 @pytest.mark.parametrize(
+    "month_param, expected_prev, expected_next",
+    [
+        ("2024-06", None, "2024-07"),
+        ("2027-06", "2027-05", None),
+    ],
+    ids=["하한", "상한"],
+)
+def test_홈_경계_달에서는_범위_밖_쪽_이전_다음_달이_비어_있다(
+    month_param, expected_prev, expected_next
+):
+    fixed_today = date(2026, 6, 26)
+
+    with patch("web.views.events.timezone.localdate", return_value=fixed_today):
+        resp = Client().get("/", {"month": month_param})
+
+    assert resp.status_code == 200
+    calendar = resp.context["home_calendar"]
+    assert calendar["prev_month"] == expected_prev
+    assert calendar["next_month"] == expected_next
+    assert "month=None" not in resp.content.decode()
+
+
+@pytest.mark.django_db
+@pytest.mark.contract
+def test_홈_범위_중간_달은_이전_다음_달이_모두_있다():
+    fixed_today = date(2026, 6, 26)
+
+    with patch("web.views.events.timezone.localdate", return_value=fixed_today):
+        resp = Client().get("/", {"month": "2026-01"})
+
+    assert resp.status_code == 200
+    calendar = resp.context["home_calendar"]
+    assert calendar["prev_month"] == "2025-12"
+    assert calendar["next_month"] == "2026-02"
+
+
+@pytest.mark.django_db
+@pytest.mark.contract
+def test_홈_경계_달의_범위_밖_채움_칸은_링크가_아니다():
+    fixed_today = date(2026, 6, 26)
+
+    with patch("web.views.events.timezone.localdate", return_value=fixed_today):
+        resp = Client().get("/", {"month": "2024-06"})
+
+    assert resp.status_code == 200
+    cells = [day for week in resp.context["home_calendar"]["weeks"] for day in week]
+    may_cells = [cell for cell in cells if cell["date"].month == 5]
+    june_cells = [cell for cell in cells if cell["date"].month == 6]
+    july_cells = [cell for cell in cells if cell["date"].month == 7]
+    assert may_cells, "2024년 5월 채움 칸이 없음"
+    assert all(cell["linkable"] is False for cell in may_cells)
+    assert all(cell["linkable"] is True for cell in june_cells)
+    assert all(cell["linkable"] is True for cell in july_cells)
+
+    body = resp.content.decode()
+    assert 'href="?month=2024-05' not in body
+
+
+@pytest.mark.django_db
+@pytest.mark.contract
+def test_홈_달력의_month가_들어간_모든_링크에는_nofollow가_붙는다(make_event):
+    """ "모두 보기" 링크(href에 /events/calendar/?month=...가 들어감)가 렌더되도록
+    선택일(오늘)에 공개 행사를 최소 1건 둔다."""
+    fixed_today = date(2026, 6, 26)
+    make_event(
+        title="아젠다모두보기행사",
+        start_date=fixed_today,
+        end_date=fixed_today,
+    )
+
+    with patch("web.views.events.timezone.localdate", return_value=fixed_today):
+        resp = Client().get("/", {"month": "2026-06"})
+
+    assert resp.status_code == 200
+    body = resp.content.decode()
+    assert "home-cal-agenda-more" in body, "Given이 의도대로 '모두 보기' 링크를 만들지 못함"
+
+    tags = re.findall(r'<a[^>]*href="[^"]*month=[^"]*"[^>]*>', body)
+    assert tags, "month= 링크를 찾을 수 없음"
+    assert all('rel="nofollow"' in tag for tag in tags)
+
+
+@pytest.mark.django_db
+@pytest.mark.contract
+@pytest.mark.parametrize(
     "query_params",
     [
         {"month": "2024-05"},

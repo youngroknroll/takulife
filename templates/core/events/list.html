@@ -16,8 +16,8 @@
       <h1>{% translate "이벤트 목록" context "페이지 제목" %}</h1>
       {% translate "목록·달력 전환" as tabs_label %}
       <nav class="events-tabs" aria-label="{{ tabs_label }}">
-        <a class="active" aria-current="page" href="/events/?{{ request.GET.urlencode }}">{% translate "목록" %}</a>
-        <a href="/events/calendar/?{{ request.GET.urlencode }}">{% translate "달력" %}</a>
+        <a class="active" aria-current="page" href="/events/?{{ request.GET.urlencode }}"{% if request.GET %} rel="nofollow"{% endif %}>{% translate "목록" %}</a>
+        <a href="/events/calendar/?{{ request.GET.urlencode }}"{% if request.GET %} rel="nofollow"{% endif %}>{% translate "달력" %}</a>
       </nav>
     </div>
 
