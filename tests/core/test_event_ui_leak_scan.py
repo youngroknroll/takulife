@@ -10,6 +10,7 @@
 from datetime import date, timedelta
 from html.parser import HTMLParser
 import re
+from unittest.mock import patch
 
 from django.test import Client
 from django.utils import timezone
@@ -398,7 +399,8 @@ def _korean_leaks(root, scene, allowed_content):
 def test_영어_이벤트_화면에는_lang_ko_밖의_한글이_없다(make_event, make_user, scene):
     user, path, allowed_content = _SCANS[scene](make_event, make_user)
 
-    resp = _get(path, "en", user=user)
+    with patch("web.views.events.timezone.localdate", return_value=date(2026, 3, 15)):
+        resp = _get(path, "en", user=user)
 
     assert resp.status_code == 200
     assert _korean_leaks(_parse(resp), scene, allowed_content) == []

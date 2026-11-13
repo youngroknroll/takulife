@@ -154,6 +154,7 @@ def test_목록에서_달력으로_전환해도_지역_필터가_유지된다():
 
 @pytest.mark.django_db
 def test_다음_달로_이동해도_기존_필터가_유지된다(make_event):
+    fixed_today = date(2026, 7, 19)
     make_event(
         title="필터유지월이동테스트행사",
         region="seoul",
@@ -161,16 +162,18 @@ def test_다음_달로_이동해도_기존_필터가_유지된다(make_event):
         end_date=date(2026, 7, 10),
     )
 
-    resp = Client().get("/events/calendar/", {"month": "2026-07", "region": "seoul"})
-    assert resp.status_code == 200
-    body = resp.content.decode()
+    with patch("web.views.events.timezone.localdate", return_value=fixed_today):
+        resp = Client().get("/events/calendar/", {"month": "2026-07", "region": "seoul"})
+        assert resp.status_code == 200
+        body = resp.content.decode()
 
-    month_nav_hrefs = _extract_nav_hrefs(body, "calendar-month-nav")
-    next_month_href = _first_containing(month_nav_hrefs, "month=2026-08")
-    assert next_month_href is not None, "calendar-month-nav에 다음 달 링크가 없음"
-    assert "region=seoul" in next_month_href
+        month_nav_hrefs = _extract_nav_hrefs(body, "calendar-month-nav")
+        next_month_href = _first_containing(month_nav_hrefs, "month=2026-08")
+        assert next_month_href is not None, "calendar-month-nav에 다음 달 링크가 없음"
+        assert "region=seoul" in next_month_href
 
-    next_resp = Client().get(_as_absolute(next_month_href, base_path="/events/calendar/"))
+        next_resp = Client().get(_as_absolute(next_month_href, base_path="/events/calendar/"))
+
     assert next_resp.status_code == 200
     next_body = next_resp.content.decode()
     assert re.search(r'name="region"\s+value="seoul"[^>]*checked', next_body)
@@ -188,7 +191,8 @@ def test_날짜를_선택하면_그_날짜에_진행되는_행사만_상세_목�
     make_event(title=selected_title, start_date=date(2026, 7, 10), end_date=date(2026, 7, 10))
     make_event(title=other_day_title, start_date=date(2026, 7, 20), end_date=date(2026, 7, 20))
 
-    resp = Client().get("/events/calendar/", {"month": "2026-07", "date": "2026-07-10"})
+    with patch("web.views.events.timezone.localdate", return_value=date(2026, 7, 19)):
+        resp = Client().get("/events/calendar/", {"month": "2026-07", "date": "2026-07-10"})
 
     assert resp.status_code == 200
     detail_section = _selected_date_section(resp.content.decode())
@@ -243,7 +247,8 @@ def test_month_파라미터가_없으면_오류_없이_당월이_표시된다(ma
 def test_잘못된_month_date_입력은_200과_함께_인라인_오류_패널로_처리된다(
     query_params, invalid_value
 ):
-    resp = Client().get("/events/calendar/", query_params)
+    with patch("web.views.events.timezone.localdate", return_value=date(2026, 7, 19)):
+        resp = Client().get("/events/calendar/", query_params)
 
     assert resp.status_code == 200
     body = resp.content.decode()
@@ -466,7 +471,8 @@ def test_여러_날_진행되는_행사를_아무_날짜로_선택해도_상세_
     title = "다일진행행사캘린더상세타이틀789"
     make_event(title=title, start_date=date(2026, 7, 5), end_date=date(2026, 7, 7))
 
-    resp = Client().get("/events/calendar/", {"month": "2026-07", "date": selected_date})
+    with patch("web.views.events.timezone.localdate", return_value=date(2026, 7, 19)):
+        resp = Client().get("/events/calendar/", {"month": "2026-07", "date": selected_date})
 
     assert resp.status_code == 200
     assert title in _selected_date_section(resp.content.decode())
@@ -527,7 +533,8 @@ def test_달력_주_항목에_카테고리_슬러그가_담긴다(make_event):
         end_date=date(2026, 7, 10),
     )
 
-    resp = Client().get("/events/calendar/", {"month": "2026-07"})
+    with patch("web.views.events.timezone.localdate", return_value=date(2026, 7, 19)):
+        resp = Client().get("/events/calendar/", {"month": "2026-07"})
 
     assert resp.status_code == 200
     weeks = resp.context["weeks"]

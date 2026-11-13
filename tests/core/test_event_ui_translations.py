@@ -9,6 +9,7 @@
 from datetime import date
 from html.parser import HTMLParser
 import re
+from unittest.mock import patch
 
 from django.test import Client
 import pytest
@@ -288,7 +289,8 @@ def test_목록과_달력_컨텍스트의_category_labels는_요청_언어로_�
 @pytest.mark.django_db
 @pytest.mark.parametrize("lang, expected", [("ko", "2026년 3월"), ("en", "March 2026")])
 def test_달력_month_label은_요청_언어의_연월이다(lang, expected):
-    resp = _get("/events/calendar/?month=2026-03", lang)
+    with patch("web.views.events.timezone.localdate", return_value=date(2026, 3, 15)):
+        resp = _get("/events/calendar/?month=2026-03", lang)
 
     assert resp.context["month_label"] == expected
 
@@ -419,7 +421,8 @@ def test_영어_목록에서_콘텐츠_필드만_lang_ko_범위다(make_event):
 def test_영어_달력_아젠다에서_콘텐츠_필드만_lang_ko_범위다(make_event):
     _korean_content_event(make_event)
 
-    root = _parse(_get("/events/calendar/?month=2026-03&date=2026-03-05", "en"))
+    with patch("web.views.events.timezone.localdate", return_value=date(2026, 3, 15)):
+        root = _parse(_get("/events/calendar/?month=2026-03&date=2026-03-05", "en"))
 
     for cls, tag in (
         ("agenda-title", "h3"),
@@ -505,7 +508,8 @@ def test_찜_토글_버튼의_aria_label은_요청_언어의_동작_번역이다
 ):
     make_event(title="Save Event", start_date=_FIXED_START, end_date=_FIXED_END)
 
-    root = _parse(_get(path, lang, user=make_user()))
+    with patch("web.views.events.timezone.localdate", return_value=date(2026, 3, 15)):
+        root = _parse(_get(path, lang, user=make_user()))
 
     buttons = root.find_all("button", attrs={"data-interest-toggle": _PRESENT})
     assert [b.attrs.get("aria-label") for b in buttons] == [expected]
@@ -560,7 +564,8 @@ def test_필터_토글_버튼은_열기_닫기_문구를_data_속성에_싣고_�
 @pytest.mark.django_db
 @pytest.mark.parametrize("lang, expected", [("ko", "이벤트 달력"), ("en", "Event calendar")])
 def test_달력_h1과_title은_요청_언어의_페이지_제목이다(lang, expected):
-    root = _parse(_get("/events/calendar/?month=2026-03", lang))
+    with patch("web.views.events.timezone.localdate", return_value=date(2026, 3, 15)):
+        root = _parse(_get("/events/calendar/?month=2026-03", lang))
 
     main = root.find_all("main", attrs={"id": "content"})[0]
     assert _texts(main, "h1") == [expected]
@@ -571,7 +576,8 @@ def test_달력_h1과_title은_요청_언어의_페이지_제목이다(lang, exp
 @pytest.mark.django_db
 @pytest.mark.parametrize("lang, expected", [("ko", "3월"), ("en", "March")])
 def test_달력_월_이름은_요청_언어의_월_이름이다(lang, expected):
-    root = _parse(_get("/events/calendar/?month=2026-03", lang))
+    with patch("web.views.events.timezone.localdate", return_value=date(2026, 3, 15)):
+        root = _parse(_get("/events/calendar/?month=2026-03", lang))
 
     assert _texts(root, cls="calendar-month-name") == [expected]
 
@@ -580,7 +586,8 @@ def test_달력_월_이름은_요청_언어의_월_이름이다(lang, expected):
 @pytest.mark.django_db
 @pytest.mark.parametrize("lang, expected", [("ko", "3월 5일"), ("en", "March 5")])
 def test_달력_선택일_제목은_요일을_뺀_월_일이_요청_언어로_나온다(lang, expected):
-    root = _parse(_get("/events/calendar/?month=2026-03&date=2026-03-05", lang))
+    with patch("web.views.events.timezone.localdate", return_value=date(2026, 3, 15)):
+        root = _parse(_get("/events/calendar/?month=2026-03&date=2026-03-05", lang))
 
     heads = root.find_all(cls="date-detail-head")
     assert len(heads) == 1
@@ -614,7 +621,8 @@ def test_달력_선택일_이벤트_개수는_개수에_맞는_번역문이다(m
             end_date=_FIXED_START,
         )
 
-    root = _parse(_get("/events/calendar/?month=2026-03&date=2026-03-05", lang))
+    with patch("web.views.events.timezone.localdate", return_value=date(2026, 3, 15)):
+        root = _parse(_get("/events/calendar/?month=2026-03&date=2026-03-05", lang))
 
     assert _texts(root, cls="date-detail-count") == [expected]
 
@@ -745,7 +753,8 @@ def test_달력_조회_실패_오류_패널은_요청_언어다(monkeypatch, lan
 
     monkeypatch.setattr("web.views.events.list_published_events_for_month", _raise)
 
-    resp = _get("/events/calendar/?month=2026-03", lang)
+    with patch("web.views.events.timezone.localdate", return_value=date(2026, 3, 15)):
+        resp = _get("/events/calendar/?month=2026-03", lang)
 
     assert resp.context["calendar_error"] == "query_failed"
     root = _parse(resp)
