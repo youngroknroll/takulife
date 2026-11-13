@@ -258,6 +258,60 @@ def test_잘못된_month_date_입력은_200과_함께_인라인_오류_패널로
         assert not href.endswith("month=")
 
 
+@pytest.mark.django_db
+@pytest.mark.contract
+@pytest.mark.parametrize(
+    "month_param",
+    ["٢٠٢٦-07", "２０２６-07"],
+    ids=["아랍_숫자", "전각_숫자"],
+)
+def test_달_파라미터의_숫자가_ASCII가_아니면_형식_오류로_처리된다(month_param):
+    """같은 달을 가리키는 다른 글자체 숫자 주소가 생기지 않게 한다."""
+    fixed_today = date(2026, 6, 26)
+
+    with patch("web.views.events.timezone.localdate", return_value=fixed_today):
+        resp = Client().get("/events/calendar/", {"month": month_param})
+
+    assert resp.status_code == 200
+    body = resp.content.decode()
+    assert "요청한 날짜를 확인할 수 없어요" in body
+    assert resp.context["month_label"] == "2026년 6월"
+
+
+@pytest.mark.django_db
+@pytest.mark.contract
+def test_한_자리_월은_두_자리_월과_같은_달로_보여준다():
+    fixed_today = date(2026, 6, 26)
+
+    with patch("web.views.events.timezone.localdate", return_value=fixed_today):
+        resp = Client().get("/events/calendar/", {"month": "2026-7"})
+
+    assert resp.status_code == 200
+    body = resp.content.decode()
+    assert "요청한 날짜를 확인할 수 없어요" not in body
+    assert resp.context["month_label"] == "2026년 7월"
+
+
+@pytest.mark.django_db
+@pytest.mark.contract
+@pytest.mark.parametrize(
+    "date_param",
+    ["٢٠٢٦-06-10", "２０２６-06-10"],
+    ids=["아랍_숫자", "전각_숫자"],
+)
+def test_날짜_파라미터의_숫자가_ASCII가_아니면_형식_오류로_처리된다(date_param):
+    """같은 날을 가리키는 다른 글자체 숫자 주소도 형식 오류로 처리한다."""
+    fixed_today = date(2026, 6, 26)
+
+    with patch("web.views.events.timezone.localdate", return_value=fixed_today):
+        resp = Client().get("/events/calendar/", {"month": "2026-06", "date": date_param})
+
+    assert resp.status_code == 200
+    body = resp.content.decode()
+    assert "요청한 날짜를 확인할 수 없어요" in body
+    assert resp.context["selected_date"] == fixed_today
+
+
 # ---------------------------------------------------------------------------
 # CAL-5-07 — 허용 범위(과거 24개월~미래 12개월)를 벗어난 월은 month 없는
 # 달력으로 리다이렉트한다(크롤러의 무한 월 주소 소진 대응). 과거에는

@@ -134,8 +134,11 @@ PUBLIC_CALENDAR_FUTURE_MONTHS = 12
 def _parse_public_calendar_month(raw_month, *, today):
     """_parse_calendar_month와 같은 (year, month, error)를 돌려주되,
     형식은 맞지만 허용 범위(오늘 기준 과거 24개월~미래 12개월, 경계
-    포함) 밖이면 error가 "out_of_range"다.
+    포함) 밖이면 error가 "out_of_range"다. ASCII가 아니면 형식 오류다.
     """
+    # 다른 글자체 숫자도 날짜로 읽혀 같은 달의 별칭 주소가 생기므로 막는다.
+    if raw_month is not None and not raw_month.isascii():
+        return None, None, "invalid"
     year, month, error = _parse_calendar_month(raw_month, today=today)
     if error is not None:
         return year, month, error
@@ -174,6 +177,16 @@ def _parse_calendar_date(raw_date, *, year, month, today):
     if (parsed.year, parsed.month) != (year, month):
         return None, "invalid"
     return parsed, None
+
+
+def _parse_public_calendar_date(raw_date, *, year, month, today):
+    """_parse_calendar_date와 같은 (date, error)를 돌려주되, ASCII가
+    아니면 형식 오류다 — 다른 글자체 숫자도 날짜로 읽혀 같은 날의 별칭
+    주소가 생기므로 막는다.
+    """
+    if raw_date is not None and not raw_date.isascii():
+        return None, "invalid"
+    return _parse_calendar_date(raw_date, year=year, month=month, today=today)
 
 
 def _render_archive_list(request, *, full_template, fragment_template, context):

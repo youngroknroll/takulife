@@ -56,6 +56,7 @@ from web.views._helpers import (
     _attach_display_many,
     _parse_calendar_date,
     _parse_calendar_month,
+    _parse_public_calendar_date,
     _parse_public_calendar_month,
     _redirect_without_calendar_params,
     _subject_view,
@@ -449,7 +450,7 @@ def event_calendar(request):
         return _redirect_without_calendar_params(request)
     selected_date = None
     if calendar_error is None:
-        selected_date, calendar_error = _parse_calendar_date(
+        selected_date, calendar_error = _parse_public_calendar_date(
             request.GET.get("date"), year=year, month=month, today=today
         )
 
