@@ -457,12 +457,15 @@ def event_calendar(request):
         params = parse_public_listing_params(request.GET)
     except ValidationError:
         # event_list와 같은 완화 방식: 인식되지 않거나 잘못된 필터 값은
-        # calendar_error와 무관하게 "매치 없음"이지 절대 오류 화면이 아니다.
-        params = {}
+        # calendar_error와 무관하게 "맞는 행사 없음"(빈 달력)이지 절대
+        # 오류 화면이 아니다 — "필터 없음"과 구분해 조회 자체를 건너뛴다.
+        params = None
 
     try:
+        if params is None:
+            events = []
         # 필터 없는 달력만 공개 캐시를 쓴다(필터 조합은 끝이 없어 담지 않는다).
-        if not params:
+        elif not params:
             events = public_month_events(year=year, month=month, today=today)
         else:
             events = list(list_published_events_for_month(params, year=year, month=month))

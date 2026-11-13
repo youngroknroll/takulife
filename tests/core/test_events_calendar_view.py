@@ -627,3 +627,17 @@ def test_달력의_month가_들어간_모든_링크에는_nofollow가_붙는다(
     tags = re.findall(r'<a[^>]*href="[^"]*month=[^"]*"[^>]*>', body)
     assert tags, "month= 링크를 찾을 수 없음"
     assert all('rel="nofollow"' in tag for tag in tags)
+
+
+@pytest.mark.django_db
+def test_인식되지_않는_필터_값은_그_달_전체_목록이_아니라_빈_결과로_처리된다(make_event):
+    make_event(title="달력행사", start_date=date(2026, 6, 10), end_date=date(2026, 6, 10))
+
+    with patch("web.views.events.timezone.localdate", return_value=date(2026, 6, 10)):
+        resp = Client().get("/events/calendar/", {"month": "2026-06", "status": "zzz"})
+
+    assert resp.status_code == 200
+    assert resp.context["calendar_error"] is None
+    counts = [cell["count"] for week in resp.context["weeks"] for cell in week]
+    assert all(count == 0 for count in counts)
+    assert resp.context["selected_events"] == []
