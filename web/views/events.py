@@ -8,7 +8,6 @@ from urllib.parse import urlencode
 
 from django.core.paginator import Paginator
 from django.core.serializers.json import DjangoJSONEncoder
-from django.db.models import Count
 from django.shortcuts import get_object_or_404, render
 from django.template.defaultfilters import truncatechars
 from django.urls import reverse
@@ -28,7 +27,6 @@ from archive.queries import (
     user_visit_record_counts,
 )
 from core.calendar_grid import month_grid
-from core.models import HomeConfig
 from core.presenters import build_website_json_ld
 from core.vocab import (
     ARCHIVE_STATUS_LABELS,
@@ -49,7 +47,7 @@ from events.queries import (
     list_published_events_for_month,
     parse_public_listing_params,
 )
-from web.public_cache import public_category_choices, public_month_events
+from web.public_cache import home_public_sections, public_category_choices, public_month_events
 from web.views._helpers import (
     _attach_display,
     _attach_display_many,
@@ -174,35 +172,27 @@ def home(request):
     # 범위 밖 달은 조회 전에 돌려보낸다.
     if calendar_error == "out_of_range":
         return _redirect_without_calendar_params(request)
-    ongoing_qs = list_published_events({"status": "ongoing"}, today=today)
-    closing_qs = Event.objects.published().ending_within_days(5, today=today)
-    # 슬라이더는 기간이 이미 끝난 행사(end_date < today)를 제외한다.
-    # end_date가 없는 행사는 "종료"가 될 수 없으므로 그대로 남긴다.
-    recent_qs = Event.objects.published().exclude(end_date__lt=today).order_by("-id")[:15]
+    public_sections = home_public_sections(today=today)
 
-    # "카테고리로 둘러보기" 타일: HomeConfig로 스태프가 순서/선택을 큐레이션한다.
-    # 저장된 선택이 없으면 어휘의 전체 카테고리로 대체한다.
-    category_counts = {
-        row["category"]: row["count"]
-        for row in Event.objects.published().values("category").annotate(count=Count("id"))
-    }
+    # 홈 카테고리 쌍과 건수는 공개 캐시에서 받고, 라벨 번역은 요청마다 한다.
     category_tiles = []
-    for slug, label in HomeConfig.get_solo().featured_category_pairs():
+    for slug, label in public_sections["featured_category_pairs"]:
         text, lang = _translate_category_label(label)
         category_tiles.append(
-            {"slug": slug, "label": text, "lang": lang, "count": category_counts.get(slug, 0)}
+            {
+                "slug": slug,
+                "label": text,
+                "lang": lang,
+                "count": public_sections["category_counts"].get(slug, 0),
+            }
         )
 
     # 구간마다 _attach_display를 따로 부르면 사용자 상태·관심 조회가
     # 구간 수만큼 늘어나므로, 모든 구간 행사를 모아 한 번에 처리한다.
+    # 건수·카테고리 쌍은 행사 목록이 아니라 넣지 않는다.
     sections = {
-        "ongoing_rows": ongoing_qs[:15],
-        "closing_rows": closing_qs[:15],
-        "recent_rows": recent_qs,
-        # 홈 대표 행사: 인기(조회수) 슬라이더 대신 공개 목록 기본 우선순위
-        # (진행중 -> 예정 -> 종료, "active"는 종료 행사를 제외)의 최대 5건을
-        # 로테이터로 노출한다.
-        "featured_event_rows": list_published_events({"status": "active"}, today=today)[:5],
+        key: public_sections[key]
+        for key in ("ongoing_rows", "closing_rows", "recent_rows", "featured_event_rows")
     }
     if request.user.is_authenticated:
         sections = {

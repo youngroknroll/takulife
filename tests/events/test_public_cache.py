@@ -491,3 +491,35 @@ def test_캐시가_채워진_뒤에도_언어가_다른_요청은_각자_번역�
     assert _label_for_slug(first_response, first_category_slug) == english_label
     assert _label_for_slug(second_response, first_category_slug) == source_label
     assert _label_for_slug(third_response, first_category_slug) == english_label
+
+
+@pytest.mark.web
+@pytest.mark.django_db
+def test_홈_공개_구간_전체는_TTL_안에_더_적은_쿼리로_같은_홈을_보여준다(
+    make_event, public_cache_locmem, client
+):
+    first_category_slug = CATEGORY[0][0]
+    # 홈 설정 행은 첫 요청 때 만들어져 쿼리가 늘어나므로 미리 만들어 두고 캐시 효과만 비교한다.
+    HomeConfig.get_solo()
+    make_event(
+        title="진행행사",
+        category=first_category_slug,
+        start_date=date(2026, 6, 1),
+        end_date=date(2026, 6, 20),
+    )
+
+    with patch("web.views.events.timezone.localdate", return_value=date(2026, 6, 10)):
+        # 달력 캐시 효과를 빼려고 두 요청의 달을 다르게 한다.
+        with CaptureQueriesContext(connection) as first_ctx:
+            first_response = client.get("/", {"month": "2026-06"})
+
+        with CaptureQueriesContext(connection) as second_ctx:
+            second_response = client.get("/", {"month": "2026-07"})
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+    first_titles = [row["event"].title for row in first_response.context["ongoing_rows"]]
+    second_titles = [row["event"].title for row in second_response.context["ongoing_rows"]]
+    assert "진행행사" in first_titles
+    assert "진행행사" in second_titles
+    assert len(second_ctx.captured_queries) < len(first_ctx.captured_queries)
