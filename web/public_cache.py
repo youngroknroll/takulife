@@ -61,7 +61,6 @@ def _load_home_public_sections(*, today):
     return {
         "ongoing_rows": list(list_published_events({"status": "ongoing"}, today=today)[:15]),
         "closing_rows": list(list_closing_soon_events(today=today)[:15]),
-        # 끝난 행사 제외는 list_latest_published_events 독스트링이 설명한다.
         "recent_rows": list(list_latest_published_events(today=today)[:15]),
         # 홈 대표 행사: 인기(조회수) 슬라이더 대신 공개 목록 기본 우선순위
         # (진행중 -> 예정 -> 종료, "active"는 종료 행사를 제외)의 최대 5건을
