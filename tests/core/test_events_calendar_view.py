@@ -405,7 +405,8 @@ def test_월_조회가_실패하면_500대신_오류_패널과_재시도_안내�
     def _raise(*args, **kwargs):
         raise RuntimeError("월 조회 실패 주입")
 
-    monkeypatch.setattr("web.views.events.list_published_events_for_month", _raise)
+    # 필터 없는 달력은 공개 캐시 모듈을 거쳐 조회하므로 그 모듈 안의 조회를 실패시킨다.
+    monkeypatch.setattr("web.public_cache.list_published_events_for_month", _raise)
 
     resp = Client().get("/events/calendar/")
 

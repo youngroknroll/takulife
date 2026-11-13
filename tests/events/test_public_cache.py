@@ -6,10 +6,13 @@ public_month_events는 아직 존재하지 않아, 추가되기 전까지는 이
 
 from datetime import date
 import time as real_time
+from unittest.mock import patch
 
 from django.core.cache import caches
 import django.core.cache.backends.base as cache_base
 import django.core.cache.backends.locmem as cache_locmem
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.utils import translation
 import pytest
 
@@ -313,3 +316,60 @@ def test_공개_캐시_유효_시간이_0이면_캐시_장애에도_카테고리
 
     slugs = [slug for slug, _ in choices]
     assert first_category_slug in slugs
+
+
+@pytest.mark.web
+@pytest.mark.django_db
+def test_달력_무필터_요청은_TTL_안에_더_적은_쿼리로_같은_내용을_보여준다(
+    make_event, public_cache_locmem, client
+):
+    make_event(title="달력행사", start_date=date(2026, 6, 10), end_date=date(2026, 6, 10))
+
+    with patch("web.views.events.timezone.localdate", return_value=date(2026, 6, 10)):
+        with CaptureQueriesContext(connection) as first_ctx:
+            first_response = client.get("/events/calendar/", {"month": "2026-06"})
+
+        with CaptureQueriesContext(connection) as second_ctx:
+            second_response = client.get("/events/calendar/", {"month": "2026-06"})
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+    assert "달력행사" in first_response.content.decode()
+    assert "달력행사" in second_response.content.decode()
+    assert len(second_ctx.captured_queries) < len(first_ctx.captured_queries)
+
+
+@pytest.mark.web
+@pytest.mark.django_db
+def test_필터가_있는_달력_요청은_캐시를_쓰지_않아_새_행사를_바로_보여준다(
+    make_event, public_cache_locmem, client
+):
+    first_category_slug = CATEGORY[0][0]
+    make_event(
+        title="기존행사",
+        category=first_category_slug,
+        start_date=date(2026, 6, 10),
+        end_date=date(2026, 6, 10),
+    )
+
+    with patch("web.views.events.timezone.localdate", return_value=date(2026, 6, 10)):
+        first_response = client.get(
+            "/events/calendar/", {"month": "2026-06", "category": first_category_slug}
+        )
+
+        make_event(
+            title="새행사",
+            category=first_category_slug,
+            start_date=date(2026, 6, 12),
+            end_date=date(2026, 6, 12),
+        )
+
+        # 쿼리 수 대신 새 행사가 보이는지로 캐시 미사용을 확인한다(다른 화면
+        # 조각이 캐시되면 쿼리 수 비교가 흔들린다).
+        second_response = client.get(
+            "/events/calendar/", {"month": "2026-06", "category": first_category_slug}
+        )
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+    assert "새행사" in second_response.content.decode()

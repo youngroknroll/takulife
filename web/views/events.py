@@ -50,6 +50,7 @@ from events.queries import (
     list_published_events_for_month,
     parse_public_listing_params,
 )
+from web.public_cache import public_month_events
 from web.views._helpers import (
     _attach_display,
     _attach_display_many,
@@ -472,7 +473,11 @@ def event_calendar(request):
         params = {}
 
     try:
-        events = list(list_published_events_for_month(params, year=year, month=month))
+        # 필터 없는 달력만 공개 캐시를 쓴다(필터 조합은 끝이 없어 담지 않는다).
+        if not params:
+            events = public_month_events(year=year, month=month, today=today)
+        else:
+            events = list(list_published_events_for_month(params, year=year, month=month))
     except Exception:
         logger.exception("Failed to query events calendar for year=%s month=%s", year, month)
         events = []
