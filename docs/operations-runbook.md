@@ -590,7 +590,8 @@ PaaS의 ENTRYPOINT 우회 기능으로 등록하고, **등록 직후 반드시 �
   배포한다. 해제는 `config/settings.py` `MIDDLEWARE`(346행 부근)에서
   `"core.middleware.CrawlerQueryBlockMiddleware"` 줄(354행)을 빼고 배포한다.
   2026-11-12 ClaudeBot이 달력·목록 쿼리 주소를 무한히 따라가며 대역폭을
-  초과시킨 데 대한 임시 조치이며, 유지 여부는 사용자 결정 대기다.
+  초과시킨 데 대한 대응으로 넣었고, 공개 달력 범위 제한·`rel="nofollow"`·
+  공개 캐시가 들어간 뒤에도 유지하기로 했다(사용자 결정 2026-11-13).
 
 ## 10. 계정 이메일 중복 감사 (`allauth` `EmailAddress`)
 
