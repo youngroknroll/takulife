@@ -45,12 +45,11 @@ from events.models import Event
 from events.presenters import build_event_json_ld, derive_event_display
 from events.queries import (
     PUBLIC_LISTING_PAGE_SIZE,
-    consumer_category_choices,
     list_published_events,
     list_published_events_for_month,
     parse_public_listing_params,
 )
-from web.public_cache import public_month_events
+from web.public_cache import public_category_choices, public_month_events
 from web.views._helpers import (
     _attach_display,
     _attach_display_many,
@@ -298,10 +297,9 @@ def _translate_category_label(label):
 
 
 def _translated_category_choices():
-    """소비자 필터용 (slug, 번역 라벨, lang) 목록."""
-    return [
-        (slug, *_translate_category_label(label)) for slug, label in consumer_category_choices()
-    ]
+    """소비자 필터용 (slug, 번역 라벨, lang) 목록. 원문은 공개 캐시에서
+    받고 번역은 요청마다 한다."""
+    return [(slug, *_translate_category_label(label)) for slug, label in public_category_choices()]
 
 
 def event_list(request):
