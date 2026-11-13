@@ -594,7 +594,9 @@ def _build_event_meta_description(event, category_label):
 
 def event_detail(request, event_id):
     event = get_object_or_404(Event.objects.published(), pk=event_id)
-    Event.objects.increment_view_count(event.pk)
+    # 본문을 받지 않는 HEAD 요청(링크 미리보기·크롤러)은 조회수에 넣지 않는다.
+    if request.method != "HEAD":
+        Event.objects.increment_view_count(event.pk)
     display = derive_event_display(event)
     status_slug = display["status"]
 
