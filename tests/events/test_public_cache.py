@@ -21,6 +21,7 @@ import pytest
 from archive.models import EventInterest
 from core.models import Category, HomeConfig
 from core.vocab import CATEGORY
+from events.models import Event
 import web.public_cache as public_cache_module
 from web.public_cache import home_public_sections, public_category_choices, public_month_events
 
@@ -672,3 +673,38 @@ def test_공개_캐시_저장소가_장애여도_정상_조회_결과를_돌려�
     events = public_month_events(year=2026, month=6, today=date(2026, 6, 1))
 
     assert [event.title for event in events] == ["초기행사"]
+
+
+@pytest.mark.web
+@pytest.mark.django_db
+def test_비공개로_바뀐_행사는_달력에서_유지_시간이_지나야_빠진다(
+    make_event, public_cache_locmem, client
+):
+    event = make_event(title="숨길행사", start_date=date(2026, 6, 10), end_date=date(2026, 6, 10))
+
+    def _titles_on_june_10(response):
+        for week in response.context["weeks"]:
+            for cell in week:
+                if cell["date"] == date(2026, 6, 10):
+                    return [item["title"] for item in cell["items"]]
+        return []
+
+    with patch("web.views.events.timezone.localdate", return_value=date(2026, 6, 10)):
+        first_response = client.get("/events/calendar/", {"month": "2026-06"})
+
+        event.publish_status = Event.PublishStatus.DRAFT
+        event.save()
+
+        second_response = client.get("/events/calendar/", {"month": "2026-06"})
+
+        public_cache_locmem.advance(61)
+
+        # 상세 화면은 캐시를 쓰지 않아 비공개 즉시 404다(tests/events/test_event_detail_view.py가
+        # 지킨다) — 여기서는 달력의 지연만 본다.
+        third_response = client.get("/events/calendar/", {"month": "2026-06"})
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+    assert third_response.status_code == 200
+    assert "숨길행사" in _titles_on_june_10(second_response)
+    assert "숨길행사" not in _titles_on_june_10(third_response)
