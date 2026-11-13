@@ -79,6 +79,19 @@ def _attach_display(events, *, today=None, user=None):
     return result
 
 
+def _attach_display_many(sections, *, today=None, user=None):
+    """구간 이름 -> 행사 목록 dict를 받아 같은 이름 -> 표시 행 목록 dict를
+    돌려준다. 사용자 상태·관심 조회를 구간마다 하지 않고 전체 행사를
+    합쳐 ``_attach_display``를 한 번만 호출하므로, 같은 행사가 여러
+    구간에 있어도 같은 값을 받는다. 각 구간은 ``list()``로 정확히 한 번만
+    평가된다.
+    """
+    materialized = {name: list(events) for name, events in sections.items()}
+    all_events = [event for events in materialized.values() for event in events]
+    rows = iter(_attach_display(all_events, today=today, user=user))
+    return {name: [next(rows) for _ in events] for name, events in materialized.items()}
+
+
 def _adjacent_month(year, month, delta):
     """(year, month)에서 `delta`개월 떨어진 (year, month)를 반환한다. 연도
     경계를 넘어가면 자동으로 넘어간다(delta는 보통 -1 또는 +1)."""

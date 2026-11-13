@@ -53,6 +53,7 @@ from events.queries import (
 from web.views._helpers import (
     _adjacent_month,
     _attach_display,
+    _attach_display_many,
     _parse_calendar_date,
     _parse_calendar_month,
     _subject_view,
@@ -183,21 +184,30 @@ def home(request):
             {"slug": slug, "label": text, "lang": lang, "count": category_counts.get(slug, 0)}
         )
 
-    # 홈 대표 행사: 인기(조회수) 슬라이더 대신 공개 목록 기본 우선순위
-    # (진행중 -> 예정 -> 종료, "active"는 종료 행사를 제외)의 최대 5건을
-    # 로테이터로 노출한다.
-    featured_event_rows = _attach_display(
-        list_published_events({"status": "active"}, today=today)[:5],
-        today=today,
-        user=request.user,
-    )
+    # 구간마다 _attach_display를 따로 부르면 사용자 상태·관심 조회가
+    # 구간 수만큼 늘어나므로, 모든 구간 행사를 모아 한 번에 처리한다.
+    sections = {
+        "ongoing_rows": ongoing_qs[:15],
+        "closing_rows": closing_qs[:15],
+        "recent_rows": recent_qs,
+        # 홈 대표 행사: 인기(조회수) 슬라이더 대신 공개 목록 기본 우선순위
+        # (진행중 -> 예정 -> 종료, "active"는 종료 행사를 제외)의 최대 5건을
+        # 로테이터로 노출한다.
+        "featured_event_rows": list_published_events({"status": "active"}, today=today)[:5],
+    }
+    if request.user.is_authenticated:
+        sections = {
+            **sections,
+            "upcoming_planned": list_user_upcoming_planned_events(request.user, today=today)[:4],
+        }
+    rows_by_section = _attach_display_many(sections, today=today, user=request.user)
 
     context = {
-        "ongoing_rows": _attach_display(ongoing_qs[:15], today=today, user=request.user),
-        "closing_rows": _attach_display(closing_qs[:15], today=today, user=request.user),
-        "recent_rows": _attach_display(recent_qs, today=today, user=request.user),
+        "ongoing_rows": rows_by_section["ongoing_rows"],
+        "closing_rows": rows_by_section["closing_rows"],
+        "recent_rows": rows_by_section["recent_rows"],
         "category_tiles": category_tiles,
-        "featured_event_rows": featured_event_rows,
+        "featured_event_rows": rows_by_section["featured_event_rows"],
         "home_calendar": _home_calendar_context(
             request.GET.get("month"), request.GET.get("date"), today=today
         ),
@@ -218,11 +228,7 @@ def home(request):
             {"status_id": row.pk, "subject": _subject_view(row)}
             for row in list_user_unrecorded_visited_statuses(user)[:5]
         ]
-        upcoming_rows = _attach_display(
-            list_user_upcoming_planned_events(user, today=today)[:4],
-            today=today,
-            user=user,
-        )
+        upcoming_rows = rows_by_section["upcoming_planned"]
         context.update(
             {
                 "collection_summary": collection_summary,
