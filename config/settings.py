@@ -422,6 +422,8 @@ CACHES = {
         "OPTIONS": {"MAX_ENTRIES": 200},
     },
 }
+# 공개 캐시 유지 시간(초). 0이면 캐시하지 않는다.
+PUBLIC_CACHE_TTL_SECONDS = load_public_cache_ttl_seconds()
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
