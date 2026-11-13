@@ -9,7 +9,11 @@ tests/core/test_analytics_recording_resilience.py도 같은 이유로 모듈 전
 
 import pytest
 
-from archive.queries import list_user_statuses, user_collection_item_summary_counts
+from archive.queries import (
+    list_user_statuses,
+    user_collection_item_summary_counts,
+    user_visit_record_counts,
+)
 
 
 @pytest.mark.contract
@@ -105,3 +109,64 @@ def test_보유_구함_교환가능_세_축_요약_집계는_쿼리_1회의_aggr
         "tradeable_count": 1,
         "total_count": 4,
     }
+
+
+@pytest.mark.contract
+@pytest.mark.django_db
+def test_방문기록_요약_집계는_쿼리_1회의_aggregate로_계산된다(
+    make_user, make_event, make_visit, django_assert_num_queries
+):
+    """/archive/visits/ 요약 카드 두 값(total/memo)이 DB 왕복 1회로
+    나와야 한다. 후기 있음 2건·없음 1건으로 일부러 비대칭을 둔 이유는,
+    후기 유무 조건의 부호가 뒤집혀도 값이 달라지게 하려는 것이다 —
+    1:1로 맞췄다면 조건을 뒤집어도 memo_count가 그대로 1이 되어
+    뮤테이션이 잡히지 않는다.
+    """
+    user_a = make_user()
+    user_b = make_user()
+    make_visit(
+        user_a,
+        event=make_event(title="행사1"),
+        visited_on="2026-01-01",
+        short_review="좋음",
+    )
+    make_visit(
+        user_a,
+        event=make_event(title="행사2"),
+        visited_on="2026-01-02",
+        short_review="",
+    )
+    make_visit(
+        user_a,
+        event=make_event(title="행사3"),
+        visited_on="2026-01-03",
+        short_review="또 좋음",
+    )
+    make_visit(
+        user_b,
+        event=make_event(title="행사4"),
+        visited_on="2026-01-04",
+        short_review="타인 후기",
+    )
+
+    with django_assert_num_queries(1):
+        counts = user_visit_record_counts(user_a)
+
+    assert counts == {"total_count": 3, "memo_count": 2}
+
+
+@pytest.mark.contract
+@pytest.mark.django_db
+def test_방문기록이_없는_사용자의_요약_집계도_쿼리_1회다(make_user, django_assert_num_queries):
+    """방문 기록이 0건이어도 쿼리는 여전히 1회여야 하고, 값은 None이
+    아니라 0이어야 한다 — 빈 경우를 조기 반환하거나 집계가 None을
+    돌려주는 퇴행을 막는다. 값 테스트
+    tests/archive/test_archive_visit_record_queries.py:168-174는 값만
+    보고 쿼리 수는 보지 않는다.
+    """
+    user = make_user()
+
+    with django_assert_num_queries(1):
+        counts = user_visit_record_counts(user)
+
+    assert counts == {"total_count": 0, "memo_count": 0}

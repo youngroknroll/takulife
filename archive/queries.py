@@ -392,11 +392,10 @@ def user_visit_record_counts(user) -> dict:
     안정된 총계를 보여준다. ``memo_count``는 short_review가 비어있지
     않은 것만의 부분집합이다.
     """
-    queryset = VisitRecord.objects.filter(user=user)
-    return {
-        "total_count": queryset.count(),
-        "memo_count": queryset.exclude(short_review="").count(),
-    }
+    return VisitRecord.objects.filter(user=user).aggregate(
+        total_count=Count("id"),
+        memo_count=Count("id", filter=~Q(short_review="")),
+    )
 
 
 def user_visit_record_photo_count(user) -> int:
