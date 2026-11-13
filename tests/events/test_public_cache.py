@@ -18,6 +18,7 @@ from django.utils import translation
 from django.utils.translation import gettext
 import pytest
 
+from archive.models import EventInterest
 from core.models import Category, HomeConfig
 from core.vocab import CATEGORY
 import web.public_cache as public_cache_module
@@ -523,3 +524,128 @@ def test_홈_공개_구간_전체는_TTL_안에_더_적은_쿼리로_같은_홈�
     assert "진행행사" in first_titles
     assert "진행행사" in second_titles
     assert len(second_ctx.captured_queries) < len(first_ctx.captured_queries)
+
+
+@pytest.mark.web
+@pytest.mark.django_db
+def test_캐시가_채워진_뒤에도_홈_카테고리_타일은_언어별로_각자_번역된_라벨을_받는다(
+    make_event, public_cache_locmem
+):
+    first_category_slug = CATEGORY[0][0]
+    make_event(
+        title="진행행사",
+        category=first_category_slug,
+        start_date=date(2026, 6, 1),
+        end_date=date(2026, 6, 20),
+    )
+
+    source_label = Category.objects.get(slug=first_category_slug).label
+    with translation.override("en"):
+        english_label = gettext(source_label)
+    assert english_label != source_label
+
+    def _tile_label(response, slug):
+        return next(
+            tile["label"] for tile in response.context["category_tiles"] if tile["slug"] == slug
+        )
+
+    with patch("web.views.events.timezone.localdate", return_value=date(2026, 6, 10)):
+        first_response = _get_with_lang("/", "en")
+        second_response = _get_with_lang("/", "ko")
+        third_response = _get_with_lang("/", "en")
+
+    assert _tile_label(first_response, first_category_slug) == english_label
+    assert _tile_label(second_response, first_category_slug) == source_label
+    assert _tile_label(third_response, first_category_slug) == english_label
+
+
+@pytest.mark.web
+@pytest.mark.django_db
+def test_캐시가_채워진_뒤에도_사용자별_찜_상태는_다른_사용자나_익명에게_안_보인다(
+    make_event, make_user, public_cache_locmem, client
+):
+    first_category_slug = CATEGORY[0][0]
+    event = make_event(
+        title="진행행사",
+        category=first_category_slug,
+        start_date=date(2026, 6, 1),
+        end_date=date(2026, 6, 20),
+    )
+    user_a = make_user()
+    user_b = make_user()
+    EventInterest.objects.create(user=user_a, event=event)
+
+    def _is_interested(response):
+        row = next(row for row in response.context["ongoing_rows"] if row["event"].id == event.id)
+        return row["user_interested"]
+
+    with patch("web.views.events.timezone.localdate", return_value=date(2026, 6, 10)):
+        anonymous_first_response = client.get("/")
+        client.force_login(user_a)
+        user_a_response = client.get("/")
+        client.logout()
+        anonymous_second_response = client.get("/")
+        client.force_login(user_b)
+        user_b_response = client.get("/")
+
+    assert _is_interested(anonymous_first_response) is False
+    assert _is_interested(user_a_response) is True
+    assert _is_interested(anonymous_second_response) is False
+    assert _is_interested(user_b_response) is False
+
+
+@pytest.mark.web
+@pytest.mark.django_db
+def test_본인_찜_상태_변경은_캐시_유지_시간_안에도_즉시_반영된다(
+    make_event, make_user, public_cache_locmem, client
+):
+    first_category_slug = CATEGORY[0][0]
+    event = make_event(
+        title="진행행사",
+        category=first_category_slug,
+        start_date=date(2026, 6, 1),
+        end_date=date(2026, 6, 20),
+    )
+    user = make_user()
+    client.force_login(user)
+
+    def _is_interested(response):
+        row = next(row for row in response.context["ongoing_rows"] if row["event"].id == event.id)
+        return row["user_interested"]
+
+    with patch("web.views.events.timezone.localdate", return_value=date(2026, 6, 10)):
+        first_response = client.get("/")
+        EventInterest.objects.create(user=user, event=event)
+        second_response = client.get("/")
+
+    assert _is_interested(first_response) is False
+    assert _is_interested(second_response) is True
+
+
+@pytest.mark.web
+@pytest.mark.django_db
+def test_공개_캐시_경로는_django_cache_테이블을_전혀_건드리지_않는다(
+    make_event, public_cache_locmem, client
+):
+    first_category_slug = CATEGORY[0][0]
+    make_event(
+        title="진행행사",
+        category=first_category_slug,
+        start_date=date(2026, 6, 1),
+        end_date=date(2026, 6, 20),
+    )
+    HomeConfig.get_solo()
+
+    with patch("web.views.events.timezone.localdate", return_value=date(2026, 6, 10)):
+        with CaptureQueriesContext(connection) as ctx:
+            responses = [
+                client.get("/"),
+                client.get("/"),
+                client.get("/events/"),
+                client.get("/events/"),
+                client.get("/events/calendar/", {"month": "2026-06"}),
+                client.get("/events/calendar/", {"month": "2026-06"}),
+            ]
+
+    assert all(response.status_code == 200 for response in responses)
+    assert not any("django_cache" in query["sql"] for query in ctx.captured_queries)
