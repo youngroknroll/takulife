@@ -46,6 +46,31 @@ def load_draft_fetch_contact():
     return _get_env("DRAFT_FETCH_CONTACT", "")
 
 
+def load_db_conn_max_age():
+    """DB_CONN_MAX_AGE env를 정수로 캐스팅한다. 정수가 아니면 조용히 무시하지
+    않고 실행을 막는다(load_email_port와 같은 방어 관용구)."""
+    raw = _get_env("DB_CONN_MAX_AGE", "600")
+    try:
+        return int(raw)
+    except ValueError:
+        raise ImproperlyConfigured(f"DB_CONN_MAX_AGE must be an integer, got {raw!r}.")
+
+
+def load_public_cache_ttl_seconds():
+    """공개 캐시(public) 유지 시간(초)을 env에서 읽는다. 0이면 캐시를 쓰지
+    않는다. 정수가 아니면 실행을 막고, 음수도 막는다."""
+    raw = _get_env("PUBLIC_CACHE_TTL_SECONDS", "60")
+    try:
+        value = int(raw)
+    except ValueError:
+        raise ImproperlyConfigured(f"PUBLIC_CACHE_TTL_SECONDS must be an integer, got {raw!r}.")
+    if value < 0:
+        raise ImproperlyConfigured(
+            f"PUBLIC_CACHE_TTL_SECONDS must be an integer 0 or greater, got {value!r}."
+        )
+    return value
+
+
 def load_database_config():
     """DATABASE_URL로 Django DATABASES["default"] 값을 만든다.
 
@@ -60,7 +85,9 @@ def load_database_config():
             "NAME": BASE_DIR / "db.sqlite3",
         }
 
-    config = dj_database_url.parse(database_url)
+    config = dj_database_url.parse(
+        database_url, conn_max_age=load_db_conn_max_age(), conn_health_checks=True
+    )
     if config["ENGINE"] != "django.db.backends.postgresql":
         scheme = urlsplit(database_url).scheme
         raise ValueError(f"Unsupported DATABASE_URL scheme: {scheme!r}")
@@ -381,13 +408,22 @@ DATABASES = {"default": load_database_config()}
 # allauth 레이트리밋 4종 + DRF 스로틀 8스코프 + 계정 삭제 잠금 카운터가
 # 이 캐시 하나를 공유한다. 기본 MAX_ENTRIES(300)면 컬링(알파벳순 1/3 삭제)이
 # 자주 일어나 살아 있는 카운터가 조기 소멸한다.
+# "public"은 공개 화면의 행사 목록만 짧게 담는 프로세스 메모리 캐시다.
+# 레이트리밋·잠금 카운터는 워커마다 따로라 공유되지 않으므로 여기 두지 않는다.
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.db.DatabaseCache",
         "LOCATION": "django_cache",
         "OPTIONS": {"MAX_ENTRIES": 10000},
-    }
+    },
+    "public": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "public_cache",
+        "OPTIONS": {"MAX_ENTRIES": 200},
+    },
 }
+# 공개 캐시 유지 시간(초). 0이면 캐시하지 않는다.
+PUBLIC_CACHE_TTL_SECONDS = load_public_cache_ttl_seconds()
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},

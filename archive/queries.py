@@ -15,6 +15,7 @@ from archive.models import (
     VisitRecord,
     VisitRecordPhoto,
 )
+from archive.querysets import OWNED_Q, TRADEABLE_Q
 from events.models import Event
 
 # archive 상태 슬러그의 정본. 모델 자신의 choices에서 가져와 단일 출처를
@@ -391,11 +392,10 @@ def user_visit_record_counts(user) -> dict:
     안정된 총계를 보여준다. ``memo_count``는 short_review가 비어있지
     않은 것만의 부분집합이다.
     """
-    queryset = VisitRecord.objects.filter(user=user)
-    return {
-        "total_count": queryset.count(),
-        "memo_count": queryset.exclude(short_review="").count(),
-    }
+    return VisitRecord.objects.filter(user=user).aggregate(
+        total_count=Count("id"),
+        memo_count=Count("id", filter=~Q(short_review="")),
+    )
 
 
 def user_visit_record_photo_count(user) -> int:
@@ -565,13 +565,12 @@ def user_collection_item_summary_counts(user) -> dict:
       is_wanted와 무관하다.
     - total_count: 세 축과 무관하게 사용자 소유 전체 행 수.
     """
-    queryset = CollectionItem.objects.filter(user=user)
-    return {
-        "owned_count": queryset.owned().count(),
-        "wanted_count": queryset.filter(is_wanted=True).count(),
-        "tradeable_count": queryset.tradeable().count(),
-        "total_count": queryset.count(),
-    }
+    return CollectionItem.objects.filter(user=user).aggregate(
+        owned_count=Count("id", filter=OWNED_Q),
+        wanted_count=Count("id", filter=Q(is_wanted=True)),
+        tradeable_count=Count("id", filter=TRADEABLE_Q),
+        total_count=Count("id"),
+    )
 
 
 def user_collection_item_work_title_facets(user) -> list:

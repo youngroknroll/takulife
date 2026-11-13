@@ -2,9 +2,10 @@
 홈 히어로 아래 이벤트 달력 섹션. 뷰가 context["home_calendar"]로 전달하는
 계약: year, month, month_start(해당 월 1일의 date, 로케일별 월 이름 서식용),
 month_param("YYYY-MM"), weeks(주 목록, 칸={date,
-in_month, today, selected, count, categories}), selected_date,
+in_month, today, selected, linkable, count, categories}), selected_date,
 selected_is_today, selected_rows(_attach_display 결과, 최대 3건),
-selected_count, prev_month/next_month("YYYY-MM"), legend([{slug,label}]).
+selected_count, prev_month/next_month("YYYY-MM", 공개 허용 범위 경계에서는
+None — 그 방향 글리프는 비활성으로 렌더), legend([{slug,label}]).
 월 이동 링크·날짜 칸은 "#home-calendar-agenda"로 돌아온다 — 그 대상은
 tabindex="-1" + CSS scroll-margin-top으로 sticky 헤더에 안 가린다. "이
 날짜의 이벤트 N개 모두 보기" 링크만 행사 달력(/events/calendar/)의
@@ -17,7 +18,7 @@ tabindex="-1" + CSS scroll-margin-top으로 sticky 헤더에 안 가린다. "이
       <span class="section-eyebrow">{% translate "이벤트 달력" %}</span>
       <h2>{% blocktranslate trimmed with month=cal.month_start|date:"F" %}{{ month }}, 놓치기 아까운 일정{% endblocktranslate %}</h2>
     </div>
-    <a class="section-more" href="/events/calendar/?month={{ cal.month_param }}">{% translate "달력 전체 보기 ›" %}</a>
+    <a class="section-more" href="/events/calendar/?month={{ cal.month_param }}" rel="nofollow">{% translate "달력 전체 보기 ›" %}</a>
   </div>
 
   <div class="home-cal">
@@ -31,9 +32,17 @@ tabindex="-1" + CSS scroll-margin-top으로 sticky 헤더에 안 가린다. "이
           <span class="calendar-month-year">{{ cal.year }}</span><span class="calendar-month-sep">·</span><span class="calendar-month-name">{{ cal.month_start|date:"F" }}</span>
         </h3>
         <div class="calendar-month-controls">
-          <a class="calendar-month-glyph" href="?month={{ cal.prev_month }}#home-calendar-agenda" aria-label="{{ prev_month_label }}">‹</a>
+          {% if cal.prev_month %}
+            <a class="calendar-month-glyph" href="?month={{ cal.prev_month }}#home-calendar-agenda" rel="nofollow" aria-label="{{ prev_month_label }}">‹</a>
+          {% else %}
+            <a class="calendar-month-glyph is-off" role="link" aria-disabled="true" aria-label="{{ prev_month_label }}">‹</a>
+          {% endif %}
           <a class="calendar-month-today" href="/#home-calendar-agenda">{{ today_label }}</a>
-          <a class="calendar-month-glyph" href="?month={{ cal.next_month }}#home-calendar-agenda" aria-label="{{ next_month_label }}">›</a>
+          {% if cal.next_month %}
+            <a class="calendar-month-glyph" href="?month={{ cal.next_month }}#home-calendar-agenda" rel="nofollow" aria-label="{{ next_month_label }}">›</a>
+          {% else %}
+            <a class="calendar-month-glyph is-off" role="link" aria-disabled="true" aria-label="{{ next_month_label }}">›</a>
+          {% endif %}
         </div>
       </nav>
 
@@ -50,9 +59,11 @@ tabindex="-1" + CSS scroll-margin-top으로 sticky 헤더에 안 가린다. "이
         {% for week in cal.weeks %}
           {% for day in week %}
             {% if day.date %}
+              {% if day.linkable %}
               <a
                 class="day-cell"
                 href="?month={{ day.date|date:"Y-m" }}&date={{ day.date|date:"Y-m-d" }}#home-calendar-agenda"
+                rel="nofollow"
                 data-in-month="{{ day.in_month|yesno:"true,false" }}"
                 data-today="{{ day.today|yesno:"true,false" }}"
                 data-selected="{{ day.selected|yesno:"true,false" }}"
@@ -66,6 +77,22 @@ tabindex="-1" + CSS scroll-margin-top으로 sticky 헤더에 안 가린다. "이
                   </span>
                 {% endif %}
               </a>
+              {% else %}
+              <span
+                class="day-cell"
+                aria-hidden="true"
+                data-in-month="{{ day.in_month|yesno:"true,false" }}"
+                data-today="{{ day.today|yesno:"true,false" }}"
+                data-selected="{{ day.selected|yesno:"true,false" }}"
+              >
+                <span class="day-num">{{ day.date|date:"j" }}</span>
+                {% if day.categories %}
+                  <span class="home-cal-dots" aria-hidden="true">
+                    {% for slug in day.categories %}<span class="home-cal-dot" data-category="{{ slug }}"></span>{% endfor %}
+                  </span>
+                {% endif %}
+              </span>
+              {% endif %}
             {% else %}
               <span class="day-cell" data-void aria-hidden="true"></span>
             {% endif %}
@@ -139,7 +166,7 @@ tabindex="-1" + CSS scroll-margin-top으로 sticky 헤더에 안 가린다. "이
             </article>
           {% endfor %}
         </div>
-        <a class="home-cal-agenda-more" href="/events/calendar/?month={{ cal.month_param }}&date={{ cal.selected_date|date:"Y-m-d" }}#selected-date">{% blocktranslate trimmed count counter=cal.selected_count %}이 날짜의 이벤트 {{ counter }}개 모두 보기 ›{% plural %}이 날짜의 이벤트 {{ counter }}개 모두 보기 ›{% endblocktranslate %}</a>
+        <a class="home-cal-agenda-more" href="/events/calendar/?month={{ cal.month_param }}&date={{ cal.selected_date|date:"Y-m-d" }}#selected-date" rel="nofollow">{% blocktranslate trimmed count counter=cal.selected_count %}이 날짜의 이벤트 {{ counter }}개 모두 보기 ›{% plural %}이 날짜의 이벤트 {{ counter }}개 모두 보기 ›{% endblocktranslate %}</a>
       {% else %}
         <p class="notice">{% translate "이 날짜에는 등록된 이벤트가 없습니다." %}</p>
       {% endif %}

@@ -22,7 +22,17 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
   반드시 **Session pooler**를 쓴다: Direct connection은 IPv6 전용이라 Render에서
   접속할 수 없고, Transaction pooler는 Django의 prepared statement와 호환되지
   않는다. 무료 티어는 7일간 DB 활동이 없으면 일시정지된다(데이터 보존) —
-  재개는 Supabase 대시보드의 Restore 버튼.
+  재개는 Supabase 대시보드의 Restore 버튼. `CONN_HEALTH_CHECKS`는 끊긴
+  연결을 다시 맺을 뿐 일시정지를 깨우지 않는다. 헬스 체크가 30분마다 DB를
+  확인해 하루 48회 `[계산 24시간 × 60분 ÷ 30분]` 활동이 생긴다. 이
+  `SELECT 1`이 Supabase의 7일 비활성 판정에 활동으로 잡히는지는 확인하지
+  않았다 — 잡히지 않으면 일시정지를 막는 근거가 되지 못한다.
+  Session pooler의 Pool Size는 15, Max Client Connections는 200, Postgres
+  max connections는 60이다 `[대시보드, 사용자 확인 2026-11-12]`. 연결 수:
+  상시 1(워커 1), 정기 명령 2종(`purge_deleted_accounts`,
+  `prune_operational_data`)·운영자 명령이 겹치면 4, 배포 중첩(구 워커 1 +
+  migrate 1 + 신 워커 1)까지 겹치면 최악 6 `[계산]` ≤ 15. 워커 수를 늘리거나
+  스레드 워커로 바꿀 때는 이 값과 다시 비교한다.
 - **R2(또는 B2) 버킷**: object storage 생성, 액세스 키 발급
 - **필수 env 전체 표** (전부 `.env.example` 및 `config/settings.py` 배선 확인,
   변수명은 정확히 일치해야 함)
@@ -36,6 +46,8 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 | `SECURE_SSL` | 필수(`true`) — ③④와 함께 | config/settings.py `load_secure_ssl`, `build_secure_ssl_settings` | X-Forwarded-Proto 신뢰 전제(§3 체크리스트 ③) |
 | `SECURE_COOKIES` | 필수(`true`) — `SECURE_SSL`과 동시 | config/settings.py `_secure_cookies` 대입부 | `SECURE_SSL`과 독립 변수지만 프로덕션에선 항상 동시 설정 |
 | `DATABASE_URL` | 필수 | config/settings.py `load_database_config` | `postgresql://` 스킴만 허용(비-Postgres 스킴 거부), 관리형 PG는 `?sslmode=require` 권장. Supabase는 Session pooler 주소 + `?sslmode=require`(§1 DB 항목) |
+| `DB_CONN_MAX_AGE` | 선택 | config/settings.py `load_db_conn_max_age` | 기본 600초 `[코드]`. `0`이면 요청마다 새 연결을 맺는다. 정수가 아니면 기동 실패. `DATABASE_URL` 쿼리스트링에 `?conn_max_age=`를 붙이면 OPTIONS로 들어가 동작하지 않는다 `[코드]` — 이 env로 따로 설정해야 한다 |
+| `PUBLIC_CACHE_TTL_SECONDS` | 선택 | config/settings.py `load_public_cache_ttl_seconds` | 기본 60초 `[코드]`. 공개 캐시(홈 공개 구간·홈 달력·행사 달력 무필터·행사 목록과 달력의 카테고리 선택지)의 프로세스 메모리 유지 시간. `.env.example`와 같은 뜻(0이면 캐시 저장소를 아예 부르지 않는다, 정수가 아니거나 음수면 기동 실패). 워커마다 따로인 메모리라 즉시 무효화 수단은 없다 — 끄려면 0 |
 | `MEDIA_STORAGE_BUCKET` | 필수(PaaS 배포 시) | config/settings.py `load_media_storage_config` | 5종 all-or-nothing(아래) — PaaS 파일시스템은 휘발성이라 미설정 시 미디어 유실 |
 | `MEDIA_STORAGE_ACCESS_KEY_ID` | 필수(위와 세트) | 〃 | |
 | `MEDIA_STORAGE_SECRET_ACCESS_KEY` | 필수(위와 세트) | 〃 | |
@@ -55,7 +67,7 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 | `DRAFT_FETCH_CONTACT` | 선택 | config/settings.py `load_draft_fetch_contact` | 크롤러 UA 연락처(`docs/operations-runbook.md` §8 참조) |
 | `PORT` | 선택 | `docker/entrypoint.sh` `--bind` | 기본값 `8000` |
 | `GUNICORN_TIMEOUT` | 선택 | `docker/entrypoint.sh` `--timeout`, `.env.example` | 워커 타임아웃(초). 기본값 `120` `[코드 docker/entrypoint.sh]`. `0`은 타임아웃 해제라 금지 |
-| `WEB_CONCURRENCY` | 선택 | `docker/entrypoint.sh` `--workers` | 워커 수. 기본값 `3` `[코드 docker/entrypoint.sh]` |
+| `WEB_CONCURRENCY` | 선택 | `docker/entrypoint.sh` `--workers` | 워커 수. 기본값 `3` `[코드 docker/entrypoint.sh]`. Render는 `WEB_CONCURRENCY=1`을 넣어 운영 워커는 1개다 `[실측 Render 배포 로그 2026-11-12]` |
 
 ## 2. 첫 배포 절차
 
@@ -80,18 +92,27 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
    `%(h)s %(t)s "%(m)s %(U)s" %(s)s %(b)s "%(a)s"`로, 경로(`%(U)s`)만 남기고
    전체 요청 라인(`%(r)s`)이나 쿼리 문자열(`%(q)s`)은 쓰지 않는다 — 쿼리
    문자열에 토큰 등 민감정보가 실릴 수 있기 때문이다(트랙 55-6). PaaS에서
-   로그를 읽는 법과 주의 사항은 `docs/operations-runbook.md` 로그 판독
-   절 참고.
+   로그를 읽는 법과 주의 사항은 `docs/operations-runbook.md` §9의
+   「접근 로그 읽는 법」 참고.
 6. **헬스체크 연결**: `/api/health/`(`core/urls.py`, `core/views.py`의 `health()`)는
-   무인증 200을 반환하되 **`connection.ensure_connection()`으로 DB 접속을
-   확인**하고, 실패 시 503을 반환한다. PaaS의 **liveness**(실패 시 컨테이너
-   재시작) 프로브로 이 엔드포인트를 그대로 쓰면, DB 자체 장애 시 앱은 멀쩡한데도
-   재시작 루프에 빠질 수 있다 — 아래 체크리스트 ⑥ 참조. readiness(트래픽 라우팅
-   여부만 결정) 프로브로 쓰는 것이 더 안전하다.
+   무인증 200을 반환한다. DB 확인은 매 호출이 아니라 커서로 `SELECT 1`을
+   실행하고, 마지막 성공 뒤 30분(`HEALTH_DB_CHECK_INTERVAL_SECONDS`,
+   1,800초 `[코드 core/views.py]`)이 지났을 때만 한다(프로세스 시작 뒤 첫
+   호출은 확인한다) `[코드 core/views.py health()]`. 실패하면 503을 반환하고
+   바로 다음 호출이 다시 확인한다. 그래서 DB가 끊겨도 헬스는 최대 30분
+   동안 200을 낼 수 있다(사용자 요청은 즉시 실패한다). Render 헬스 체크는
+   5초마다 온다 `[실측 production 접근 로그 2026-11-12]`. PaaS의
+   **liveness**(실패 시 컨테이너 재시작) 프로브로 이 엔드포인트를 그대로
+   쓰면, DB 자체 장애 시 앱은 멀쩡한데도 재시작 루프에 빠질 수 있다 — 아래
+   체크리스트 ⑥ 참조. readiness(트래픽 라우팅
+   여부만 결정) 프로브로 쓰는 것이 더 안전하다. 마지막 확인 시각은
+   워커(프로세스)마다 따로 두므로 워커 수를 늘리면 DB 확인 빈도도 워커
+   수만큼 늘어난다 `[코드 core/views.py _last_db_check_at]`.
 
 ## 3. 필수 pre-launch 체크리스트 (0단계 계획서 T7 행, PR-0a/0b/0d/0e 게이트 승계)
 
-첫 트래픽을 받기 **전** 반드시 아래 19개 항목을 순서대로 확인한다. 하나라도
+첫 트래픽을 받기 **전** 반드시 아래 21개 항목 `[실측 rg '^\d+\. \*\*' §3 범위]`을
+순서대로 확인한다. 하나라도
 미확인 상태로 첫 배포를 진행하지 않는다.
 
 1. **DEBUG 독립 확인**: `DEBUG=false`가 다른 env 설정과 무관하게 실제로
@@ -113,9 +134,18 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
    있음).
 5. **멀티레플리카 migrate**: 레플리카 2개 이상 또는 롤링 배포라면 §2-3의
    `RUN_DB_MIGRATIONS=false` + release-phase 전략을 실제로 적용했는지 재확인한다.
-6. **헬스 프로브 의미 인지**: `/api/health/`를 liveness로 쓰는 경우, DB 장애가
-   재시작 루프로 이어질 수 있음을 인지하고 재시작 임계치·백오프를 보수적으로
-   설정한다(§2-5).
+6. **헬스 프로브 의미 인지**: DB 확인은 매 호출이 아니라 커서로 `SELECT 1`을
+   실행하고, 마지막 성공 뒤 30분(1,800초
+   `[코드 HEALTH_DB_CHECK_INTERVAL_SECONDS]`)이 지났을 때만 한다(프로세스
+   시작 뒤 첫 호출은 확인한다).
+   실패는 503이고 바로 다음 호출이 다시 확인한다. 그래서 DB가 끊겨도
+   헬스는 최대 30분 동안 200을 낸다(사용자 요청은 즉시 실패한다). Render
+   헬스 체크는 5초마다 온다 `[실측 production 접근 로그 2026-11-12]`.
+   `/api/health/`를 liveness로 쓰는 경우, DB 장애가 재시작 루프로 이어질
+   수 있음을 인지하고 재시작 임계치·백오프를 보수적으로 설정한다(§2-5).
+   마지막 확인 시각은 워커(프로세스)마다 따로 두므로 워커 수를 늘리면
+   DB 확인 빈도도 워커 수만큼 늘어난다 `[코드 core/views.py
+   _last_db_check_at]`.
 7. **R2 실왕복 확인**: object storage로 실제 파일을 업로드하고 다시 다운로드해
    왕복 동작을 확인한다(0단계 계획서 §9-b/미검증 항목, PR-0b에서 로컬 스모크만
    수행됨 — 실제 R2 엔드포인트 왕복은 첫 배포에서 최초 검증).
@@ -139,7 +169,7 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
    manage_email)가 위조 `X-Forwarded-For`로도 500이 나지 않고, IP A에서
    잘못된 로그인 10회 뒤 IP B의 첫 로그인이 429가 아님을 확인한다.
 9. **멀티워커 rate limit 실측**: gunicorn 멀티워커(`WEB_CONCURRENCY`,
-   기본 3 — docker/entrypoint.sh:15) 환경에서 `ACCOUNT_RATE_LIMITS`
+   기본 3 — docker/entrypoint.sh:19) 환경에서 `ACCOUNT_RATE_LIMITS`
    (`docs/operations-runbook.md` §2)가 워커 간 실제로 공유되는지 확인한다.
    `CACHES`가 `DatabaseCache`(config/settings.py `CACHES`)로 배선돼 구조적으로는
    공유되지만, 통합 환경에서의 실측은 아직 없다(0단계 계획서 §9-b).
@@ -170,6 +200,10 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
    django_cache;`로 실제 행 수가 예상 사용자 규모에서 10000에 근접하지
    않는지 함께 확인하고, 근접한다면 카운터가 TTL 만료 전에 조기 삭제돼
    레이트리밋·계정 삭제 잠금이 의도보다 일찍 풀릴 수 있음을 인지한다.
+   `CACHES`에 별칭 `"public"`(LocMemCache, 프로세스별 메모리)이
+   추가됐다(트랙 17). 레이트리밋·잠금 카운터는 계속 공유 `"default"`
+   (DatabaseCache)만 쓰고 `"public"`에 두면 안 된다 — 위 대조군 표의
+   LocMem 결과(워커별 개별 카운트라 한도가 걸리지 않음)가 그 이유다.
 10. **DB 백업에 django_cache 포함 인지**: `DatabaseCache`는 `django_cache`
     테이블(config/settings.py `CACHES` `MAX_ENTRIES`, core 마이그레이션으로 생성)에 rate limit
     카운터를 저장한다. DB 백업/복구 시 이 테이블도 함께 복원되므로, 복구
@@ -207,11 +241,15 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 12. **robots.txt 크롤링 허용 확인**: robots 해제(SEO 트랙 16)는 **SMTP
     게이트와 분리**됐다(2026-08-29 사용자 결정) — SMTP 미설정 상태로도
     크롤링 허용이 배포된다. 코드 수정은 이미 완료됐다(`core/views.py`의
-    robots 뷰가 비제품 4경로(`/admin/`, `/api/`, `/accounts/`, `/staff/`)만
-    차단하고 Sitemap 위치를 안내한다). **알려진 상태**: 검색으로 유입된
+    `robots_txt` 뷰가 Disallow 11줄 `[코드 core/views.py]`을 낸다: 비제품
+    4경로(`/admin/`, `/api/`, `/accounts/`, `/staff/`)와 달력·목록 쿼리
+    주소 7줄(`/events/?`, `/events/calendar/?`, `/?month=`, `/*?month=`,
+    `/*&month=`, `/*?date=`, `/*&date=` — 트랙 17, 끝없이 이어지는 이전·
+    다음 달/필터 조합을 막는다)을 차단하고 Sitemap 위치를 안내한다).
+    **알려진 상태**: 검색으로 유입된
     방문자는 가입 인증 메일 미동작(SMTP 보류) 동안 가입을 완료할 수
     없다 — 이는 수용된 상태이며 SMTP 활성화(별도 항목)가 해소 조건이다.
-    배포 후 확인 항목: `curl https://<host>/robots.txt`로 `Disallow` 4경로와
+    배포 후 확인 항목: `curl https://<host>/robots.txt`로 `Disallow` 11줄과
     `Sitemap:` 라인을 확인하고, `curl https://<host>/sitemap.xml`이 200을
     반환하는지 확인한다(도메인은 요청 Host를 따르므로 별도 설정 불필요 —
     `RequestSite`). **한글 브랜드명 확인(트랙 28, 라이브 `<title>`은 `타쿠라이프 takulife — 굿즈 컬렉션·서브컬처 이벤트 기록` `[실측 curl -s https://takulife.kr/ 2026-10-27]`)**:
@@ -233,7 +271,9 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
     **확인 결과 `[실측 2026-08-31]`**: `https://takulife.kr/static/css/dist/shell.763817b51953.css`에
     `Accept-Encoding: br` 요청 시 `HTTP/2 200` + `content-encoding: br` 응답 —
     Render 프록시가 br을 전달한다. 같은 날 §3-12 배포 후 확인도 완료:
-    robots.txt 200(Disallow 4경로 + `Sitemap: https://takulife.kr/sitemap.xml`),
+    robots.txt 200(당시 Disallow 4경로 + `Sitemap: https://takulife.kr/sitemap.xml`
+    — 현재는 달력·목록 쿼리 주소 7줄이 더해져 Disallow 11줄 `[코드
+    core/views.py, 트랙 17]`이다),
     sitemap.xml 200(공개 행사 미존재 상태라 정적 5페이지만 수록 — 정합).
 15. **닉네임 배포 확인(트랙 29)**: `curl -s https://<host>/accounts/signup/ | grep -c 'name="nickname"'`
     → `1`(가입 폼에 닉네임 입력칸이 렌더되는지). `psql "$DATABASE_URL" -c
@@ -297,6 +337,18 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
       화면에 영향).
     - Render 환경 변수는 새로 필요 없다 — 번역 러너 API는 기존
       `DRAFT_DISCOVERY_RUNNER_TOKEN`을 공유한다.
+20. **DB 연결 재사용·헬스 확인(트랙 17) 배포 확인**: 배포 뒤 Supabase
+    대시보드 연결 수 그래프로 상시 연결이 1 근처인지 확인하고, `/api/health/`가
+    200인지, 접근 로그에서 헬스 체크가 계속 5초 간격으로 오는지 확인한다.
+    참고 지표: `curl -o /dev/null -s -w '%{time_starttransfer}\n'
+    https://takulife.kr/`를 20회 실행한 중앙값을 전/후로 비교한다(콜드스타트·
+    압축 영향이 있어 판정 기준이 아니다).
+21. **공개 달력 범위·공개 캐시(트랙 17) 배포 확인**: `curl -sI
+    'https://takulife.kr/events/calendar/?month=2040-01'`이 302이고
+    `Location`에 쿼리가 없는지 확인한다. 범위 경계 달(과거 24개월·미래
+    12개월 `[코드 web/views/_helpers.py]`)은 200인지 확인한다. 배포 뒤 7일
+    동안 Render 시간당 아웃바운드와 접근 로그의 경로·User-Agent별 건수를
+    기록해 2026-11-07 이후 구간과 비교한다(통과 임계값 없음).
 
 ## 4. 백업·복구 (T6)
 
@@ -349,6 +401,14 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
   마이그레이션을 실행할지 판단한다. 데이터 손실 가능성이 있는 역방향
   마이그레이션(컬럼 삭제 등)은 실행 전 반드시 백업을 재확인한다.
 - **gunicorn 타임아웃(트랙 46) 롤백**: `GUNICORN_TIMEOUT=30`으로 env를 바꾸고 재기동하면 이전 동작(gunicorn 기본 30초 `[코드 gunicorn/config.py]`)이다.
+- **DB 연결 재사용(트랙 17) 롤백**: `DB_CONN_MAX_AGE=0`으로 env를 바꾸면
+  요청마다 새 연결을 맺는 이전 동작으로 돌아간다. Render Environment
+  탭에서 값을 바꿔 저장한 뒤 재시작·재배포가 되는지는 미검증이다 — 다음
+  env 변경 때 확인해 기록한다.
+- **공개 캐시(트랙 17) 롤백**: `PUBLIC_CACHE_TTL_SECONDS=0`으로 env를 바꾸면
+  공개 캐시 저장소를 아예 부르지 않는 이전 동작으로 돌아간다. Render
+  Environment 탭에서 값을 바꿔 저장한 뒤 재시작·재배포가 되는지는
+  미검증이다 — 다음 env 변경 때 확인해 기록한다.
 - **장애 시 점검 순서**: 헬스(`/api/health/` 응답 상태) → 애플리케이션 로그
   (`LOGGING`, config/settings.py 콘솔 구조화 로그) → DB(연결·쿼리 지연) →
   스토리지(R2 접근 가능 여부).
@@ -384,6 +444,9 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 | 멀티워커 환경에서 rate limit 공유 실측 | 로컬 PG에서 워커 3개 실측 완료(2026-10-28, §3-9). 프로덕션(Render) 통합 환경은 미검증 | 첫 배포 직후(§3 체크리스트 ⑨) |
 | 탈퇴 파기(`purge_deleted_accounts`) 정기 실행 등록 | 미등록(플랫폼은 §7에서 Render로 확정 — Render 스케줄러에 ENTRYPOINT 우회로 등록 필요, 비용 확인 포함) | 첫 배포 전(§3 체크리스트 ⑪) |
 | 운영 로그 정리(`prune_operational_data`, 트랙 37) 정기 실행 등록 | 미등록(Render 스케줄러에 ENTRYPOINT 우회로 등록 필요, 비용 확인 포함 — `docs/operations-runbook.md` §7.2·`docs/BE/data-retention.md` 참고) | 첫 배포 전 |
+| 배포 후 Supabase 연결 수 실측(트랙 17) | 미검증(계산상 최악 6 ≤ Pool Size 15, §1 DB 항목) | 첫 배포 직후(§3 체크리스트 ⑳) |
+| 배포 후 7일 아웃바운드 비교(트랙 17) | 미검증 | 배포 뒤 7일(§3 체크리스트 ㉑) |
+| `DB_CONN_MAX_AGE`·`PUBLIC_CACHE_TTL_SECONDS` env 롤백의 재시작·재배포 동작(트랙 17) | 미검증 — Render Environment 탭에서 값만 바꿔 저장했을 때 재시작·재배포가 실제로 일어나는지 확인 안 됨 | 다음 env 변경 때(§5) |
 
 ## 7. 배포 브랜치와 deploy PR 흐름
 

@@ -18,41 +18,52 @@ state" 절 참고).
 number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴다 — 제목 앞의
 `feat:`/`fix:`/`docs:` 같은 접두어도 변경 성격을 알려주는 정보이므로 유지한다.
 
-이 문서는 200줄을 넘기지 않는다. 머지된 PR 402건(`gh pr list --state merged --limit 500`,
-2026-11-05 `[실측]`; 2026-08-17에는 289건)이 전부 들어가지 않으므로 최신부터 채우고 줄 수
+이 문서는 200줄을 넘기지 않는다. 머지된 PR 409건(`gh pr list --state merged --limit 500`,
+2026-11-13 `[실측]`; 2026-08-17에는 289건)이 전부 들어가지 않으므로 최신부터 채우고 줄 수
 예산에서 끊는다 — 컷오프는 "재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래
-목록은 PR #410부터 #269까지다(#411은 위 상세 항목). 그보다 오래된 PR은 `gh pr list
+목록은 PR #416부터 #276까지다(#415는 위 상세 항목). 그보다 오래된 PR은 `gh pr list
 --state merged --limit 500 --json number,title` 으로 언제든 다시 조회할 수 있다.
 
 ---
 
 ## 최신 PR
 
-### PR #411 — fix: Track 55 — review residuals, hook gaps, plan archive
+### PR #415 — perf: Track 17 — DB connection reuse, public calendar range, public cache
 
-**무엇을 바꿨나**: 2026-11-11 상태 문서 전수 검토의 결함·드리프트를 정리하고,
-계획서 닫힌 트랙을 보관 파일로 옮겨 커밋하는 규약을 신설했다. 계획서 보관(닫힌
-트랙 절 40개·5,673줄을 `docs/plan-archive/track-<id>.md`로 원문 이동, SHA-256
-재조립 일치), 훅 빈틈(Bash 훅 4개가 통과시키던 10개 형태 차단, 계약 테스트
-85건, `.claude/settings.json` timeout을 초 단위로 정정), 백엔드(상태 전환
-3함수의 동시 PATCH 오기록을 잠금 재조회로 수정, 시리얼라이저 중복 제거),
-프론트 7건(방문 기록 빈 상태 링크·동적 오류 `aria-live`·죽은 바인딩 삭제·
-스태프 큐 판정 공지·검색 빈 상태 공지 일치·컬렉션 폼 포커스), Gunicorn 접근
-로그(`docker/entrypoint.sh`에 `--access-logfile -`, 사용자 지시), 문서 정리
-(README·backlog·`docs/BE`·`docs/FE` 줄 인용 드리프트 재측정, PR #410 롤링
-반영 포함). 머지 완료 2026-11-12T11:43:49Z, merge commit `21a9e408` `[실측
-gh]`. 머지된 트리는 검증한 브랜치 최신 커밋 `e94e9317`과 diff 0 `[실측 gh·git]`.
+**무엇을 바꿨나**: DB 연결 재사용(`DB_CONN_MAX_AGE` 기본 600초 `[코드]` +
+`CONN_HEALTH_CHECKS`), `/api/health/`의 DB 확인을 30분에 한 번으로, 컬렉션·
+방문 기록 요약 집계 병합(4→1, 2→1쿼리)과 홈 다섯 구간 사용자 상태 조회 병합
+(테스트 Given 로그인 29→21쿼리 `[실측]`), `/events/` COUNT 2회→1회, 공개 달력
+두 곳(홈·`/events/calendar/`)을 오늘 기준 과거 24개월~미래 12개월로 제한(범위
+밖 302·비ASCII 숫자 거부·경계 달 비활성 글리프·`month=` 링크 `rel="nofollow"`),
+공개 데이터 캐시(`"public"` LocMem 별칭, `PUBLIC_CACHE_TTL_SECONDS` 기본 60초
+`[코드]`, 0이면 저장소를 부르지 않음, 저장소 장애는 기록 후 DB 값), 공개 `q`
+100자 상한, 상세 HEAD 조회수 생략, 홈 구간 ORM 체인의 `events/queries.py` 이관,
+배포·운영 런북. 커밋 36개 + main 합치기 1개, 37 files changed +2,352/−169
+`[실측 git diff --stat]`, 마이그레이션 없음. 머지 완료 2026-11-13T13:30:39Z,
+merge commit `6628dee1` `[실측 gh]`. 머지된 트리는 검증한 브랜치 최신 커밋
+`d5b623de`와 diff 0 `[실측 git]`.
 
-**왜**: 상태 문서 전수 검토가 찾은 문서 드리프트와, 같은 트랙 중 발견한 같은
-유형의 훅·접근성·동시성 결함을 사용자 표준 지시("새 발견 백로그 이연 금지")에
-따라 같은 PR에서 묶어 처리했다.
+**왜**: Render 아웃바운드가 포함 한도 약 5GB를 넘어 13.8GB가 됐고 `[실측
+청구서]`, production 접근 로그에서 `ClaudeBot/1.0`이 범위 제한 없는
+`/events/calendar/?month=…`와 `/events/?필터`를 초당 약 10건 요청한 것이
+원인이었다 `[실측 접근 로그 2026-11-12]`. 사용자가 연결 재사용·집계 병합·공개
+데이터 캐시를 한 트랙으로 지시했다(2026-11-12). ClaudeBot 쿼리 요청 403 서버
+차단(main `f386dd0e`)은 유지 확정(사용자 결정 2026-11-13).
 
-**검증**: `uv run pytest -q -n auto` 4,391 passed / 57.84초(기준 4,301 대비
-+90건 `[계산]`), `uv run pytest -q -m e2e tests/e2e` 10 passed / 11.89초,
-`manage.py check`·`makemigrations --check` 이상 없음, `ruff check`·`ruff
-format --check` 통과(461파일). PR CI 6잡 전부 success `[실측 gh pr checks]`.
+**검증**: main을 합친 뒤 `uv run pytest -q -n auto` 4,483 passed / 42.28초
+(착수 기준 4,397 대비 +86건 `[계산]`), `uv run pytest -q -m e2e tests/e2e` 10
+passed / 10.43초 `[실측]`. 합치기 전 `ruff check`·`ruff format --check`
+통과(465파일), `manage.py check`·`makemigrations --check` 이상 없음 `[실측]`.
+합친 커밋의 PR CI 6잡 전부 pass `[실측 gh pr checks]`. CI 의존성 감사 실패
+(soupsieve 2.9.2)는 #416으로 먼저 해소했다.
 
 ## 이전 PR (번호 — 실제 PR 제목)
+- #416 — chore(deps): Upgrade soupsieve to 4.1 for two GHSA advisories
+- #414 — deploy: main → production
+- #413 — deploy: main → production
+- #412 — deploy: main → production
+- #411 — fix: Track 55 — review residuals, hook gaps, plan archive
 - #410 — deploy: main → production
 - #409 — docs: Track 50 design principles — A4 black-and-grey direction and the Track B token input
 - #408 — style(home): Replace the neon highlighter with a dark emphasis block
@@ -187,10 +198,3 @@ format --check` 통과(461파일). PR CI 6잡 전부 success `[실측 gh pr chec
 - #278 — fix: 조용히 깨질 자리 두 곳을 닫는다 (백로그 A5 잔여 + F8)
 - #277 — refactor: 보유·교환 축 술어를 CollectionItem으로 모은다 (백로그 A3 이관분)
 - #276 — refactor: core.analytics를 서명 규약 가드에 넣는다 (백로그 A2)
-- #275 — feat(staff): 스태프 콘솔을 소비자 셸에서 분리하고 재설계한다
-- #274 — refactor: Split archive queries and their tests by domain (E2 + E3)
-- #273 — docs: Close E4, E5, and E1 in the backlog
-- #272 — refactor: Name the conditions that comments were explaining (E5)
-- #271 — style: Close the comment-policy track — missed files and a guard
-- #270 — style: Sweep every comment under the rewritten policy
-- #269 — style: Bring auth-track comments under the comment policy, and register E4

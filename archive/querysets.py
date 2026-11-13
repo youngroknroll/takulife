@@ -12,21 +12,25 @@
 """
 
 from django.db import models
-from django.db.models import Case, CharField, Exists, F, OuterRef, Value, When
+from django.db.models import Case, CharField, Exists, F, OuterRef, Q, Value, When
+
+# 보유·교환가능 판정 조건과 그 반대 조건을 쿼리셋 메서드와 요약 집계가 함께 쓴다.
+OWNED_Q = Q(quantity__gt=0)
+TRADEABLE_Q = Q(tradeable_quantity__gt=0)
 
 
 class CollectionItemQuerySet(models.QuerySet):
     def owned(self):
-        return self.filter(quantity__gt=0)
+        return self.filter(OWNED_Q)
 
     def not_owned(self):
-        return self.filter(quantity=0)
+        return self.exclude(OWNED_Q)
 
     def tradeable(self):
-        return self.filter(tradeable_quantity__gt=0)
+        return self.filter(TRADEABLE_Q)
 
     def not_tradeable(self):
-        return self.filter(tradeable_quantity=0)
+        return self.exclude(TRADEABLE_Q)
 
 
 class UserEventStatusQuerySet(models.QuerySet):
