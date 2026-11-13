@@ -7,14 +7,15 @@ import logging
 
 from django.conf import settings
 from django.core.cache import caches
-from django.db.models import Count
 
 from core.models import HomeConfig
-from events.models import Event
 from events.queries import (
     consumer_category_choices,
+    list_closing_soon_events,
+    list_latest_published_events,
     list_published_events,
     list_published_events_for_month,
+    published_category_counts,
 )
 
 CACHE_ALIAS = "public"
@@ -59,22 +60,16 @@ def public_month_events(*, year, month, today):
 def _load_home_public_sections(*, today):
     return {
         "ongoing_rows": list(list_published_events({"status": "ongoing"}, today=today)[:15]),
-        "closing_rows": list(Event.objects.published().ending_within_days(5, today=today)[:15]),
-        # 슬라이더는 기간이 이미 끝난 행사(end_date < today)를 제외한다.
-        # end_date가 없는 행사는 "종료"가 될 수 없으므로 그대로 남긴다.
-        "recent_rows": list(
-            Event.objects.published().exclude(end_date__lt=today).order_by("-id")[:15]
-        ),
+        "closing_rows": list(list_closing_soon_events(today=today)[:15]),
+        # 끝난 행사 제외는 list_latest_published_events 독스트링이 설명한다.
+        "recent_rows": list(list_latest_published_events(today=today)[:15]),
         # 홈 대표 행사: 인기(조회수) 슬라이더 대신 공개 목록 기본 우선순위
         # (진행중 -> 예정 -> 종료, "active"는 종료 행사를 제외)의 최대 5건을
         # 로테이터로 노출한다.
         "featured_event_rows": list(list_published_events({"status": "active"}, today=today)[:5]),
         # "카테고리로 둘러보기" 집계: HomeConfig로 스태프가 순서/선택을
         # 큐레이션한 카테고리와 게시 건수를 함께 담는다.
-        "category_counts": {
-            row["category"]: row["count"]
-            for row in Event.objects.published().values("category").annotate(count=Count("id"))
-        },
+        "category_counts": published_category_counts(),
         "featured_category_pairs": list(HomeConfig.get_solo().featured_category_pairs()),
     }
 

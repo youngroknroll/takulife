@@ -330,14 +330,10 @@ def consumer_category_choices() -> list[tuple[str, str]]:
     보여준다 — 비활성화해도 기존 이벤트를 찾던 사용자가 필터를 잃지
     않게 하려는 결정이다. 카테고리마다 exists()를 따로 묻지 않고
     게시 건수를 한 번에 집계해(1쿼리) 활성 목록 조회(1쿼리)와 합친다.
+    빈 문자열 키가 생겨도 카테고리 슬러그는 빈 문자열일 수 없어(형식
+    검증) 결과가 같다.
     """
-    published_counts = {
-        row["category"]: row["count"]
-        for row in Event.objects.published()
-        .exclude(category="")
-        .values("category")
-        .annotate(count=models.Count("id"))
-    }
+    published_counts = published_category_counts()
     return [
         (category.slug, category.label)
         for category in Category.objects.all()
