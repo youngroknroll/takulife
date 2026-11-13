@@ -54,8 +54,6 @@ from web.views._helpers import (
     _adjacent_month,
     _attach_display,
     _attach_display_many,
-    _parse_calendar_date,
-    _parse_calendar_month,
     _parse_public_calendar_date,
     _parse_public_calendar_month,
     _redirect_without_calendar_params,
@@ -123,12 +121,14 @@ def _home_calendar_weeks(grid, events_by_date, *, today, selected_date):
     ]
 
 
-def _home_calendar_context(raw_month, raw_date, *, today):
-    """홈 이벤트 달력 섹션 컨텍스트를 만든다."""
-    year, month, calendar_error = _parse_calendar_month(raw_month, today=today)
+def _home_calendar_context(year, month, calendar_error, raw_date, *, today):
+    """홈 이벤트 달력 섹션 컨텍스트를 만든다. year/month/calendar_error는
+    호출자(home)가 이미 파싱한 달 — 범위 밖 판단을 조회 전에 끝내기
+    위해서다.
+    """
     selected_date = None
     if calendar_error is None:
-        selected_date, calendar_error = _parse_calendar_date(
+        selected_date, calendar_error = _parse_public_calendar_date(
             raw_date, year=year, month=month, today=today
         )
 
@@ -168,6 +168,12 @@ def _home_calendar_context(raw_month, raw_date, *, today):
 
 def home(request):
     today = timezone.localdate()
+    year, month, calendar_error = _parse_public_calendar_month(
+        request.GET.get("month"), today=today
+    )
+    # 범위 밖 달은 조회 전에 돌려보낸다.
+    if calendar_error == "out_of_range":
+        return _redirect_without_calendar_params(request)
     ongoing_qs = list_published_events({"status": "ongoing"}, today=today)
     closing_qs = Event.objects.published().ending_within_days(5, today=today)
     # 슬라이더는 기간이 이미 끝난 행사(end_date < today)를 제외한다.
@@ -212,7 +218,7 @@ def home(request):
         "category_tiles": category_tiles,
         "featured_event_rows": rows_by_section["featured_event_rows"],
         "home_calendar": _home_calendar_context(
-            request.GET.get("month"), request.GET.get("date"), today=today
+            year, month, calendar_error, request.GET.get("date"), today=today
         ),
         "json_ld_script": _json_ld_script(build_website_json_ld(request.build_absolute_uri("/"))),
     }

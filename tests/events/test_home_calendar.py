@@ -370,3 +370,72 @@ def test_카테고리가_없는_행사는_건수와_아젠다에는_남고_점�
     assert calendar["selected_count"] == 1
     assert [row["event"].title for row in calendar["selected_rows"]] == ["미분류 행사"]
     assert calendar["legend"] == []
+
+
+@pytest.mark.django_db
+@pytest.mark.contract
+@pytest.mark.parametrize(
+    "query_params",
+    [
+        {"month": "2024-05"},
+        {"month": "2027-07", "date": "2027-07-01"},
+    ],
+    ids=["하한_바로_밖", "상한_바로_밖"],
+)
+def test_홈_범위_밖_달_요청은_쿼리_없이_month와_date를_뺀_홈으로_보낸다(
+    make_event, query_params, django_assert_num_queries
+):
+    """범위 밖 달은 조회 전에 돌려보내 크롤러가 끝없는 달 주소를 따라가지 못하게 한다."""
+    fixed_today = date(2026, 6, 26)
+    make_event()
+
+    with patch("web.views.events.timezone.localdate", return_value=fixed_today):
+        with django_assert_num_queries(0):
+            resp = Client().get("/", query_params)
+
+    assert resp.status_code == 302
+    assert resp["Location"] == "/"
+
+
+@pytest.mark.django_db
+@pytest.mark.contract
+@pytest.mark.parametrize(
+    "query_params",
+    [
+        {"month": "٢٠٢٦-07"},
+        {"month": "２０２６-07"},
+        {"month": "2026-06", "date": "٢٠٢٦-06-10"},
+    ],
+    ids=["월_아랍_숫자", "월_전각_숫자", "날짜_아랍_숫자"],
+)
+def test_홈_달력은_ASCII가_아닌_숫자를_이번_달로_되돌린다(query_params):
+    """홈은 달력 전용 화면이 아니라 형식 오류를 알리지 않고 이번 달·오늘로 되돌린다."""
+    fixed_today = date(2026, 6, 26)
+
+    with patch("web.views.events.timezone.localdate", return_value=fixed_today):
+        resp = Client().get("/", query_params)
+
+    assert resp.status_code == 200
+    calendar = resp.context["home_calendar"]
+    assert calendar["month"] == 6
+    assert calendar["selected_date"] == fixed_today
+
+
+@pytest.mark.django_db
+@pytest.mark.contract
+@pytest.mark.parametrize(
+    "month_param",
+    ["2024-06", "2027-06"],
+    ids=["하한", "상한"],
+)
+def test_홈_달력은_허용_범위_경계_달을_그대로_보여준다(month_param):
+    fixed_today = date(2026, 6, 26)
+    year, month = (int(part) for part in month_param.split("-"))
+
+    with patch("web.views.events.timezone.localdate", return_value=fixed_today):
+        resp = Client().get("/", {"month": month_param})
+
+    assert resp.status_code == 200
+    calendar = resp.context["home_calendar"]
+    assert calendar["year"] == year
+    assert calendar["month"] == month
