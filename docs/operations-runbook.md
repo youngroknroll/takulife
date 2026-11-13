@@ -228,6 +228,9 @@ PaaS(managed load balancer 등)를 쓰는 경우 이 설정은 보통 플랫폼�
 
 ## 7. 정기 실행 작업
 
+명령 하나는 실행 중 DB 연결 1개를 쓰고 끝나면 닫는다. 웹 워커 연결과 합친
+수는 `docs/deploy-runbook.md` §1 DB 항목을 참조한다.
+
 ### 7.1 탈퇴 계정 파기 — `purge_deleted_accounts`
 
 <!-- uv-run-exempt: 런타임 이미지엔 uv가 없다(Dockerfile:3-4) — PaaS 스케줄러가 컨테이너 안에서 이 명령을 직접 실행한다 -->
@@ -568,11 +571,26 @@ PaaS의 ENTRYPOINT 우회 기능으로 등록하고, **등록 직후 반드시 �
     (`confirm-email/<key>/`)와 비밀번호 재설정 키
     (`password/reset/key/<uidb36>-<key>/`)는 URL 경로라 접근 로그에 그대로
     남는다. 로그를 외부로 내보내거나 공유하지 말 것. 헬스체크 요청도
-    로그에 쌓인다(Render 헬스체크 주기는 미확인).
+    로그에 쌓인다. Render 헬스 체크는 5초마다 온다
+    `[실측 production 접근 로그 2026-11-12]`.
+  - **경로·User-Agent별 건수 집계 예**: 로그를 파일(`access.log`)로 받은
+    뒤 `awk -F'"' '{print $2}' access.log | sort | uniq -c | sort -rn`로
+    메서드+경로(`%(m)s %(U)s`)별 건수를, `awk -F'"' '{print $4}'
+    access.log | sort | uniq -c | sort -rn`로 User-Agent(`%(a)s`)별 건수를
+    센다 — 포맷에 인용부호가 두 쌍뿐이라 `"`로 나누면 2번째·4번째 필드가
+    각각 그 값이다.
 - **바로 아래 「저장소」 패널(트랙 37)**: 「최근 14일 처리량」 다음에 오는
   DB 용량 요약이다 — 전체 크기와 상위 5개 테이블 크기를 보여준다.
   Postgres가 아니거나 조회에 실패하면 헤더는 유지한 채 측정 불가 문구만
   나온다(대시보드가 죽지 않는다). 상세는 `docs/BE/data-retention.md` 참고.
+- **크롤러 쿼리 요청 차단(`core/middleware.py` `CrawlerQueryBlockMiddleware`,
+  트랙 17)**: User-Agent에 `BLOCKED_QUERY_CRAWLER_TOKENS`(지금
+  `"claudebot"`, `core/middleware.py:7`) 중 하나가 있고 쿼리 문자열이 붙은
+  요청은 DB 조회 없이 403을 돌려준다. 대상 추가·제거는 그 튜플을 고쳐
+  배포한다. 해제는 `config/settings.py` `MIDDLEWARE`(346행 부근)에서
+  `"core.middleware.CrawlerQueryBlockMiddleware"` 줄(354행)을 빼고 배포한다.
+  2026-11-12 ClaudeBot이 달력·목록 쿼리 주소를 무한히 따라가며 대역폭을
+  초과시킨 데 대한 임시 조치이며, 유지 여부는 사용자 결정 대기다.
 
 ## 10. 계정 이메일 중복 감사 (`allauth` `EmailAddress`)
 
@@ -590,3 +608,16 @@ print('rows', EmailAddress.objects.count(), 'dup_all', dup_all, 'dup_verified', 
 
 - 기대: `dup_all`·`dup_verified` 모두 빈 목록. 비어 있지 않으면 해당 `user_id`의 행을 Django admin(`allauth` EmailAddress)에서 확인해 검증되지 않은 중복 행을 정리하고, 검증된 주소가 둘이면 사용자에게 확인한 뒤 하나만 남긴다.
 - 실행 기록: 로컬 DB `rows 12 / dup_all 0 / dup_verified 0` `[실측 2026-10-27]`. **운영 DB 실행은 미완(사용자 실행 대기)** — 실행 후 이 줄에 날짜와 결과를 적는다.
+
+## 11. 공개 캐시 (트랙 17, `web/public_cache.py`)
+
+별칭 `"public"`은 프로세스 메모리(LocMem)라 워커·재시작마다 비어 있고 다른
+워커와 공유되지 않는다. 레이트리밋·잠금 카운터 같은 공유해야 하는 값은
+절대 여기에 두지 않는다(계속 공유 `"default"` DatabaseCache만 쓴다). 게시·
+수정·비공개는 홈·달력·카테고리 선택지에 최대 `PUBLIC_CACHE_TTL_SECONDS`
+(기본 60초 `[코드 config/settings.py load_public_cache_ttl_seconds]`)만큼
+늦게 반영되고, 행사 상세는 즉시 반영된다. 끄려면 env
+`PUBLIC_CACHE_TTL_SECONDS=0`. 유지 시간이 0보다 클 때 캐시 저장소 `get`·
+`set`이 예외를 내면 서버 로그에 "Public cache read failed" /
+"Public cache write failed" 오류를 남기고 DB에서 읽은 값으로 화면을
+그린다 — 같은 오류가 반복되면 캐시 저장소 자체를 의심하고 env 0으로 끈다.
