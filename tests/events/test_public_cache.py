@@ -649,3 +649,26 @@ def test_공개_캐시_경로는_django_cache_테이블을_전혀_건드리지_�
 
     assert all(response.status_code == 200 for response in responses)
     assert not any("django_cache" in query["sql"] for query in ctx.captured_queries)
+
+
+@pytest.mark.domain
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "broken_method",
+    ["get", "set"],
+    ids=["조회_실패", "저장_실패"],
+)
+def test_공개_캐시_저장소가_장애여도_정상_조회_결과를_돌려준다(
+    make_event, public_cache_locmem, monkeypatch, broken_method
+):
+    make_event(title="초기행사", start_date=date(2026, 6, 1), end_date=date(2026, 6, 1))
+
+    # 기존 장애 테스트는 유지 시간 0 경로만 덮으므로 기본 유지 시간에서 저장소를 고장 낸다.
+    def _raise_cache_failure(*args, **kwargs):
+        raise RuntimeError("공개 캐시 장애 주입")
+
+    monkeypatch.setattr(caches["public"], broken_method, _raise_cache_failure)
+
+    events = public_month_events(year=2026, month=6, today=date(2026, 6, 1))
+
+    assert [event.title for event in events] == ["초기행사"]

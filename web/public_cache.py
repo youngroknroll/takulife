@@ -3,6 +3,8 @@
 수정은 유지 시간이 지나야 반영된다.
 """
 
+import logging
+
 from django.conf import settings
 from django.core.cache import caches
 from django.db.models import Count
@@ -17,21 +19,31 @@ from events.queries import (
 
 CACHE_ALIAS = "public"
 
+logger = logging.getLogger(__name__)
+
 
 def _cached(cache_key, load):
     """담아 둔 값이 있으면 돌려주고, 없으면 `load()`로 읽어 유지 시간 동안
     담는다. 유지 시간이 0이면 저장소를 아예 부르지 않는다(캐시 장애 때도
-    끌 수 있게)."""
+    끌 수 있게). 캐시 저장소가 고장 나면 기록을 남기고 DB에서 읽은 값을
+    그대로 쓴다."""
     if settings.PUBLIC_CACHE_TTL_SECONDS == 0:
         return load()
 
     cache = caches[CACHE_ALIAS]
-    value = cache.get(cache_key)
+    try:
+        value = cache.get(cache_key)
+    except Exception:
+        logger.exception("Public cache read failed for key=%s", cache_key)
+        value = None
     if value is not None:
         return value
 
     value = load()
-    cache.set(cache_key, value, timeout=settings.PUBLIC_CACHE_TTL_SECONDS)
+    try:
+        cache.set(cache_key, value, timeout=settings.PUBLIC_CACHE_TTL_SECONDS)
+    except Exception:
+        logger.exception("Public cache write failed for key=%s", cache_key)
     return value
 
 
