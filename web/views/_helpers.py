@@ -85,6 +85,10 @@ def _attach_display_many(sections, *, today=None, user=None):
     합쳐 ``_attach_display``를 한 번만 호출하므로, 같은 행사가 여러
     구간에 있어도 같은 값을 받는다. 각 구간은 ``list()``로 정확히 한 번만
     평가된다.
+
+    ``_attach_display``가 입력 행사마다 정확히 한 행을 입력 순서대로
+    돌려준다는 성질에 기대어 구간별로 다시 자른다 — 행을 거르거나
+    순서를 바꾸면 구간 배분이 어긋난다.
     """
     materialized = {name: list(events) for name, events in sections.items()}
     all_events = [event for events in materialized.values() for event in events]
