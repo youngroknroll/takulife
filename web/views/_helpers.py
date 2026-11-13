@@ -2,6 +2,7 @@
 
 from datetime import datetime
 
+from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.utils import timezone
 
@@ -122,6 +123,36 @@ def _parse_calendar_month(raw_month, *, today):
     except ValueError:
         return None, None, "invalid"
     return parsed.year, parsed.month, None
+
+
+# 공개 달력이 보여주는 달의 범위(오늘 기준, 경계 포함). 크롤러가 끝없는
+# 이전·다음 달 주소를 따라가지 못하게 한다.
+PUBLIC_CALENDAR_PAST_MONTHS = 24
+PUBLIC_CALENDAR_FUTURE_MONTHS = 12
+
+
+def _parse_public_calendar_month(raw_month, *, today):
+    """_parse_calendar_month와 같은 (year, month, error)를 돌려주되,
+    형식은 맞지만 허용 범위(오늘 기준 과거 24개월~미래 12개월, 경계
+    포함) 밖이면 error가 "out_of_range"다.
+    """
+    year, month, error = _parse_calendar_month(raw_month, today=today)
+    if error is not None:
+        return year, month, error
+    lower = _adjacent_month(today.year, today.month, -PUBLIC_CALENDAR_PAST_MONTHS)
+    upper = _adjacent_month(today.year, today.month, PUBLIC_CALENDAR_FUTURE_MONTHS)
+    if not lower <= (year, month) <= upper:
+        return year, month, "out_of_range"
+    return year, month, None
+
+
+def _redirect_without_calendar_params(request):
+    """month·date만 빼고 나머지 쿼리는 그대로 둔 같은 경로로 리다이렉트한다."""
+    params = request.GET.copy()
+    params.pop("month", None)
+    params.pop("date", None)
+    query = params.urlencode()
+    return HttpResponseRedirect(f"{request.path}?{query}" if query else request.path)
 
 
 def _parse_calendar_date(raw_date, *, year, month, today):

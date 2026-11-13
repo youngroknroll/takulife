@@ -56,6 +56,8 @@ from web.views._helpers import (
     _attach_display_many,
     _parse_calendar_date,
     _parse_calendar_month,
+    _parse_public_calendar_month,
+    _redirect_without_calendar_params,
     _subject_view,
 )
 
@@ -439,7 +441,12 @@ def event_calendar(request):
     """
     today = timezone.localdate()
 
-    year, month, calendar_error = _parse_calendar_month(request.GET.get("month"), today=today)
+    year, month, calendar_error = _parse_public_calendar_month(
+        request.GET.get("month"), today=today
+    )
+    # 범위 밖 달은 조회 전에 돌려보낸다.
+    if calendar_error == "out_of_range":
+        return _redirect_without_calendar_params(request)
     selected_date = None
     if calendar_error is None:
         selected_date, calendar_error = _parse_calendar_date(

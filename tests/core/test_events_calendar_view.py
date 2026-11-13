@@ -259,7 +259,9 @@ def test_잘못된_month_date_입력은_200과_함께_인라인_오류_패널로
 
 
 # ---------------------------------------------------------------------------
-# CAL-5-07 — 유효한 극단적 월은 클램프 없이 그대로 렌더된다
+# CAL-5-07 — 허용 범위(과거 24개월~미래 12개월)를 벗어난 월은 month 없는
+# 달력으로 리다이렉트한다(크롤러의 무한 월 주소 소진 대응). 과거에는
+# "클램프 없이 그대로 렌더"가 계약이었으나 그 반대로 바뀌었다.
 # ---------------------------------------------------------------------------
 
 
@@ -269,13 +271,69 @@ def test_잘못된_month_date_입력은_200과_함께_인라인_오류_패널로
     ["0001-01", "9999-12"],
     ids=["매우_이른_월", "매우_늦은_월"],
 )
-def test_유효한_극단적_월은_클램프_없이_그대로_렌더링된다(month_param):
-    resp = Client().get("/events/calendar/", {"month": month_param})
+def test_허용_범위를_크게_벗어난_극단적_월은_month_없는_달력으로_보낸다(month_param):
+    fixed_today = date(2026, 6, 26)
+
+    with patch("web.views.events.timezone.localdate", return_value=fixed_today):
+        resp = Client().get("/events/calendar/", {"month": month_param})
+
+    assert resp.status_code == 302
+    assert resp["Location"] == "/events/calendar/"
+
+
+@pytest.mark.django_db
+@pytest.mark.contract
+@pytest.mark.parametrize(
+    "query_params, expected_location",
+    [
+        ({"month": "2024-05"}, "/events/calendar/"),
+        ({"month": "2027-07"}, "/events/calendar/"),
+        (
+            {"month": "2024-05", "date": "2024-05-10", "region": "seoul"},
+            "/events/calendar/?region=seoul",
+        ),
+    ],
+    ids=["하한_바로_밖", "상한_바로_밖", "필터_보존"],
+)
+def test_허용_범위_밖_달_요청은_쿼리_없이_month와_date를_뺀_같은_경로로_보낸다(
+    make_event, query_params, expected_location, django_assert_num_queries
+):
+    """범위 밖 달은 조회 전에 돌려보내 크롤러가 끝없는 달 주소를 따라가지
+    못하게 한다."""
+    fixed_today = date(2026, 6, 26)
+    make_event()
+
+    with patch("web.views.events.timezone.localdate", return_value=fixed_today):
+        with django_assert_num_queries(0):
+            resp = Client().get("/events/calendar/", query_params)
+
+    assert resp.status_code == 302
+    assert resp["Location"] == expected_location
+
+
+@pytest.mark.django_db
+@pytest.mark.contract
+@pytest.mark.parametrize(
+    "month_param",
+    ["2024-06", "2027-06"],
+    ids=["하한", "상한"],
+)
+def test_허용_범위_경계인_하한과_상한_달은_그대로_보여준다(make_event, month_param):
+    fixed_today = date(2026, 6, 26)
+    year, month = (int(part) for part in month_param.split("-"))
+    make_event(
+        title="경계달행사",
+        start_date=date(year, month, 10),
+        end_date=date(year, month, 10),
+    )
+
+    with patch("web.views.events.timezone.localdate", return_value=fixed_today):
+        resp = Client().get("/events/calendar/", {"month": month_param})
 
     assert resp.status_code == 200
     body = resp.content.decode()
     assert "요청한 날짜를 확인할 수 없어요" not in body
-    assert "이 날짜에는 등록된 공식 이벤트가 없어요" in body
+    assert "경계달행사" in body
 
 
 # ---------------------------------------------------------------------------
