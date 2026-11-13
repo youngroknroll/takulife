@@ -150,6 +150,44 @@ def test_DB_CONN_MAX_AGE가_정수가_아니면_설정_오류로_실행을_막�
         settings_module.load_database_config()
 
 
+def test_PUBLIC_CACHE_TTL_SECONDS가_미설정이면_기본값_60초가_적용된다(monkeypatch, tmp_path):
+    monkeypatch.delenv("PUBLIC_CACHE_TTL_SECONDS", raising=False)
+
+    settings_module = importlib.import_module("config.settings")
+    monkeypatch.setattr(settings_module, "BASE_DIR", tmp_path)
+
+    assert settings_module.load_public_cache_ttl_seconds() == 60
+
+
+def test_PUBLIC_CACHE_TTL_SECONDS를_0으로_지정하면_설정값이_0이_된다(monkeypatch, tmp_path):
+    monkeypatch.setenv("PUBLIC_CACHE_TTL_SECONDS", "0")
+
+    settings_module = importlib.import_module("config.settings")
+    monkeypatch.setattr(settings_module, "BASE_DIR", tmp_path)
+
+    assert settings_module.load_public_cache_ttl_seconds() == 0
+
+
+def test_PUBLIC_CACHE_TTL_SECONDS가_정수가_아니면_설정_오류로_실행을_막는다(monkeypatch, tmp_path):
+    monkeypatch.setenv("PUBLIC_CACHE_TTL_SECONDS", "abc")
+
+    settings_module = importlib.import_module("config.settings")
+    monkeypatch.setattr(settings_module, "BASE_DIR", tmp_path)
+
+    with pytest.raises(ImproperlyConfigured):
+        settings_module.load_public_cache_ttl_seconds()
+
+
+def test_PUBLIC_CACHE_TTL_SECONDS가_음수이면_설정_오류로_실행을_막는다(monkeypatch, tmp_path):
+    monkeypatch.setenv("PUBLIC_CACHE_TTL_SECONDS", "-1")
+
+    settings_module = importlib.import_module("config.settings")
+    monkeypatch.setattr(settings_module, "BASE_DIR", tmp_path)
+
+    with pytest.raises(ImproperlyConfigured):
+        settings_module.load_public_cache_ttl_seconds()
+
+
 def test_DATABASE_URL이_postgres이면_연결_상태_확인이_켜진다(monkeypatch, tmp_path):
     db_password = secrets.token_hex(4)
     monkeypatch.setenv("DATABASE_URL", f"postgresql://taku:{db_password}@localhost:5432/taku")
@@ -590,6 +628,17 @@ def test_설정_모듈은_DatabaseCache_백엔드를_기본_캐시로_사용한�
         "BACKEND": "django.core.cache.backends.db.DatabaseCache",
         "LOCATION": "django_cache",
         "OPTIONS": {"MAX_ENTRIES": 10000},
+    }
+
+
+def test_설정_모듈은_공개_데이터_캐시_별칭_public에_LocMem_백엔드를_사용한다():
+    # 공개 데이터(행사 목록 등)만 담는 별도 캐시 별칭이 LocMem인지 확인한다.
+    settings_module = importlib.import_module("config.settings")
+
+    assert settings_module.CACHES["public"] == {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "public_cache",
+        "OPTIONS": {"MAX_ENTRIES": 200},
     }
 
 
