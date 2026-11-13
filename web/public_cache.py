@@ -18,21 +18,30 @@ from events.queries import (
 CACHE_ALIAS = "public"
 
 
-def public_month_events(*, year, month, today):
-    # 운영자가 0으로 캐시를 끄면 캐시 저장소를 아예 부르지 않는다(캐시 장애 때도 끌 수 있게).
+def _cached(cache_key, load):
+    """담아 둔 값이 있으면 돌려주고, 없으면 `load()`로 읽어 유지 시간 동안
+    담는다. 유지 시간이 0이면 저장소를 아예 부르지 않는다(캐시 장애 때도
+    끌 수 있게)."""
     if settings.PUBLIC_CACHE_TTL_SECONDS == 0:
-        return list(list_published_events_for_month({}, year=year, month=month, today=today))
+        return load()
 
     cache = caches[CACHE_ALIAS]
+    value = cache.get(cache_key)
+    if value is not None:
+        return value
+
+    value = load()
+    cache.set(cache_key, value, timeout=settings.PUBLIC_CACHE_TTL_SECONDS)
+    return value
+
+
+def public_month_events(*, year, month, today):
     # 진행 중·예정 구분이 오늘 날짜에 따라 달라지므로 날짜를 키에 넣는다.
     cache_key = f"public_month_events:{year:04d}-{month:02d}:{today.isoformat()}"
-    events = cache.get(cache_key)
-    if events is not None:
-        return events
-
-    events = list(list_published_events_for_month({}, year=year, month=month, today=today))
-    cache.set(cache_key, events, timeout=settings.PUBLIC_CACHE_TTL_SECONDS)
-    return events
+    return _cached(
+        cache_key,
+        lambda: list(list_published_events_for_month({}, year=year, month=month, today=today)),
+    )
 
 
 def _load_home_public_sections(*, today):
@@ -61,34 +70,11 @@ def _load_home_public_sections(*, today):
 def home_public_sections(*, today):
     """홈의 공개 섹션을 날짜별로 담는다. 사용자별 상태와 로그인 사용자의
     예정 구간은 담지 않는다."""
-    # 운영자가 0으로 캐시를 끄면 캐시 저장소를 아예 부르지 않는다(캐시 장애 때도 끌 수 있게).
-    if settings.PUBLIC_CACHE_TTL_SECONDS == 0:
-        return _load_home_public_sections(today=today)
-
-    cache = caches[CACHE_ALIAS]
     cache_key = f"home_public_sections:{today.isoformat()}"
-    sections = cache.get(cache_key)
-    if sections is not None:
-        return sections
-
-    sections = _load_home_public_sections(today=today)
-    cache.set(cache_key, sections, timeout=settings.PUBLIC_CACHE_TTL_SECONDS)
-    return sections
+    return _cached(cache_key, lambda: _load_home_public_sections(today=today))
 
 
 def public_category_choices():
     """행사 필터의 카테고리 (slug, 원문 라벨) 목록을 담는다. 번역은 화면이
     요청마다 한다."""
-    # 운영자가 0으로 캐시를 끄면 캐시 저장소를 아예 부르지 않는다(캐시 장애 때도 끌 수 있게).
-    if settings.PUBLIC_CACHE_TTL_SECONDS == 0:
-        return consumer_category_choices()
-
-    cache = caches[CACHE_ALIAS]
-    cache_key = "public_category_choices"
-    choices = cache.get(cache_key)
-    if choices is not None:
-        return choices
-
-    choices = consumer_category_choices()
-    cache.set(cache_key, choices, timeout=settings.PUBLIC_CACHE_TTL_SECONDS)
-    return choices
+    return _cached("public_category_choices", consumer_category_choices)
