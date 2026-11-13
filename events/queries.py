@@ -75,6 +75,24 @@ def list_published_events_for_month(params, *, year, month, today=None):
     )
 
 
+# 홈 "마감 임박" 구간이 보는 기간(상태 라벨용 CLOSING_SOON_DAYS와 다른 값이다).
+CLOSING_SOON_WINDOW_DAYS = 5
+
+
+def list_closing_soon_events(*, today=None, within_days=CLOSING_SOON_WINDOW_DAYS):
+    """곧 종료되는 게시 이벤트를 종료일 임박순으로 반환한다."""
+    if today is None:
+        today = timezone.localdate()
+    return Event.objects.published().ending_within_days(within_days, today=today)
+
+
+def list_latest_published_events(*, today=None):
+    """종료된 이벤트는 빼고(종료일 없는 이벤트는 남긴다) 등록 최신순으로 반환한다."""
+    if today is None:
+        today = timezone.localdate()
+    return Event.objects.published().exclude(end_date__lt=today).order_by("-id")
+
+
 # 각 _*_qs() 헬퍼가 경고 하나의 조건을 담는 단일 소스다. count_published_*는 여기에
 # count()만 씌우고, list_staff_events()도 같은 쿼리셋을 재사용해 대시보드 집계 수와
 # 드릴다운 목록이 항상 같은 집합을 가리키게 한다.
@@ -296,6 +314,12 @@ def count_staff_events_by_category(
         warning=warning, publish_status=publish_status, period=period, today=today, search=search
     )
     rows = queryset.values("category").annotate(count=models.Count("id"))
+    return {row["category"]: row["count"] for row in rows}
+
+
+def published_category_counts() -> dict[str, int]:
+    """게시 행사를 카테고리 슬러그별로 센다(1쿼리, 카테고리 없는 행사는 빈 문자열 키)."""
+    rows = Event.objects.published().values("category").annotate(count=models.Count("id"))
     return {row["category"]: row["count"] for row in rows}
 
 
