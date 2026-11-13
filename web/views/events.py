@@ -140,7 +140,7 @@ def _home_calendar_context(year, month, calendar_error, raw_date, *, today):
         year, month = today.year, today.month
         selected_date = today
 
-    events = list(list_published_events_for_month({}, year=year, month=month, today=today))
+    events = public_month_events(year=year, month=month, today=today)
     events_by_date = _events_by_date(events)
 
     grid = month_grid(year, month)

@@ -16,7 +16,7 @@ from django.test.utils import CaptureQueriesContext
 from django.utils import translation
 import pytest
 
-from core.models import Category
+from core.models import Category, HomeConfig
 from core.vocab import CATEGORY
 import web.public_cache as public_cache_module
 from web.public_cache import home_public_sections, public_category_choices, public_month_events
@@ -373,3 +373,33 @@ def test_필터가_있는_달력_요청은_캐시를_쓰지_않아_새_행사를
     assert first_response.status_code == 200
     assert second_response.status_code == 200
     assert "새행사" in second_response.content.decode()
+
+
+@pytest.mark.web
+@pytest.mark.django_db
+def test_홈_달력_무필터_요청은_TTL_안에_더_적은_쿼리로_같은_달력을_보여준다(
+    make_event, public_cache_locmem, client
+):
+    make_event(title="홈달력행사", start_date=date(2026, 6, 10), end_date=date(2026, 6, 10))
+    # 홈 설정 행은 첫 요청 때 만들어져 쿼리가 늘어나므로 미리 만들어 두고 캐시 효과만 비교한다.
+    HomeConfig.get_solo()
+
+    with patch("web.views.events.timezone.localdate", return_value=date(2026, 6, 10)):
+        with CaptureQueriesContext(connection) as first_ctx:
+            first_response = client.get("/", {"month": "2026-06"})
+
+        with CaptureQueriesContext(connection) as second_ctx:
+            second_response = client.get("/", {"month": "2026-06"})
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+    first_titles = [
+        row["event"].title for row in first_response.context["home_calendar"]["selected_rows"]
+    ]
+    second_titles = [
+        row["event"].title for row in second_response.context["home_calendar"]["selected_rows"]
+    ]
+    assert "홈달력행사" in first_titles
+    assert "홈달력행사" in second_titles
+    # 홈의 다른 구간도 나중에 캐시되므로 정확한 차이 대신 "둘째가 더 적다"만 본다.
+    assert len(second_ctx.captured_queries) < len(first_ctx.captured_queries)
