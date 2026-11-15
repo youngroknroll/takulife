@@ -55,7 +55,7 @@
             {% else %}
               <p class="cat-rail-note cat-rail-note--warn">미배정 — 중립색으로 표시됩니다</p>
             {% endif %}
-            <div class="cat-palette-preview">
+            <div class="cat-palette-preview" aria-hidden="true">
               <div class="cat-palette-card" style="background:{{ palette_hex.light_soft }};color:{{ palette_hex.light_ink }}">
                 <span class="cat-palette-card-label">{{ category.label }}</span>
               </div>
