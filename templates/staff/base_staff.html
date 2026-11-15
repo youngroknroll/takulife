@@ -14,29 +14,6 @@
     window.addEventListener("unhandledrejection", function (e) { window.__takuErrorQueue.push({ reason: String(e.reason), name: e.reason && e.reason.name }); });
   } catch (e) {}
   </script>
-  {% comment %}
-  base.html:9-25와 같은 페인트 전 테마 스크립트를 그대로 복제했다(D1). 스태프
-  콘솔도 다크 3보드가 시안에 있어 다크 사용자가 매 로드마다 흰 화면 깜빡임을
-  보지 않게 해야 한다. theme.js의 읽기 로직만 최소로 복제한 것이며, 쓰기/
-  토글/시스템 테마 감지는 theme.js(아래 script 태그)가 담당한다.
-  {% endcomment %}
-  <script>
-    (function () {
-      "use strict";
-      var theme = "light";
-      try {
-        var stored = window.localStorage.getItem("takulife-theme");
-        if (stored === "light" || stored === "dark") {
-          theme = stored;
-        } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-          theme = "dark";
-        }
-      } catch (e) {
-        // Storage or matchMedia blocked — theme keeps its "light" default.
-      }
-      document.documentElement.setAttribute("data-theme", theme);
-    })();
-  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}스태프 콘솔 | takulife{% endblock %}</title>
   <meta name="robots" content="noindex, nofollow">
@@ -80,7 +57,6 @@
 
   <script defer src="{% static 'js/shared/i18n_fallback.js' %}"></script>
   <script defer src="{% static 'js/shared/error_report.js' %}"></script>
-  <script defer src="{% static 'js/shared/theme.js' %}"></script>
   {% comment %}
   window.TakuAPI는 하드 의존이다 — draft.js·draft_bulk.js가
   전부 쓴다. 여기서 빠뜨리면 승인·반려·수정이 첫 클릭에 조용히 죽는다(D1).
