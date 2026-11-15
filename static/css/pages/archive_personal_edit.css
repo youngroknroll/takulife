@@ -158,7 +158,11 @@
      에 먼저 5rem을 설정하지만, 이 파일이 뒤에 로드되고 .personal-edit-page
      쪽 선택자가 나중 소스 순서로 이겨 6rem이 최종 적용된다. */
   .personal-edit-page {
-    padding-bottom: 6rem;
+    padding-bottom: calc(6rem + var(--site-tabbar-h, 0px));
+  }
+  /* 고정 바가 푸터 끝을 덮지 않게 문서 끝에 바 높이만큼 여백 */
+  body:has(.personal-edit-page .personal-edit-actions) {
+    padding-bottom: calc(6rem + var(--site-tabbar-h, 0px));
   }
 
   .personal-edit-page .personal-edit-actions-row {
@@ -186,7 +190,7 @@
     position: fixed;
     left: 0;
     right: 0;
-    bottom: 0;
+    bottom: var(--site-tabbar-h, 0px);
     z-index: 20;
     gap: 0.5rem;
     padding: 0.625rem var(--page-pad-x) calc(0.625rem + env(safe-area-inset-bottom));

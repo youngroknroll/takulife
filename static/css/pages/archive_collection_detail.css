@@ -367,7 +367,11 @@
      고정 64px 값이 아니다. 맨 아래까지 스크롤해 마지막 메타 행/메모
      문단이 가려지지 않는지 확인할 것. */
   .collection-detail-page {
-    padding-bottom: 6rem;
+    padding-bottom: calc(6rem + var(--site-tabbar-h, 0px));
+  }
+  /* 고정 바가 푸터 끝을 덮지 않게 문서 끝에 바 높이만큼 여백 */
+  body:has(.collection-detail-page .collection-detail-actions) {
+    padding-bottom: calc(6rem + var(--site-tabbar-h, 0px));
   }
   .collection-detail-page .collection-detail-grid {
     grid-template-columns: minmax(0, 1fr);
@@ -413,7 +417,7 @@
     position: fixed;
     left: 0;
     right: 0;
-    bottom: 0;
+    bottom: var(--site-tabbar-h, 0px);
     z-index: 20;
     margin-top: 0;
     padding: 0.625rem var(--page-pad-x) calc(0.625rem + env(safe-area-inset-bottom));

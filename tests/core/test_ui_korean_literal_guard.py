@@ -125,7 +125,6 @@ _JS_FIXED_RELPATHS = [
     "shared/disclosure.js",
     "shared/error_report.js",
     "shared/i18n_fallback.js",
-    "shared/nav_menu.js",
     "shared/status.js",
     "shared/submit_guard.js",
     "shared/toast.js",
@@ -146,9 +145,9 @@ _JS_FIXED_RELPATHS = [
     "pages/archive_search.js",
 ]
 
-# shared(10) + components(2) + home_hero_rotator.js(1) + event_list.js(1)
-# + pages/*.js 11개(43-3) = 25개 — 직접 센 기대 개수 [실측 ls].
-_EXPECTED_JS_FILE_COUNT = 25
+# shared(9) + components(2) + home_hero_rotator.js(1) + event_list.js(1)
+# + pages/*.js 11개(43-3) = 24개 — 직접 센 기대 개수 [실측 ls].
+_EXPECTED_JS_FILE_COUNT = 24
 
 _BLOCK_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
 _UNESCAPED_QUOTE_RE = re.compile(r"(?<!\\)['\"]")

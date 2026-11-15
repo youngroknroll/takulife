@@ -984,7 +984,11 @@
       gap: 1rem;
     }
     .activity-page {
-      padding-bottom: 6rem;
+      padding-bottom: calc(6rem + var(--site-tabbar-h, 0px));
+    }
+    /* 고정 바가 푸터 끝을 덮지 않게 문서 끝에 바 높이만큼 여백 */
+    body:has(.activity-page .mobile-cta:not([hidden])) {
+      padding-bottom: calc(6rem + var(--site-tabbar-h, 0px));
     }
     /* 시안/컬렉션 모바일 사이즈·여백 통일; .layout gap은 시안 고유값 */
     .activity-page .archive-search input[type="search"] {
@@ -1017,7 +1021,7 @@
       position: fixed;
       left: 0;
       right: 0;
-      bottom: 0;
+      bottom: var(--site-tabbar-h, 0px);
       padding: 0.625rem 0.875rem calc(10px + env(safe-area-inset-bottom));
       background: var(--chrome-glass-cta);
       border-top: 1px solid var(--line);

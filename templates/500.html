@@ -12,13 +12,8 @@ _site_header.html을 그대로 include하면 _topbar.html이 세션 정보를 �
 {% translate "주 메뉴" as primary_nav_label %}
 <header class="site-header">
   <div class="site-header-inner">
-    <button type="button" class="nav-menu-toggle" data-nav-menu-toggle
-            data-expanded="false" aria-expanded="false" aria-controls="primary-nav"
-            aria-label="{{ primary_nav_label }}">
-      <span class="nav-menu-icon" aria-hidden="true">&#9776;</span>
-    </button>
     <a class="brand" href="/">takulife</a>
-    <nav id="primary-nav" class="site-nav" data-expanded="false" aria-label="{{ primary_nav_label }}">
+    <nav id="primary-nav" class="site-nav" aria-label="{{ primary_nav_label }}">
       <a href="/">{% translate "홈" %}</a>
       <a href="/events/">{% translate "이벤트" %}</a>
       <a href="/collection/">{% translate "컬렉션" %}</a>

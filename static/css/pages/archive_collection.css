@@ -1324,13 +1324,17 @@
      닿을 수 있게 한다. 폼에 준 하단 여백은 이 바가 마지막 필드를
      가리지 않게 하기 위함이다. */
   .collection-page .collection-form {
-    padding-bottom: 5rem;
+    padding-bottom: calc(5rem + var(--site-tabbar-h, 0px));
+  }
+  /* 고정 바가 푸터 끝을 덮지 않게 문서 끝에 바 높이만큼 여백 */
+  body:has(.collection-page .collection-form-actions) {
+    padding-bottom: calc(5rem + var(--site-tabbar-h, 0px));
   }
   .collection-page .collection-form-actions {
     position: fixed;
     left: 0;
     right: 0;
-    bottom: 0;
+    bottom: var(--site-tabbar-h, 0px);
     z-index: 20;
     margin-top: 0;
     padding: 0.625rem var(--page-pad-x) calc(0.625rem + env(safe-area-inset-bottom));
