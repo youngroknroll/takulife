@@ -14,8 +14,8 @@
   /* --brand를 흰 배경 위 글자색으로 쓰면 대비 4.42:1로 AA 4.5:1에 살짝
      못 미친다. 이 잉크색(5.39:1)은 작은 글자에 쓸 때만 쓴다. */
   --brand-ink: #c13a22;
-  /* 강조 문구 블록. 글자색을 뒤집은 짙은 배경이라 테마마다 bg/ink를
-     한 쌍으로 같이 정의한다(한쪽만 바꾸면 다크에서 묻힌다). */
+  /* 강조 문구 블록. 글자색을 뒤집은 짙은 배경이라 bg/ink를 한 쌍으로
+     같이 정의한다. */
   --emphasis-bg: var(--text);
   --emphasis-ink: var(--surface);
   --focus: #8a94a6;
@@ -32,8 +32,8 @@
   --rose-ink: #be123c;
   --up-soft: #e4eafb;
   --up-ink: #33488f;
-  /* teal = 내 활동(archive) 전용 액센트. 라이트/다크 값이 위 --up-ink와
-     같아 별도 색상 체계 없이 그대로 맞춰 정의했다. */
+  /* teal = 내 활동(archive) 전용 액센트. 값이 위 --up-ink와 같아 별도
+     색상 체계 없이 그대로 맞춰 정의했다. */
   --teal: #0e7490;
   --teal-soft: #d3edf2;
   --teal-ink: #0e7490;
@@ -53,8 +53,7 @@
   --shadow: 0 18px 38px rgba(17, 31, 55, 0.08);
 
   /* ── translucent chrome ─────────────────────────────────────── */
-  /* 반투명 크롬 색상들. 다크모드 값은 각각 아래 :root[data-theme="dark"]
-     블록에 짝으로 정의돼 있다. */
+  /* 반투명 크롬 색상들. */
   /* 상단 고정 헤더(site-chrome.css .site-header)용. */
   --chrome-glass: rgba(255, 255, 255, 0.9);
   /* 모바일 고정 CTA 바(.mobile-cta)용. --chrome-glass보다 불투명도가 조금 높다. */
@@ -142,8 +141,8 @@
 
   /* work_title(시리즈)별 배색 — 카테고리(--cat-*)와는 별개 축이다
      (core/views.py의 _series_ink_classes 참고, 둘을 섞지 말 것).
-     OKLCH 30도 간격으로 12색을 만들고 홀짝 명도를 다르게 둬 라이트/다크
-     모두 대비 AA를 지킨다(72개 배경 조합 실측, 최저 4.91:1). 홀짝을
+     OKLCH 30도 간격으로 12색을 만들고 홀짝 명도를 다르게 둬 대비 AA를
+     지킨다(당시 다크 포함 72개 배경 조합 실측, 최저 4.91:1). 홀짝을
      나눈 이유는 색약자도 인접 색을 명도 차이로 구분하게 하려는 것이다.
      배경 채우기용 -soft 짝은 의도적으로 두지 않았다 — 필요해지면 그때
      추가한다. */
@@ -159,128 +158,6 @@
   --series-10-ink: #4a328e;
   --series-11-ink: #864296;
   --series-12-ink: #7c1852;
-}
-
-/* ── dark mode token overrides ────────────────────────────────── */
-/* 다크모드 확정 팔레트를 그대로 반영했다. 다크/라이트 오버라이드는 이
- * 블록 하나로 모아 뒀고, static/js/shared/theme.js가 <html>에
- * data-theme를 설정한다.
- */
-:root[data-theme="dark"] {
-  color-scheme: dark;
-
-  --bg: #13151b;
-  --surface: #1f232d;
-  --surface-alt: #272b35;
-  --bg-soft: #292d38;
-  --bg-card: #2e323e;
-  --border-soft: #373e4e;
-  --line: #3d465c;
-  --text: #e3e4e8;
-  --muted: #a2a9b9;
-  --focus: #969fb0;
-
-  --brand: #c63d24;
-  /* 원안 색이 --bg-card 다크 배경 위에서 대비 4.4985:1로 AA 기준에
-     근소하게 못 미쳐 값을 미세 조정했다(4.588:1로 통과, 다른 배경
-     페어링도 함께 개선됨). */
-  --brand-ink: #da8474;
-  --brand-soft: #422824;
-  --emphasis-bg: var(--text);
-  --emphasis-ink: var(--bg);
-
-  --cat-popup_store-soft: #342442;
-  --cat-popup_store-ink: #b17edc;
-  --cat-collaboration_cafe-soft: #3d3024;
-  --cat-collaboration_cafe-ink: #bf9f82;
-  --cat-theater_bonus-soft: #272541;
-  --cat-theater_bonus-ink: #8f8bcf;
-  --cat-goods_reservation-soft: #20413f;
-  --cat-goods_reservation-ink: #64d8cf;
-  --cat-exhibition-soft: #23354e;
-  --cat-exhibition-ink: #839ec3;
-  --cat-fan_meeting-soft: #412530;
-  --cat-fan_meeting-ink: #da769e;
-  --cat-concert-soft: #422006;
-  --cat-concert-ink: #fb923c;
-
-  /* 팔레트 슬롯 토큰(트랙 27) — 라이트 블록 주석 참고. 값은
-     core/categories.py의 PALETTE dark_soft/dark_ink와 일치해야 한다. */
-  --cat-slot-0-soft: #342442;
-  --cat-slot-0-ink: #b17edc;
-  --cat-slot-1-soft: #3d3024;
-  --cat-slot-1-ink: #bf9f82;
-  --cat-slot-2-soft: #272541;
-  --cat-slot-2-ink: #8f8bcf;
-  --cat-slot-3-soft: #20413f;
-  --cat-slot-3-ink: #64d8cf;
-  --cat-slot-4-soft: #23354e;
-  --cat-slot-4-ink: #839ec3;
-  --cat-slot-5-soft: #412530;
-  --cat-slot-5-ink: #da769e;
-  --cat-slot-6-soft: #422006;
-  --cat-slot-6-ink: #fb923c;
-  --cat-slot-7-soft: #7f1d1d;
-  --cat-slot-7-ink: #fca5a5;
-  --cat-slot-8-soft: #713f12;
-  --cat-slot-8-ink: #fde047;
-  --cat-slot-9-soft: #365314;
-  --cat-slot-9-ink: #bef264;
-  --cat-slot-10-soft: #14532d;
-  --cat-slot-10-ink: #86efac;
-  --cat-slot-11-soft: #0c4a6e;
-  --cat-slot-11-ink: #7dd3fc;
-
-  /* 시리즈 색 12개는 전부 다크값을 채워야 한다 — 하나라도 빠지면 아무
-     오류 없이 조용히 회색으로 대체된다(이 프로젝트에서 실제로 두 번
-     발생한 실패 유형). */
-  --series-1-ink: #da8282;
-  --series-2-ink: #f7a97c;
-  --series-3-ink: #c29647;
-  --series-4-ink: #c2c46e;
-  --series-5-ink: #79af6d;
-  --series-6-ink: #6cd5b3;
-  --series-7-ink: #2bb3b9;
-  --series-8-ink: #6bcbf7;
-  --series-9-ink: #769fe3;
-  --series-10-ink: #bcb2ff;
-  --series-11-ink: #bd88c9;
-  --series-12-ink: #f4a0c8;
-
-  --pink-soft: #42242e;
-  --pink-ink: #d87497;
-  --mint-soft: #243d2e;
-  --mint-ink: #72cb95;
-  --amber-soft: #403221;
-  --amber-ink: #dba466;
-  --rose-soft: #43232b;
-  --rose-ink: #e0718c;
-  /* 라이트 모드는 테두리를 배경보다 어둡게 잡지만, 다크에서는 반대로
-     배경보다 밝아야 눈에 띈다. 다크값이 없어 라이트 값이 그대로 새어
-     나와 삭제 버튼·오류 배너가 지나치게 밝게 보이던 결함을 고쳤다
-     (--surface 대비 4.01:1, --rose-soft 대비 3.54:1로 확인). */
-  --rose-border: #c46278;
-  --up-soft: #242a3d;
-  --up-ink: #8897c8;
-  /* 원안 색은 흰 글자 대비 3.27:1로 AA 4.5:1에 못 미쳐 5.74:1로
-     보정했다(사용자 확정). --teal-ink는 원안 값을 그대로 유지했다. */
-  --teal: #17707f;
-  --teal-soft: #173b42;
-  --teal-ink: #5ac9d4;
-  --end-soft: #2d3239;
-  --end-ink: #a5acb6;
-  /* --muted-soft에 다크값이 없어 "비공식" 마커 칩이 다크모드에서도 밝은
-     배경 위에 어두운 글자가 얹혀 대비 2.06:1로 렌더되던 결함을 고쳤다.
-     --surface-alt 다크값을 그대로 재사용했다(대비 6.01:1). */
-  --muted-soft: #272b35;
-
-  --shadow: 0 18px 38px rgba(255, 255, 255, 0.04);
-
-  --chrome-glass: rgba(31, 35, 45, 0.88);
-  --chrome-glass-cta: rgba(31, 35, 45, 0.94);
-  --shadow-cta: 0 -8px 24px rgba(255, 255, 255, 0.05);
-  --shadow-dropdown: 0 8px 24px rgba(255, 255, 255, 0.05);
-  --backdrop: rgba(0, 0, 0, 0.6);
 }
 
 /* ── --page-pad-x: 페이지 좌우 여백 토큰 ───────────────────────── */
