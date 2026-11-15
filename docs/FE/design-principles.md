@@ -3,7 +3,7 @@
 기준일: 2026-11-03 · 트랙 50 · 2026-11-15 트랙 57(간격 규칙 개정)
 대상: `static/css/tokens.css`, `static/css/base.css`, `static/css/components/`, `static/css/pages/`, `templates/`. 스태프 콘솔(`static/css/staff/`, `templates/staff/`)은 제외한다.
 시안 정본: `.docs/FE/design-samples/a4.css`, `a4-home.html`, `a4-events.html` (`.docs/`는 git 무시 영역이라 새 clone에는 없다. 저장소에 보존하지 않으며 로컬 파일도 2026-11-05에 삭제했다 `[문서 사용자 결정 2026-11-05, ⑬-13]` — 시안 파일은 이제 어디에도 없고, 아래 `[코드 시안 a4.css]` 인용과 시안 줄 번호는 다시 대조할 수 없는 삭제 전 기록이다. 이 문서의 `a4.css`·`a4-events.html` 줄 번호는 286줄·388줄 판 `[실측 wc -l 2026-11-03]` 기준이고 시안이 바뀌면 어긋난다).
-파일:줄 기준: PR #408은 2026-11-02에 머지됐다(`a8a7fc3f`) `[실측 gh 2026-11-12]`. `static/`·`templates/` 줄 번호는 이 문서가 인용한 범위를 현재 작업 트리(main, 기준 커밋 `d0b75213`, `git rev-parse --short HEAD` 2026-11-12 측정)에서 전부 다시 대조했고 일치했다 `[실측 2026-11-12]`. 그 뒤 `static/css/tokens.css`를 인용한 줄 번호는 2026-11-15에 현재 파일과 다시 대조해 어긋난 곳을 고쳤다 `[실측 rg -n·Read 2026-11-15]`. 어긋난 곳이 남아 있던 ③·④ 표의 경로 오기 2건(`templates/events/list.html` → `templates/core/events/list.html`)만 고쳤다.
+파일:줄 기준: PR #408은 2026-11-02에 머지됐다(`a8a7fc3f`) `[실측 gh 2026-11-12]`. `static/`·`templates/` 줄 번호는 이 문서가 인용한 범위를 현재 작업 트리(main, 기준 커밋 `d0b75213`, `git rev-parse --short HEAD` 2026-11-12 측정)에서 전부 다시 대조했고 일치했다 `[실측 2026-11-12]`. 그때 어긋난 곳이 남아 있던 ③·④ 표의 경로 오기 2건(`templates/events/list.html` → `templates/core/events/list.html`)만 고쳤다. 트랙 56(2026-11-15)의 다크 블록 삭제와 탭 바 변경으로 줄이 밀려, 2026-11-15에 `static/`·`templates/`·`tests/`·`core/vocab.py`의 인용 줄 번호를 현재 작업 트리와 하나씩 다시 대조해 어긋난 곳을 고쳤다 `[실측 rg -n·Read 2026-11-15]`.
 
 이 문서는 방향과 가드레일만 담는다. 값의 정본은 `static/css/tokens.css`이고 바꿀 값은 ⑩에만 적는다.
 
@@ -65,8 +65,8 @@
 | `.emphasis` 블록 | 유지(이름·토큰 쌍) + **재정의, 경고·제약 문구 전용** | 짙은 배경 반전은 색 없이 강조하는 유일한 면이다. 현 규칙은 인라인·`padding 0 0.25em`·반경 0.2em이고 소비처는 홈 히어로 h1 안 `<span>` 하나뿐이라 경고도 요약도 아니다 → 시안처럼 블록·반경 0으로 재정의하고 현 소비처는 제거한다. 홈 요약에는 쓰지 않는다 `[문서 사용자 결정 2026-11-03]`. 경고 문구의 실제 사용처는 트랙 C가 정한다 | `static/css/components/text.css:21-31`, `templates/core/home.html:22`, `static/css/pages/home.css` `.hero .emphasis`(:47-49), `static/css/tokens.css:17-20` [코드 2026-11-15 재대조] |
 | 브랜드 레드 | 폐기 | `#d8432a`. 액션 파랑으로 대체한다 | `static/css/tokens.css:12,16` |
 | 캡슐 칩(알약 반경) | 폐기 | 반경은 0이다. 칩은 사각형이다 | `static/css/tokens.css:72`, `static/css/pages/event_list.css:119,464-465` [코드 2026-11-03] |
-| 텍스트 전용 헤어라인 행 `.event-compact-row` | 유지 | 면 없이 괘선과 밀도로 만든 이 사이트 고유의 행이다. 시안의 32px 한 줄 행(≥70rem)·3줄 행(<70rem)으로 발전시킨다 | `templates/core/partials/_event_compact_row.html`, `static/css/components/cards.css:248-370`(주석 248행부터 모바일 미디어 블록 끝 370행까지) [코드 2026-11-03] |
-| 점선 빈 상태·안내 박스 | 폐기 | 텍스트 + 액션 링크로 대체한다. 이모지 아이콘도 함께 폐기한다 | 공유 클래스 `.empty-icon`(`static/css/components/cards.css:151`)의 소비처는 9개 템플릿이다 `[실측 rg -l 'empty-icon' templates/ 2026-11-12]`: `templates/core/events/list.html:228`, `core/archive/calendar.html`, `core/partials/_archive_results_{record,personal,interests,collection,statuses,visits}.html`, `core/partials/_home_collection_snapshot.html` |
+| 텍스트 전용 헤어라인 행 `.event-compact-row` | 유지 | 면 없이 괘선과 밀도로 만든 이 사이트 고유의 행이다. 시안의 32px 한 줄 행(≥70rem)·3줄 행(<70rem)으로 발전시킨다 | `templates/core/partials/_event_compact_row.html`, `static/css/components/cards.css:230-353`(주석 230행부터 모바일 미디어 블록 끝 353행까지) [코드 2026-11-03] |
+| 점선 빈 상태·안내 박스 | 폐기 | 텍스트 + 액션 링크로 대체한다. 이모지 아이콘도 함께 폐기한다 | 공유 클래스 `.empty-icon`(`static/css/components/cards.css:138`)의 소비처는 9개 템플릿이다 `[실측 rg -l 'empty-icon' templates/ 2026-11-12]`: `templates/core/events/list.html:228`, `core/archive/calendar.html`, `core/partials/_archive_results_{record,personal,interests,collection,statuses,visits}.html`, `core/partials/_home_collection_snapshot.html` |
 | 카테고리 컬러 점 | 유지 | 색을 쓰는 유일한 표지다. 점에만 쓴다 | `static/css/tokens.css:96-109` |
 | `mono-num` | 유지 | 숫자 정렬이 열 읽기의 핵심이다. `tabular-nums`를 전역으로 올린다 | 현 `static/css/components/text.css:15`, 시안 `a4.css` body 규칙 |
 | 본문 `radial-gradient` 배경 | 폐기 | 장식 그라디언트이고 바탕은 단색 `--bg`다 | `static/css/base.css:38-39` |
@@ -89,7 +89,7 @@
 | 4 | 알약·원형 컨트롤 | 유: `event_list.css:119,464-465,475-486`, `home.css:225` | 반경 0 사각 칩, 글리프 찜 |
 | 5 | 카테고리 soft/ink 쌍 배경·글자 | 유 [코드]: `tokens.css:96-109,117-140`, `event_list.css:442-446` | 작은 점만. 글자는 `--ink` |
 | 6 | 상태 칩 무지개 | 유 [코드]: `components/controls.css:14-42` | 파랑·회색의 형태 차이 3개 상태 |
-| 7 | 이모지 빈 상태 아이콘 | 유: `core/events/list.html:228`, `cards.css:151`. 공유 클래스 `.empty-icon`의 소비처는 9개 템플릿이다(목록은 ③ "점선 빈 상태·안내 박스" 행) `[실측 rg -l 'empty-icon' templates/ 2026-11-12]` | 텍스트 + 링크 |
+| 7 | 이모지 빈 상태 아이콘 | 유: `core/events/list.html:228`, `cards.css:138`. 공유 클래스 `.empty-icon`의 소비처는 9개 템플릿이다(목록은 ③ "점선 빈 상태·안내 박스" 행) `[실측 rg -l 'empty-icon' templates/ 2026-11-12]` | 텍스트 + 링크 |
 | 8 | 3:4 이미지 타일 | 유: `archive_collection.css:612,1091`, `home.css:674`, `archive_collection_detail.css:57` | 미결(⑬-15, 시안 범위 밖) |
 | 9 | 배경 그라디언트·바코드 | 유: `base.css:38-39`, `home.css:137` | 단색 `--bg` |
 | 10 | 티켓 메타포(노치·ADMIT ONE) | 유: `templates/core/home.html:21,45,75` (시안 A3에도 있었음) | 쓰지 않음 |
@@ -128,8 +128,8 @@
 
 ### 색 토큰 규칙
 
-1. 색 리터럴은 토큰 블록에만 둔다. 컴포넌트·페이지 CSS에서 `#hex`·`rgb()`를 쓰지 않는다. 현재 우회 사례(예시, 전수 아님): `button.css:29`의 `#fff`, `cards.css:98`의 `#46617f`, `:142`의 `#fafcff`, `:219`의 `#25508a` `[코드 2026-11-02 계획서 기준선]`, 같은 `#fff`가 `archive_collection.css:102,242,455,1206,1275`·`archive_collection_detail.css:155`·`cards.css:193`에도 있다 `[실측 rg 2026-11-03]`. 전수는 트랙 D가 `rg -n '#[0-9a-fA-F]{3,6}\b|rgba?\(' static/css --glob '!tokens.css' --glob '!dist/**' --glob '!staff/**'`로 만든다.
-2. 대비 하한: 글자 AA 4.5:1, 비텍스트(괘선·점·포커스 링) 3:1 `[문서 WCAG 2.2 AA SC 1.4.3·1.4.11]`. 터치 타깃은 터치 조건(≤44.99rem 또는 `pointer: coarse`)에서 44px `[문서 AGENTS.md:965-968(폐지된 규칙이라 정보 항목); 코드 button.css:12-16]`, WCAG 2.2 AA(SC 2.5.8) 하한은 24px이고 데스크톱 행 안 찜 24px·컨트롤 32px는 이 하한 이상이다.
+1. 색 리터럴은 토큰 블록에만 둔다. 컴포넌트·페이지 CSS에서 `#hex`·`rgb()`를 쓰지 않는다. 현재 우회 사례(예시, 전수 아님): `button.css:29`의 `#fff`, `cards.css:98`의 `#46617f`, `:135`의 `#fafcff`, `:206`의 `#25508a` `[코드 2026-11-02 계획서 기준선]`, 같은 `#fff`가 `archive_collection.css:102,242,455,1206,1275`·`archive_collection_detail.css:155`·`cards.css:180`에도 있다 `[실측 rg 2026-11-03]`. 전수는 트랙 D가 `rg -n '#[0-9a-fA-F]{3,6}\b|rgba?\(' static/css --glob '!tokens.css' --glob '!dist/**' --glob '!staff/**'`로 만든다.
+2. 대비 하한: 글자 AA 4.5:1, 비텍스트(괘선·점·포커스 링) 3:1 `[문서 WCAG 2.2 AA SC 1.4.3·1.4.11]`. 터치 타깃은 터치 조건(≤44.99rem 또는 `pointer: coarse`)에서 44px `[문서 AGENTS.md "Frontend Work Policy"(폐지된 규칙이라 정보 항목); 코드 button.css:12-16]`, WCAG 2.2 AA(SC 2.5.8) 하한은 24px이고 데스크톱 행 안 찜 24px·컨트롤 32px는 이 하한 이상이다.
 3. 예외: 비활성 컨트롤은 WCAG 대비 예외다. 그래서 비활성 색은 정보 글자에 쓰지 않는다. `--off`의 대비비는 ⑩(a)에 있다.
 4. 링크 색과 본문 글자의 대비는 3.42:1로 3:1 하한에 여유가 작고(값은 ⑩(a) "링크/본문 글자" 행), 색 하나로만 링크를 구분하지 않는다. 그래서 링크 밑줄은 항상 켠다(원칙 3).
 
@@ -205,7 +205,7 @@ WED 사후 판정 요지: 토큰 값이 사양과 100% 일치, 사용자 결정 
 
 ### (a) 신 토큰 표
 
-아래 표의 값은 시안 `a4.css`를 잰 기록이다 `[문서 ⑨ — 시안 파일은 2026-11-05 삭제]`. 색 17개는 목표값이다. 비색 토큰은 행마다 지위가 다르다(표 아래 단락). 값 열은 2026-11-03 시안 1~30행의 라이트 값이다. 대비비는 `[계산 python 2026-11-03]`이다.
+아래 표의 값은 시안 `a4.css`를 잰 기록이다 `[문서 ⑨ — 시안 파일은 2026-11-05 삭제]`. 색 17개는 목표값이다 `[계산 10+7]`(무채·기능 색 10개 + 카테고리 점 7개). 비색 토큰은 행마다 지위가 다르다(각 행의 용도 열과 표 아래 단락). 값 열은 2026-11-03 시안 1~30행의 라이트 값이다. 대비비는 `[계산 python 2026-11-03]`이다.
 
 | 토큰 | 값 | 용도 | 대비 (바탕 / 표면 위) |
 |---|---|---|---|
@@ -289,7 +289,7 @@ WED 사후 판정이 ⑩에 추가하라고 한 범주다 `[문서 WED 사후 �
 
 1. **구 토큰 → 신 토큰 대응표 완성**: (b)는 역할 단위다. 상태·액센트 soft/ink 참조(수치는 (e) 첫 행)의 이동처를 줄 단위로 정한다.
 2. **컴포넌트 규칙**: (f)에 정리했다.
-3. **시안이 CSS에 직접 쓴 값(컴포넌트 상수)**: 그리드 열 폭(3.5·7·10·6.5·5.5·6·3 rem), aside 폭 13rem, 헤더 `min-height` 3rem, 행 `min-height` 2rem, `z-index` 50·40·100, 밑줄 오프셋 0.2em, 점 0.5rem·50%, `scroll-padding-top` 3.5rem, `outline-offset` 2px, 스킵 링크 `top -4rem`, 검색 `flex 0 1 20rem`·입력 `min-width 8rem`, 모바일 `.bar padding-block 0.25rem`, 제목 링크 `padding-block 0.125rem`, 읽기 전용 칩 `min-height 1.5rem`(`--hit-sm`과 같은 값이라 치환 가능), 체크박스 1rem `[코드 시안 a4.css 2026-11-03]`. 이 값들은 기본적으로 컴포넌트 상수다 `[문서 계획서 트랙 57 D3]`. 다른 값과 함께 움직여야 하는 것(헤더 높이와 `scroll-padding-top`·스킵 링크 오프셋, 읽기 전용 칩 `min-height 1.5rem`과 `--hit-sm`)은 역할 토큰 후보라 트랙 B가 운영 값을 재서 정한다.
+3. **시안이 CSS에 직접 쓴 값(컴포넌트 상수)**: 그리드 열 폭(3.5·7·10·6.5·5.5·6·3 rem), aside 폭 13rem, 헤더 `min-height` 3rem, 행 `min-height` 2rem, `z-index` 50·40·100, 밑줄 오프셋 0.2em, 점 0.5rem·50%, `scroll-padding-top` 3.5rem, `outline-offset` 2px, 스킵 링크 `top -4rem`, 검색 `flex 0 1 20rem`·입력 `min-width 8rem`, 모바일 `.bar padding-block 0.25rem`, 제목 링크 `padding-block 0.125rem`, 읽기 전용 칩 `min-height 1.5rem`(`--hit-sm`과 같은 값이라 치환 가능), 체크박스 1rem `[코드 시안 a4.css 2026-11-03]`. 이 값들은 기본적으로 컴포넌트 상수다 `[문서 계획서 트랙 57 D3]`. 다른 값과 함께 움직여야 하는 것(헤더 높이와 `scroll-padding-top`·스킵 링크 오프셋 — 헤더 높이는 운영에 이미 역할 토큰 `--site-header-h`가 있어 이 둘이 그 토큰에 묶일 후보다 `[코드 static/css/components/site-chrome.css:30]`, 읽기 전용 칩 `min-height 1.5rem`과 `--hit-sm`)은 역할 토큰 후보라 트랙 B가 운영 값을 재서 정한다.
 4. **브레이크포인트 상수**: 경계 2개 — 45rem(터치 44px·내비 접힘은 `max-width: 44.99rem`, 좌우 패딩 확대는 `min-width: 45rem`으로 같은 경계의 보수 쌍)과 70rem(한 줄 행, 필터 aside) `[코드 a4.css:30,120,125; 70rem은 :188,240,268]`. 범위 문법으로 통일할지는 (c) 참조.
 5. **스태프 생성 카테고리 슬롯 7~11 점 색**: 시안은 고정 슬러그 7개만 다룬다. 슬롯은 5개다 `[계산 슬롯 7~11]` `[코드 tokens.css:131-140]`. ⑬ 참조.
 6. **시안에 없는 컴포넌트**: 홈·행사 달력, 목록 빈 상태, 모달·토스트, textarea·select·파일 입력. 트랙 C가 카탈로그에서 정한다.
@@ -363,7 +363,7 @@ WED 사후 판정이 ⑩에 추가하라고 한 범주다 `[문서 WED 사후 �
 ### 2026-11-15
 
 - 다크 모드를 전면 삭제하고 라이트만 둔다 — 사용자 원문 "다크모드는 전면 삭제. 라이트모드만 생성." → "오케이 적용하도록" `[문서 사용자 결정 2026-11-15]`. 2026-11-03 "라이트·다크 모두 무채색 바탕"(위)은 이 결정이 대체한다. 운영 반영은 트랙 56(공개·스태프 셸, 토큰, 카테고리 팔레트)이다.
-- 간격의 숫자 단계 규칙(6단 스케일)을 폐기하고 역할 이름 토큰과 컴포넌트 상수로 바꾼다 — 사용자 원문 "유지보수가 편한 방안은? 숫자 원칙은 자유도가 떨어지더라고" → 권고(역할 이름 토큰 소수 + 컴포넌트 안 숫자는 컴포넌트 상수) → "자동점검 기준을 추가하고 진행" `[문서 사용자 결정 2026-11-15]`. 6단 값의 출처가 삭제된 시안 `a4.css`뿐이라 외부 근거가 없었다. 자동 점검의 범위는 사용자가 "정의 위치 점검만"으로 정했다(`AGENTS.md` "Frontend Work Policy"가 순수 표현의 간격에 자동 테스트를 금지하므로 덮어쓰기 점검은 만들지 않는다). 점검은 `tests/core/test_role_token_contract.py`(소스 계약 가드)이고 역할 토큰 목록의 정본은 그 레지스트리다. CSS·템플릿은 바꾸지 않는다(트랙 57).
+- 간격의 숫자 단계 규칙(6단 스케일)을 폐기하고 역할 이름 토큰과 컴포넌트 상수로 바꾼다 — 사용자 원문 "유지보수가 편한 방안은? 숫자 원칙은 자유도가 떨어지더라고" → 권고(역할 이름 토큰 소수 + 컴포넌트 안 숫자는 컴포넌트 상수) → "자동점검 기준을 추가하고 진행" `[문서 사용자 결정 2026-11-15]`. 6단 값의 출처가 삭제된 시안 `a4.css`뿐이라 외부 근거가 없었다. 자동 점검의 범위는 사용자가 "정의 위치 점검만"으로 정했다(`AGENTS.md` "Frontend Work Policy"가 순수 표현의 간격에 자동 테스트를 금지하므로 덮어쓰기 점검은 만들지 않는다 `[코드 AGENTS.md:976-977]`). 점검은 `tests/core/test_role_token_contract.py`(소스 계약 가드)이고 역할 토큰 목록의 정본은 그 레지스트리다. CSS·템플릿은 바꾸지 않는다(트랙 57). 글자 크기 토큰은 공유 글자 역할의 이름 묶음으로 유지하고 리터럴 금지 규칙은 두지 않는다 `[문서 계획서 트랙 57 D4]`.
 
 출처는 전부 `[문서 사용자 결정 2026-11-02]`, `[문서 사용자 결정 2026-11-03]`, `[문서 사용자 결정 2026-11-05]` 또는 `[문서 사용자 결정 2026-11-15]`이고, 2026-11-02·03 결정의 원문은 ⑨의 인용 2건과 `prompt_plan.md` 트랙 50 Frontend Review Evidence(롤링 파일이라 다음 트랙에서 덮어써질 수 있다)에 있다.
 
