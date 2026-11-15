@@ -28,7 +28,7 @@
 }
 
 .archive-search-row button[type="submit"] {
-  /* --teal + 흰 텍스트 조합은 명암비 AA(라이트 5.36:1 / 다크 5.74:1)를 충족한다. */
+  /* --teal + 흰 텍스트 조합은 명암비 AA(5.36:1)를 충족한다. */
   border: 1px solid var(--teal);
   background: var(--teal);
   color: #fff;

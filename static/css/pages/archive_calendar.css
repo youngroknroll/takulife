@@ -483,10 +483,8 @@
 }
 
 /* 이 링크는 공용 .side-action-link 박스가 아니라 단순 텍스트 링크라
-   박스 속성을 전부 여기서 지운다. `.activity-page` 접두사는 특이도를
-   (0,3,0)으로 올려 components/cards.css의 다크모드 색 재정의(같은
-   특이도)를 이기기 위해 꼭 필요하다 — 없으면 로드 순서와 무관하게
-   다크모드에서 색이 다시 muted로 바뀐다. */
+   박스 속성을 전부 여기서 지운다. `.activity-page` 접두사는 공용
+   `.side-action-link` 규칙보다 확실히 이기도록 특이도를 올린다. */
 .activity-page .calendar-item-row .side-action-link {
   margin-left: auto;
   display: inline;

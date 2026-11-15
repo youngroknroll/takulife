@@ -12,9 +12,7 @@
   padding: 0.625rem 1rem;
   border-radius: 999px;
   background: var(--text);
-  /* 흰색 리터럴 대신 var(--bg)를 쓴다: --text/--bg는 테마별로 짝을 이루는
-     고대비 쌍이라, 배경을 --text로 채운 이 토스트가 다크모드에서도
-     별도 오버라이드 없이 자동으로 뒤집힌다. */
+  /* --text 배경 위 글자는 고대비 짝인 --bg를 쓴다(색 리터럴은 토큰에만). */
   color: var(--bg);
   font-size: var(--fs-md);
   font-weight: 600;
