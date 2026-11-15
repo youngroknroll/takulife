@@ -13,27 +13,6 @@
     window.addEventListener("unhandledrejection", function (e) { window.__takuErrorQueue.push({ reason: String(e.reason), name: e.reason && e.reason.name }); });
   } catch (e) {}
   </script>
-  <!-- 브라우저가 뭔가 그리기 전에 테마를 정해야 한 프레임이라도 잘못된 테마가
-       번쩍이지 않는다. 그래서 이 스크립트만 defer 없이 모든 스타일시트보다
-       앞에 둔다. theme.js의 읽기 로직만 최소로 복제한 것이며, 쓰기/토글/시스템
-       테마 감지는 theme.js가 담당한다. -->
-  <script>
-    (function () {
-      "use strict";
-      var theme = "light";
-      try {
-        var stored = window.localStorage.getItem("takulife-theme");
-        if (stored === "light" || stored === "dark") {
-          theme = stored;
-        } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-          theme = "dark";
-        }
-      } catch (e) {
-        // Storage or matchMedia blocked — theme keeps its "light" default.
-      }
-      document.documentElement.setAttribute("data-theme", theme);
-    })();
-  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}takulife{% endblock %}</title>
   {% block robots_meta %}<meta name="robots" content="noindex, nofollow">{% endblock %}
@@ -121,7 +100,6 @@
   <script defer src="{% static 'js/shared/i18n_fallback.js' %}"></script>
   <script defer src="{% url 'javascript-catalog' %}"></script>
   <script defer src="{% static 'js/shared/error_report.js' %}"></script>
-  <script defer src="{% static 'js/shared/theme.js' %}"></script>
   <script defer src="{% static 'js/shared/api.js' %}"></script>
   <script defer src="{% static 'js/shared/submit_guard.js' %}"></script>
   <script defer src="{% static 'js/components/confirm-modal.js' %}"></script>

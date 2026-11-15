@@ -8,7 +8,6 @@
 홈 전용이고 "/events/", "/collection/", "/archive/"는 서로 배타적인 접두사다.
 {% endcomment %}
 {% translate "주 메뉴" as primary_nav_label %}
-{% translate "다크모드 전환" as theme_toggle_label %}
 <header class="site-header">
   <div class="site-header-inner">
     <button type="button" class="nav-menu-toggle" data-nav-menu-toggle
@@ -17,12 +16,6 @@
       <span class="nav-menu-icon" aria-hidden="true">&#9776;</span>
     </button>
     <a class="brand" href="/">takulife</a>
-    <button type="button" class="theme-toggle" data-theme-toggle aria-label="{{ theme_toggle_label }}">
-      <span class="theme-toggle-mark">
-        <span class="theme-toggle-icon theme-toggle-icon-light">&#9728;&#65038;</span>
-        <span class="theme-toggle-icon theme-toggle-icon-dark">&#9790;&#65038;</span>
-      </span>
-    </button>
     <nav id="primary-nav" class="site-nav" data-expanded="false" aria-label="{{ primary_nav_label }}">
       <a href="/"{% if request.path == '/' %} class="active"{% endif %}>{% translate "홈" %}</a>
       <a href="/events/"{% if '/events/' in request.path %} class="active"{% endif %}>{% translate "이벤트" %}</a>
