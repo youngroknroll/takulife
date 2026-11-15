@@ -61,7 +61,7 @@
 
 **G2** 새 CSS의 색은 전부 `var(--…)` 토큰이다. 리터럴은 오늘 배지 글자
 `#fff` 1곳뿐(선례 `event_calendar.css:142`). 새 리터럴 hex를 추가하면
-다크모드가 깨진다.
+토큰 밖 색이 생긴다.
 
 **G3** 날짜 이동으로 도착하는 앵커 대상은 세 규칙이 항상 짝으로 붙는다:
 `tabindex="-1"`(키보드 포커스 이동) + `scroll-margin-top: calc(var(--site-header-h)
