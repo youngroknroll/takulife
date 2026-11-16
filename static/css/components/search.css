@@ -3,70 +3,107 @@
    마크업: templates/core/partials/_archive_search.html */
 
 .archive-search {
-  margin-bottom: 0.75rem;
+  margin-bottom: var(--space-2);
 }
 
 .archive-search-row {
   display: flex;
-  align-items: center;
-  gap: 0.375rem;
+  align-items: stretch;
+  gap: var(--space-2);
 }
 
 /* ⌕ 글자는 별도 요소가 아니라 input의 placeholder 첫 글자로 들어간다
-   (_archive_search.html). 왼쪽 패딩을 0.875rem으로 넉넉히 둬 그 글자가
-   테두리에 붙어 보이지 않게 한다. */
+   (_archive_search.html). 왼쪽 패딩을 넉넉히 둬 그 글자가 테두리에 붙어
+   보이지 않게 한다. */
 .archive-search-row input[type="search"] {
   flex: 1;
   min-width: 0;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 0.5rem 0.75rem 0.5rem 0.875rem;
-  font-size: 0.9rem;
-  color: var(--text);
+  min-height: var(--hit-md);
+  border: var(--bw-1) solid var(--ink);
+  padding: 0 var(--space-2) 0 var(--space-3);
+  font-size: var(--fs-3);
+  color: var(--ink);
   background: var(--surface);
   font-family: inherit;
 }
 
+.archive-search-row input[type="search"]::placeholder {
+  color: var(--ink-2);
+}
+
 .archive-search-row button[type="submit"] {
-  /* --teal + 흰 텍스트 조합은 명암비 AA(5.36:1)를 충족한다. */
-  border: 1px solid var(--teal);
-  background: var(--teal);
-  color: #fff;
-  border-radius: 8px;
-  min-height: 34px;
-  padding: 0.5rem 0.875rem;
-  font-size: 0.9rem;
-  font-weight: 700;
+  min-height: var(--hit-md);
+  padding: 0 var(--space-3);
+  border: var(--bw-1) solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-3);
+  font-weight: var(--fw-regular);
   cursor: pointer;
   font-family: inherit;
   white-space: nowrap;
 }
 
-.archive-search-row button[type="submit"]:hover {
-  filter: brightness(0.95);
+@media (hover: hover) {
+  .archive-search-row button[type="submit"]:hover {
+    background: var(--select);
+    border-color: var(--select);
+    color: var(--on-select);
+  }
+}
+
+.archive-search-row button[type="submit"]:focus-visible {
+  background: var(--select);
+  border-color: var(--select);
+  color: var(--on-select);
 }
 
 .archive-search-clear {
   display: inline-block;
-  margin-top: 0.375rem;
-  font-size: 0.8rem;
-  color: var(--muted);
+  margin-top: var(--space-1);
+  font-size: var(--fs-2);
+  color: var(--ink-2);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 
 .archive-search-clear[hidden] {
   display: none;
 }
 
-.archive-search-clear:hover {
-  color: var(--text);
-  text-decoration: underline;
+@media (hover: hover) {
+  .archive-search-clear:hover {
+    background: var(--select);
+    color: var(--on-select);
+    text-decoration: none;
+  }
+}
+
+.archive-search-clear:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+  text-decoration: none;
 }
 
 /* ── live-search swap target ───────────────────────────────────────── */
 /* archive_search.js가 innerHTML을 통째로 교체하는 대상이라 border/padding/margin을
    따로 두지 않는다 — 감싸기 전과 레이아웃이 달라지지 않게 하기 위해서다. */
+/* 검색 요청 중 표시: 흐리게 하지 않고 점선 윤곽 + 위쪽 스피너로 알린다.
+   .is-loading은 archive_search.js가 토글한다(JS 없으면 이 클래스도 안 붙는다). */
 #archive-results.is-loading {
-  /* 검색 요청이 진행 중일 때만 흐리게 표시한다(archive_search.js가 토글). JS 없으면 이 클래스도 안 붙는다. */
-  opacity: 0.55;
-  transition: opacity 0.12s ease;
+  opacity: 1;
+  outline: var(--bw-1) dashed var(--rule);
+  outline-offset: var(--space-1);
+  cursor: progress;
+}
+
+/* 결과가 길어도 스피너가 화면 안에 있도록 컨테이너 위쪽에 붙인다. */
+#archive-results.is-loading::after {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  margin: 0;
+  width: 1rem;
+  height: 1rem;
+  color: var(--ink);
 }

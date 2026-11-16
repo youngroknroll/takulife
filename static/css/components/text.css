@@ -1,13 +1,13 @@
 /* 이벤트/아카이브 목록·카드가 공유하는 텍스트 스타일 모음이다. */
 .meta {
   margin: 0;
-  color: var(--muted);
-  font-size: 0.84rem;
+  color: var(--ink-2);
+  font-size: var(--fs-2);
 }
 .period {
-  margin: 0.25rem 0 0;
-  color: var(--text);
-  font-size: var(--fs-md);
+  margin: var(--space-1) 0 0;
+  color: var(--ink);
+  font-size: var(--fs-2);
 }
 
 /* ── monospace numerals ──────────────────────────────────────────── */
@@ -19,13 +19,13 @@
 }
 
 /* ── emphasis ──────────────────────────────────────────────────── */
-/* 홈 히어로의 강조 문구 전용이다. 카드·버튼 배경으로는 확장하지 않는다.
+/* 강조·경고 문구 전용 반전 블록이다(배경과 글자색을 함께 바꾼다).
    box-decoration-break는 줄바꿈이 생겨도 블록이 자연스럽게 이어지게 한다. */
 .emphasis {
-  background: var(--emphasis-bg);
-  color: var(--emphasis-ink);
+  background: var(--select);
+  color: var(--on-select);
+  font-weight: var(--fw-regular);
   padding: 0 0.25em;
-  border-radius: 0.2em;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }
@@ -33,9 +33,14 @@
 /* ── shared inline error line ────────────────────────────────────── */
 /* 컨트롤 아래 오류 한 줄을 표시하는 공용 스타일이다. auth.css의 .field-error와 같은 토큰을 쓴다. */
 .inline-error {
-  color: var(--rose-ink);
-  font-size: var(--fs-xs);
-  margin: 0.25rem 0 0;
+  color: var(--error);
+  font-size: var(--fs-1);
+  margin: var(--space-1) 0 0;
+}
+
+/* JS가 글자를 채우는 빈 오류 줄은 숨기지 않고(낭독 유지) 여백만 없앤다. */
+.inline-error:empty {
+  margin: 0;
 }
 
 /* ── live search result summary (screen-reader only) ─────────────── */

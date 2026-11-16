@@ -2,36 +2,27 @@
    z-index는 event_detail.css의 .mobile-cta(20)보다 위, confirm-modal.css의
    .confirm-overlay(1000)보다 아래로 둔다. 모바일 하단 고정 탭 바는 헤더의
    쌓임 맥락(50) 안이라 이 40보다 위에 그려지므로, 토스트 위치를 탭 바
-   위로 올린다. */
+   위로 올린다. 전환 효과는 없고 .is-visible 토글만으로 나타나고 사라진다. */
 
 .taku-toast {
   position: fixed;
   left: 50%;
   bottom: calc(1rem + max(env(safe-area-inset-bottom), var(--site-tabbar-h, 0px)));
-  transform: translate(-50%, 8px);
+  transform: translateX(-50%);
   z-index: 40;
   max-width: calc(100% - 2rem);
-  padding: 0.625rem 1rem;
-  border-radius: 999px;
-  background: var(--text);
-  /* --text 배경 위 글자는 고대비 짝인 --bg를 쓴다(색 리터럴은 토큰에만). */
-  color: var(--bg);
-  font-size: var(--fs-md);
-  font-weight: 600;
+  padding: var(--space-2) var(--space-3);
+  background: var(--ink);
+  /* 글자색 배경 위에는 표면색 글자를 쓴다(선택색 반전과 구분되는 검정 줄). */
+  color: var(--surface);
+  font-size: var(--fs-2);
+  font-weight: var(--fw-regular);
   text-align: center;
-  box-shadow: var(--shadow);
+  /* 보이지 않을 때도 낭독되도록 display가 아니라 opacity로 숨긴다. */
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 .taku-toast.is-visible {
   opacity: 1;
-  transform: translate(-50%, 0);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .taku-toast {
-    transition: none;
-  }
 }
