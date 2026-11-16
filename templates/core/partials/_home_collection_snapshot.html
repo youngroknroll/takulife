@@ -12,11 +12,11 @@ CTA가 있는 빈 상태다.
 unrecorded(최대 5), upcoming_planned(최대 4), snapshot_active.
 {% endcomment %}
 {% if request.user.is_authenticated %}
-<section class="section snapshot-panel">
-  <div class="section-head">
+<section class="section snapshot-panel window">
+  <div class="section-head window-head">
     <div>
       <span class="section-eyebrow">MY</span>
-      <h2>{% translate "내 컬렉션 현황" %}</h2>
+      <h2 class="window-title"><span aria-hidden="true">[</span> {% translate "내 컬렉션 현황" %} <span aria-hidden="true">]</span></h2>
     </div>
     {% if snapshot_active %}<a class="section-more" href="/collection/">{% translate "전체 컬렉션 보기 ›" %}</a>{% endif %}
   </div>

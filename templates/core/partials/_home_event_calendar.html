@@ -12,11 +12,11 @@ tabindex="-1" + CSS scroll-margin-top으로 sticky 헤더에 안 가린다. "이
 "#selected-date"로 나간다 — 이 화면 아젠다는 최대 3건(HOME_CALENDAR_AGENDA_LIMIT)만 보여주기 때문.
 {% endcomment %}
 {% with cal=home_calendar %}
-<section class="section" id="home-calendar">
-  <div class="section-head">
+<section class="section window" id="home-calendar">
+  <div class="section-head window-head">
     <div>
       <span class="section-eyebrow">{% translate "이벤트 달력" %}</span>
-      <h2>{% blocktranslate trimmed with month=cal.month_start|date:"F" %}{{ month }}, 놓치기 아까운 일정{% endblocktranslate %}</h2>
+      <h2 class="window-title"><span aria-hidden="true">[</span> {% blocktranslate trimmed with month=cal.month_start|date:"F" %}{{ month }}, 놓치기 아까운 일정{% endblocktranslate %} <span aria-hidden="true">]</span></h2>
     </div>
     <a class="section-more" href="/events/calendar/?month={{ cal.month_param }}" rel="nofollow">{% translate "달력 전체 보기 ›" %}</a>
   </div>
