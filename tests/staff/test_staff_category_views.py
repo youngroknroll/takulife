@@ -468,7 +468,7 @@ def test_수정_화면에서도_같은_폴백으로_렌더된다(staff_client):
 
 
 @pytest.mark.django_db
-def test_배정된_슬롯이_있는_카테고리는_컨텍스트에_hex_4개가_내려온다(staff_client):
+def test_배정된_슬롯이_있는_카테고리는_컨텍스트에_hex_2개가_내려온다(staff_client):
     """Q-03"""
     target = Category.objects.exclude(palette_slot=None).first()
     _, client = staff_client(is_superuser=True)
@@ -478,4 +478,4 @@ def test_배정된_슬롯이_있는_카테고리는_컨텍스트에_hex_4개가_
     assert resp.status_code == 200
     row = next(r for r in resp.context["category_rows"] if r["slug"] == target.slug)
     assert row["palette_hex"] == palette_hex_for(target.palette_slot)
-    assert set(row["palette_hex"].keys()) == {"light_soft", "light_ink", "dark_soft", "dark_ink"}
+    assert set(row["palette_hex"].keys()) == {"light_soft", "light_ink"}

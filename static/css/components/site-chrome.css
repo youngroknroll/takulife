@@ -98,20 +98,63 @@
 
 .site-header .topbar-auth {
   margin-left: auto;
-  /* 모바일에서 .site-nav가 헤더 아래로 줄바꿈될 때 계정 메뉴 드롭다운
-     패널을 덮어 그리지 않도록 그리기 순서를 올린다. */
+  /* 계정 메뉴 드롭다운 패널이 같은 헤더 안의 다른 위치 지정 요소(모바일
+     하단 탭 바 등)에 덮이지 않도록 그리기 순서를 올린다. */
   z-index: 1;
 }
 
 @media (max-width: 45rem) {
+  /* 탭 바 높이 변수 — 이 미디어 쿼리 안에서만 정의해 45rem 초과에서는
+     var(--site-tabbar-h, 0px)가 0이 되게 한다.
+     칸 높이 + 위 경계선 1px + 안전 영역. */
+  :root {
+    --site-tabbar-h: calc(3.5rem + 1px + env(safe-area-inset-bottom));
+  }
   .site-header-inner {
     flex-wrap: wrap;
     gap: 0.625rem;
     padding: 0.625rem var(--page-pad-x);
   }
+  .site-header {
+    /* 고정 위치 자손(.site-nav)의 기준 상자가 뷰포트가 아니라 헤더가
+       되는 것을 막는다. */
+    backdrop-filter: none;
+  }
   .site-nav {
-    order: 3;
-    width: 100%;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    gap: 0;
+    flex-wrap: nowrap;
+    min-height: var(--site-tabbar-h);
+    padding-bottom: env(safe-area-inset-bottom);
+    /* 반투명이면 뒤로 지나가는 큰 제목이 라벨 뒤에 비친다 — 불투명 표면색. */
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+  }
+  .site-nav a {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: center;
+    text-align: center;
+    min-height: 3.5rem;
+    padding: 0.25rem;
+    border-radius: 0;
+    font-size: 0.75rem;
+    line-height: 1.25;
+  }
+  /* 칸이 좁아 밑줄은 아래 대신 칸 위쪽 가장자리에 그린다. */
+  .site-nav a.active::after {
+    top: 0;
+    bottom: auto;
+  }
+  body {
+    padding-bottom: var(--site-tabbar-h);
+  }
+  html {
+    scroll-padding-bottom: var(--site-tabbar-h);
   }
   .site-header .topbar-auth {
     flex-wrap: wrap;
@@ -124,50 +167,6 @@
      이겨 이 규칙이 조용히 무시된다 — .site-header 조상을 붙여 특이도를
      올려서 이긴다. */
   .site-header .topbar-username {
-    display: none;
-  }
-}
-
-/* ── mobile nav toggle (hamburger) ─────────────────────────────
-   계정 메뉴와 같은 인터랙션 관례(aria-expanded/aria-controls/Escape/
-   포커스 복귀)를 재사용한다. 45rem 초과에서는 .site-nav가 항상 보이므로
-   이 버튼 자체를 숨긴다(모바일 전용 컨트롤). */
-.nav-menu-toggle {
-  display: none;
-  width: 44px;
-  height: 44px;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
-  cursor: pointer;
-  color: var(--text);
-}
-
-.nav-menu-toggle:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
-}
-
-.nav-menu-icon {
-  font-size: 1.5rem;
-  line-height: 1;
-}
-
-@media (max-width: 45rem) {
-  .nav-menu-toggle {
-    display: flex;
-    width: 32px;
-    height: 32px;
-  }
-  .nav-menu-icon {
-    font-size: 1.5rem; /* 32px 히트박스 안에 24px 아이콘 */
-  }
-  /* 45rem 초과에서는 이 규칙 자체가 매치되지 않아 항상 보이는 상태를
-     유지한다. */
-  .site-nav[data-expanded="false"] {
     display: none;
   }
 }
@@ -387,76 +386,6 @@
   font-weight: 700;
   color: var(--text);
   text-decoration: none;
-}
-
-/* ── theme toggle (light/dark) ─────────────────────────────────
-   .account-menu-toggle 패턴 재사용(44px 히트박스/30px 원) — hover는
-   계정 메뉴 아바타와 달리 중립(--bg-soft/--line, 브랜드 레드는
-   상태·CTA 전용이라 배제, 다크모드 팔레트 문서 §9). 글리프 2종을 겹쳐
-   두고 [data-theme]로 하나만 보이게 하는 순수 CSS 전환 — FOUC 방지
-   인라인 스크립트가 첫 페인트 전에 data-theme을 이미 확정하므로 JS의
-   아이콘 교체 타이밍에 기댈 필요가 없다. */
-.theme-toggle {
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
-  cursor: pointer;
-}
-
-.theme-toggle:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
-}
-
-.theme-toggle-mark {
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--border-soft);
-  border-radius: 50%;
-  background: transparent;
-  color: var(--text);
-  font-size: 0.95rem;
-  line-height: 1;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
-}
-
-.theme-toggle:hover .theme-toggle-mark,
-.theme-toggle:focus-visible .theme-toggle-mark {
-  border-color: var(--line);
-  background: var(--bg-soft);
-}
-
-.theme-toggle-icon-dark {
-  display: none;
-}
-
-:root[data-theme="dark"] .theme-toggle-icon-light {
-  display: none;
-}
-
-:root[data-theme="dark"] .theme-toggle-icon-dark {
-  display: inline;
-}
-
-@media (max-width: 45rem) {
-  .theme-toggle {
-    width: 32px;
-    height: 32px;
-  }
-  .theme-toggle-mark {
-    width: 24px;
-    height: 24px;
-    font-size: 0.75rem;
-  }
 }
 
 /* ── account menu (header disclosure dropdown) ────────────────

@@ -52,28 +52,27 @@ def test_tokens_css의_팔레트_슬롯_hex_값은_PALETTE와_전부_일치한�
     (스태프 화면은 PALETTE에서 hex를 계산해 인라인 style로 찍고, 소비자
     화면은 CSS 토큰을 쓰므로 어긋나면 두 화면 색이 달라진다).
 
-    블록 위치(:root vs :root[data-theme="dark"])에 기대지 않고, "슬롯
-    이름마다 값이 정확히 2번 정의되고 그 두 값의 집합이 {light, dark}
-    값의 집합과 같다"로 판정해 CSS 구조 변경에 덜 취약하게 했다. 대소문자·
-    앞뒤 공백은 정규화해서 비교한다.
+    슬롯 이름마다 값이 정확히 1번 정의되고 그 값이 PALETTE의 라이트
+    값과 같아야 한다(다크 모드가 없어 같은 속성의 두 번째 정의는
+    결함이다). 대소문자·앞뒤 공백은 정규화해서 비교한다.
 
-    [실측] 현재 48개 토큰 값은 PALETTE와 전부 일치해 이 테스트는 Green으로
-    태어난다. 뮤테이션 지점: core/categories.py의 PALETTE 슬롯 아무 hex나
-    한 글자 바꾸면 Red가 된다.
+    [계산] 12슬롯 × soft/ink = 24개 토큰 값이 대상이다. 뮤테이션 지점:
+    core/categories.py의 PALETTE 슬롯 hex 한 글자를 바꾸거나, tokens.css에
+    같은 슬롯 속성을 한 번 더 정의하면 Red가 된다.
     """
     css_text = TOKENS_CSS.read_text()
 
     mismatches = []
     for slot, colors in enumerate(PALETTE):
-        for suffix, keys in (
-            ("soft", ("light_soft", "dark_soft")),
-            ("ink", ("light_ink", "dark_ink")),
+        for suffix, key in (
+            ("soft", "light_soft"),
+            ("ink", "light_ink"),
         ):
             name = f"cat-slot-{slot}-{suffix}"
             values = [v.strip().lower() for v in _all_property_values(css_text, name)]
-            expected = {colors[key].strip().lower() for key in keys}
-            if len(values) != 2 or set(values) != expected:
-                mismatches.append((name, values, sorted(expected)))
+            expected = colors[key].strip().lower()
+            if len(values) != 1 or values[0] != expected:
+                mismatches.append((name, values, expected))
 
     assert not mismatches, mismatches
 

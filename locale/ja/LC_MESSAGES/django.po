@@ -356,10 +356,6 @@ msgid "주 메뉴"
 msgstr "メインメニュー"
 
 #: templates/500.html templates/core/partials/_site_header.html
-msgid "다크모드 전환"
-msgstr "ダークモード切り替え"
-
-#: templates/500.html templates/core/partials/_site_header.html
 msgid "홈"
 msgstr "ホーム"
 

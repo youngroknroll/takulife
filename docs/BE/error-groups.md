@@ -149,12 +149,13 @@
 ## 프론트 캡처
 
 - `templates/base.html:8-15`, `templates/staff/base_staff.html:9-16`의
-  head 최상단(테마 스크립트보다 앞) 인라인 부트스트랩이
+  head 최상단 인라인 부트스트랩이
   `window.__takuErrorQueue = []`를 만들고 `error`·`unhandledrejection`
   리스너를 즉시 건다 — 이 시점에는 아직 다른 스크립트가 실행되지 않아
   이후 로드되는 어떤 스크립트의 동기 오류도 큐에 놓치지 않는다.
-- `static/js/shared/error_report.js`(두 셸 모두 defer 목록 첫 번째,
-  `templates/base.html:123`, `templates/staff/base_staff.html:82`)가 큐를
+- `static/js/shared/error_report.js`(두 셸 모두 `i18n_fallback.js` 뒤에
+  로드하는 defer 스크립트, `templates/base.html:102`,
+  `templates/staff/base_staff.html:59`)가 큐를
   드레인한 뒤(`drainBootstrapQueue`, `:75-86`) 큐의 `push`를 무시
   함수로 바꿔치고, 이후 오류는 자신의 리스너로 직접 처리한다
   (`bindListeners`, `:93-107`) — 같은 이벤트가 두 번 보고되지 않는다.

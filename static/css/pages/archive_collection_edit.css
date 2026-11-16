@@ -320,7 +320,11 @@
   /* 하단 고정 바 높이만큼 여백을 남겨 삭제 버튼과 오류 배너가
      끝까지 스크롤해도 가려지지 않게 한다. */
   .collection-edit-page {
-    padding-bottom: 6rem;
+    padding-bottom: calc(6rem + var(--site-tabbar-h, 0px));
+  }
+  /* 고정 바가 푸터 끝을 덮지 않게 문서 끝에 바 높이만큼 여백 */
+  body:has(.collection-edit-page .collection-edit-actions) {
+    padding-bottom: calc(6rem + var(--site-tabbar-h, 0px));
   }
 
   /* 클래스 3개짜리 특이도라 archive_collection.css의 2클래스 규칙을
@@ -379,7 +383,7 @@
     position: fixed;
     left: 0;
     right: 0;
-    bottom: 0;
+    bottom: var(--site-tabbar-h, 0px);
     z-index: 20;
     gap: 0.5rem;
     padding: 0.625rem var(--page-pad-x) calc(0.625rem + env(safe-area-inset-bottom));

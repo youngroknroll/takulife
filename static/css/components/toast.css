@@ -1,20 +1,20 @@
 /* position:fixed로 둬 문서 흐름에 끼지 않게 한다(좁은 화면 가로 스크롤 방지).
    z-index는 event_detail.css의 .mobile-cta(20)보다 위, confirm-modal.css의
-   .confirm-overlay(1000)보다 아래로 둔다. */
+   .confirm-overlay(1000)보다 아래로 둔다. 모바일 하단 고정 탭 바는 헤더의
+   쌓임 맥락(50) 안이라 이 40보다 위에 그려지므로, 토스트 위치를 탭 바
+   위로 올린다. */
 
 .taku-toast {
   position: fixed;
   left: 50%;
-  bottom: calc(1rem + env(safe-area-inset-bottom));
+  bottom: calc(1rem + max(env(safe-area-inset-bottom), var(--site-tabbar-h, 0px)));
   transform: translate(-50%, 8px);
   z-index: 40;
   max-width: calc(100% - 2rem);
   padding: 0.625rem 1rem;
   border-radius: 999px;
   background: var(--text);
-  /* 흰색 리터럴 대신 var(--bg)를 쓴다: --text/--bg는 테마별로 짝을 이루는
-     고대비 쌍이라, 배경을 --text로 채운 이 토스트가 다크모드에서도
-     별도 오버라이드 없이 자동으로 뒤집힌다. */
+  /* --text 배경 위 글자는 고대비 짝인 --bg를 쓴다(색 리터럴은 토큰에만). */
   color: var(--bg);
   font-size: var(--fs-md);
   font-weight: 600;

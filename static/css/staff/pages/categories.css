@@ -464,10 +464,10 @@
   filter: brightness(0.96);
 }
 
-/* ── 팔레트 미리보기(라이트·다크 두 칩) ──────────────────────── */
+/* ── 팔레트 미리보기 ──────────────────────────────────────────── */
 .cat-palette-preview {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 0.5625rem;
 }
 
@@ -599,10 +599,6 @@
   }
 
   .cat-form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .cat-palette-preview {
     grid-template-columns: 1fr;
   }
 }

@@ -356,10 +356,6 @@ msgid "주 메뉴"
 msgstr "主菜单"
 
 #: templates/500.html templates/core/partials/_site_header.html
-msgid "다크모드 전환"
-msgstr "切换深色模式"
-
-#: templates/500.html templates/core/partials/_site_header.html
 msgid "홈"
 msgstr "首页"
 
