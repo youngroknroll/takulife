@@ -18,48 +18,51 @@ state" 절 참고).
 number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴다 — 제목 앞의
 `feat:`/`fix:`/`docs:` 같은 접두어도 변경 성격을 알려주는 정보이므로 유지한다.
 
-이 문서는 200줄을 넘기지 않는다. 머지된 PR 409건(`gh pr list --state merged --limit 500`,
-2026-11-13 `[실측]`; 2026-08-17에는 289건)이 전부 들어가지 않으므로 최신부터 채우고 줄 수
+이 문서는 200줄을 넘기지 않는다. 머지된 PR 411건(`gh pr list --state merged --limit 500`,
+2026-11-17 `[실측]`; 2026-08-17에는 289건)이 전부 들어가지 않으므로 최신부터 채우고 줄 수
 예산에서 끊는다 — 컷오프는 "재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래
-목록은 PR #416부터 #276까지다(#415는 위 상세 항목). 그보다 오래된 PR은 `gh pr list
+목록은 PR #418부터 #279까지다(#419는 위 상세 항목). 그보다 오래된 PR은 `gh pr list
 --state merged --limit 500 --json number,title` 으로 언제든 다시 조회할 수 있다.
 
 ---
 
 ## 최신 PR
 
-### PR #415 — perf: Track 17 — DB connection reuse, public calendar range, public cache
+### PR #419 — docs: Track 57 — replace the spacing step scale with role tokens, add a definition-location guard
 
-**무엇을 바꿨나**: DB 연결 재사용(`DB_CONN_MAX_AGE` 기본 600초 `[코드]` +
-`CONN_HEALTH_CHECKS`), `/api/health/`의 DB 확인을 30분에 한 번으로, 컬렉션·
-방문 기록 요약 집계 병합(4→1, 2→1쿼리)과 홈 다섯 구간 사용자 상태 조회 병합
-(테스트 Given 로그인 29→21쿼리 `[실측]`), `/events/` COUNT 2회→1회, 공개 달력
-두 곳(홈·`/events/calendar/`)을 오늘 기준 과거 24개월~미래 12개월로 제한(범위
-밖 302·비ASCII 숫자 거부·경계 달 비활성 글리프·`month=` 링크 `rel="nofollow"`),
-공개 데이터 캐시(`"public"` LocMem 별칭, `PUBLIC_CACHE_TTL_SECONDS` 기본 60초
-`[코드]`, 0이면 저장소를 부르지 않음, 저장소 장애는 기록 후 DB 값), 공개 `q`
-100자 상한, 상세 HEAD 조회수 생략, 홈 구간 ORM 체인의 `events/queries.py` 이관,
-배포·운영 런북. 커밋 36개 + main 합치기 1개, 37 files changed +2,352/−169
-`[실측 git diff --stat]`, 마이그레이션 없음. 머지 완료 2026-11-13T13:30:39Z,
-merge commit `6628dee1` `[실측 gh]`. 머지된 트리는 검증한 브랜치 최신 커밋
-`d5b623de`와 diff 0 `[실측 git]`.
+**무엇을 바꿨나**: ① `docs/FE/design-principles.md` ⑦의 간격 6단 스케일 규칙을
+폐기하고 규칙 셋(같은 역할이면 같은 역할 토큰 / 컴포넌트 안 숫자는 컴포넌트 상수,
+배수 규칙 없음 / 하한은 브라우저 측정)으로 개정했다. ② 가드
+`tests/core/test_role_token_contract.py`는 역할 토큰 3개(`--page-pad-x`는
+`static/css/tokens.css`, `--site-header-h`·`--site-tabbar-h`는
+`static/css/components/site-chrome.css`)가 레지스트리에 적힌 파일 한 곳에서만
+선언되는지 본다. 다른 화면 폭에서 숫자로 덮어쓰는 것은 자동 점검으로 만들지 않았다
+(사용자 결정 "정의 위치 점검만", 근거 `AGENTS.md:976-977` `[코드]`). ③ 트랙 56이
+줄을 지워 어긋난 문서의 `파일:줄` 인용 15곳(`tokens.css` 10곳, `cards.css` 5곳)을
+재대조했다. 커밋 3개(`382d9674` 테스트, `a5c8a715` 문서·백로그, `796c90f0` 인용 줄
+재대조), 3 files changed +102/−32 `[실측 git diff --stat 149ca3d9..11a8aad5]`.
+CSS·템플릿·마이그레이션 변경 없음. #418 위에 쌓은 PR이라 base가
+`refactor/remove-dark-mode`였고, 머지 완료 2026-11-16T18:35:47Z, merge commit
+`11a8aad5`로 그 브랜치에 들어갔다 `[실측 gh]`. main에는 2026-11-17 머지 뒤 직접
+커밋 경로로 merge commit `3750d791`을 만들어 반영했고, 합친 main 트리는 검증한
+브랜치 커밋 `796c90f0`과 diff 0(`prompt_plan.md` 제외)이다 `[실측 git diff --quiet]`.
 
-**왜**: Render 아웃바운드가 포함 한도 약 5GB를 넘어 13.8GB가 됐고 `[실측
-청구서]`, production 접근 로그에서 `ClaudeBot/1.0`이 범위 제한 없는
-`/events/calendar/?month=…`와 `/events/?필터`를 초당 약 10건 요청한 것이
-원인이었다 `[실측 접근 로그 2026-11-12]`. 사용자가 연결 재사용·집계 병합·공개
-데이터 캐시를 한 트랙으로 지시했다(2026-11-12). ClaudeBot 쿼리 요청 403 서버
-차단(main `f386dd0e`)은 유지 확정(사용자 결정 2026-11-13).
+**왜**: 사용자가 간격 규칙(4px 배수 6단)의 출처를 물었고, 출처가 삭제된 시안
+`a4.css`뿐이라 외부 근거가 없음을 확인했다. 사용자 원문 "유지보수가 편한 방안은?
+숫자 원칙은 자유도가 떨어지더라고" → "자동점검 기준을 추가하고 진행" → 점검 형태
+"정의 위치 점검만"(2026-11-15).
 
-**검증**: main을 합친 뒤 `uv run pytest -q -n auto` 4,483 passed / 42.28초
-(착수 기준 4,397 대비 +86건 `[계산]`), `uv run pytest -q -m e2e tests/e2e` 10
-passed / 10.43초 `[실측]`. 합치기 전 `ruff check`·`ruff format --check`
-통과(465파일), `manage.py check`·`makemigrations --check` 이상 없음 `[실측]`.
-합친 커밋의 PR CI 6잡 전부 pass `[실측 gh pr checks]`. CI 의존성 감사 실패
-(soupsieve 2.9.2)는 #416으로 먼저 해소했다.
+**검증**: 합친 main `3750d791`에서 `uv run pytest -q -n auto` 4,484 passed /
+57.29초, `ruff check` 통과, `ruff format --check` 466파일 변경 없음, `manage.py
+check` 0건, `makemigrations --check --dry-run` 변경 없음 `[실측 2026-11-17]`. PR
+CI 6개 체크 전부 pass `[실측 gh pr checks]`. 가드 판별력(임시 위반 주입): 다른 CSS
+파일에 토큰 재선언 → 실패, 원래 선언 삭제 → 실패, 주석 안 선언·이름이 비슷한 다른
+토큰 → 통과 `[실측 2026-11-15]`.
 
 ## 이전 PR (번호 — 실제 PR 제목)
+- #418 — refactor: Track 56 — remove dark mode, keep light only, add mobile bottom tab bar
 - #416 — chore(deps): Upgrade soupsieve to 4.1 for two GHSA advisories
+- #415 — perf: Track 17 — DB connection reuse, public calendar range, public cache
 - #414 — deploy: main → production
 - #413 — deploy: main → production
 - #412 — deploy: main → production
@@ -195,6 +198,3 @@ passed / 10.43초 `[실측]`. 합치기 전 `ruff check`·`ruff format --check`
 - #281 — refactor: 프레젠테이션 계층을 web 앱으로 분리해 앱 순환을 없앤다
 - #280 — chore: 운영·위생 백로그 4건을 닫는다 (F3·F4·F5·F9)
 - #279 — docs: 백로그 현재 상태를 main b43957c 기준으로 갱신
-- #278 — fix: 조용히 깨질 자리 두 곳을 닫는다 (백로그 A5 잔여 + F8)
-- #277 — refactor: 보유·교환 축 술어를 CollectionItem으로 모은다 (백로그 A3 이관분)
-- #276 — refactor: core.analytics를 서명 규약 가드에 넣는다 (백로그 A2)
