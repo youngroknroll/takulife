@@ -14,6 +14,19 @@
     margin-bottom: 0;
   }
 
+  /* 창 안의 빈 안내·빈 상태는 중첩 상자 없이 글자만 둔다(점선은 "놓침" 의미). */
+  .section .notice {
+    border: none;
+    background: none;
+    padding: var(--space-2) 0;
+    color: var(--ink-2);
+  }
+  .snapshot-panel .empty-state {
+    border: none;
+    background: none;
+    padding: var(--space-4) var(--space-2);
+  }
+
   /* ── 혼자 놓인 텍스트 링크(더보기·자세히·기록) — 클래스가 있어 전역 링크
      규칙을 못 받으므로 색·밑줄·반전을 직접 준다. 누름 크기는 --hit-sm. */
   .section-more,
@@ -55,14 +68,10 @@
     outline-offset: -2px;
   }
 
-  /* ── Hero 창. cards.css의 `.hero`(1px 테두리·안쪽 여백)가 `.window`보다
-     뒤에 와서 이기므로, 같은 파일에서 창 모양을 다시 선언한다. */
+  /* ── Hero 창. 창 모양은 cards.css의 `.window`가 맡고 여기서는 바깥 여백만 정한다. */
   .hero.window {
     margin-top: var(--space-4);
     margin-bottom: 0;
-    padding: calc(var(--space-3) + 0.5rem) var(--space-3) var(--space-3);
-    background: var(--surface);
-    border: var(--bw-3) double var(--ink);
   }
   /* 창 제목(h1)은 창 위 테두리에 얹힌다. 굵기는 base.css의 h1 규칙(700)이
      맡는다. 위치 기준이 창이 되도록 .hero-ticket에 position을 두지 않는다. */
@@ -242,6 +251,20 @@
     border-style: solid;
     border-width: 6px 0 6px 10px;
     border-color: transparent transparent transparent var(--ink);
+  }
+  /* 눌림 반전(버튼 전체가 --select) 동안 글리프가 같은 색에 묻히지 않게 한다. */
+  .hero-rotator-dot:active::before,
+  .hero-rotator-dot[aria-current="true"]:active::before {
+    background: var(--on-select);
+  }
+  .hero-rotator-toggle:active::before {
+    background: var(--on-select);
+    box-shadow: 6px 0 0 var(--on-select);
+  }
+  .hero-rotator-toggle[aria-pressed="true"]:active::before {
+    background: transparent;
+    box-shadow: none;
+    border-color: transparent transparent transparent var(--on-select);
   }
 
   /* 대표 행사가 없을 때 — 안내 문구 + 회복 링크 하나. */
@@ -542,11 +565,7 @@
     .hscroll-track li {
       scroll-snap-align: start;
     }
-    /* cards.css의 모바일 `.window` 안쪽 여백이 `.hero`의 선언에 눌리므로
-       히어로 창도 같은 값으로 다시 맞춘다. 제목(h1)은 창 안 첫 줄로 내려온다. */
-    .hero.window {
-      padding: var(--space-3) var(--space-2);
-    }
+    /* 제목(h1)은 창 안 첫 줄로 내려온다. */
     .hero .window-title {
       margin: var(--space-1) 0 0;
     }

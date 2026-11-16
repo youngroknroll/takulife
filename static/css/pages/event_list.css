@@ -42,6 +42,8 @@
     background: var(--select);
     color: var(--on-select);
     border-color: var(--select);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
   }
 }
 
@@ -166,22 +168,9 @@
   }
 }
 
-/* 공용 .panel(1px 테두리·작은 안쪽 여백)이 cards.css에서 .window보다 뒤에
-   있어 창 테두리를 덮는다. 창 값을 이 두 열에서 되돌린다. */
+/* 그리드 열이 내용 때문에 늘어나지 않게 한다. */
 .layout .panel.window {
   min-width: 0;
-  border: var(--bw-3) double var(--ink);
-  padding: calc(var(--space-3) + 0.5rem) var(--space-3) var(--space-3);
-}
-
-.layout .panel.window.filters {
-  padding-top: var(--space-3);
-}
-
-@media (max-width: 45rem) {
-  .layout .panel.window {
-    padding: var(--space-3) var(--space-2);
-  }
 }
 
 .filters {
@@ -387,7 +376,7 @@
   padding: 0;
   list-style: none;
   background: var(--surface);
-  border: var(--bw-3) double var(--ink);
+  border: var(--bw-1) solid var(--ink);
   box-shadow: var(--shadow-dropdown);
 }
 
@@ -406,6 +395,11 @@
   .results-sort-menu a:hover {
     background: var(--select);
     color: var(--on-select);
+  }
+  /* 현재 항목과 구분되도록 hover에만 밑줄을 더한다. */
+  .results-sort-menu a:not([aria-current]):hover {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
   }
 }
 
@@ -573,7 +567,7 @@
   color: var(--select);
 }
 
-.events-page :is(.event-index-row, .agenda-row):focus-within .event-index-interest {
+.events-page :is(.event-index-row, .agenda-row):has(:focus-visible) .event-index-interest {
   color: inherit;
 }
 
@@ -661,7 +655,7 @@
 
 /* 반전 행 안의 방문 상태 배지는 배경이 행과 같은 파랑이 되어 모양이 사라진다.
    레이아웃을 밀지 않도록 안쪽 outline으로 윤곽을 낸다. */
-.events-page :is(.event-index-row, .agenda-row):focus-within .status {
+.events-page :is(.event-index-row, .agenda-row):has(:focus-visible) .status {
   outline: var(--bw-1) solid currentColor;
   outline-offset: -1px;
 }

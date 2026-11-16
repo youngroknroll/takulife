@@ -210,7 +210,7 @@
 
 /* 행 안 "로그인하고 찜하기"는 표면 배경 버튼이라, 행이 반전되면 흰 글자가
    표면 위에 놓여 안 보인다. 반전 행 안에서는 배경을 비우고 테두리를 글자색으로 둔다. */
-.events-page .agenda-row:focus-within .side-action-link {
+.events-page .agenda-row:has(:focus-visible) .side-action-link {
   background: transparent;
   border-color: currentColor;
 }

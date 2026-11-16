@@ -5,7 +5,7 @@
 ## 현재 구성
 
 - 주 내비는 헤더 마크업 안 `#primary-nav` 하나다(`templates/core/partials/_site_header.html`, `templates/500.html`). 두 번째 `<nav>`는 없다. 45rem 이하에서만 CSS가 `position: fixed; bottom: 0`으로 화면 하단에 옮긴다(`static/css/components/site-chrome.css`의 45rem 미디어 쿼리). 그래서 데스크톱과 모바일의 탭 순서가 같다(건너뛰기 → 로고 → 주 내비 4개 → 계정 → 본문).
-- 탭 바 높이는 `--site-tabbar-h`(칸 3.5rem + 위 경계선 1px + 안전 영역) 하나로 정한다. 이 변수는 45rem 이하 블록에서만 정의되므로 넓은 화면에서는 `var(--site-tabbar-h, 0px)`가 0이다.
+- 탭 바 높이는 `--site-tabbar-h`(칸 3.5rem + 위 경계선 2px + 안전 영역: `calc(3.5rem + var(--bw-2) + env(safe-area-inset-bottom))`) 하나로 정한다. 안전 영역이 0이면 높이 58px, `body` 아래 여백 58px이다 `[실측 Playwright 2026-11-17]`. 이 변수는 45rem 이하 블록에서만 정의되므로 넓은 화면에서는 `var(--site-tabbar-h, 0px)`가 0이다.
 - 현재 섹션 링크는 `class="active"`와 `aria-current="page"`를 함께 가진다(`tests/core/test_site_header_nav.py`가 바이트 문자열로 고정).
 
 ## 가드레일

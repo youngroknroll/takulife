@@ -10,12 +10,10 @@
   font-size: var(--fs-2);
 }
 
-/* ── monospace numerals ──────────────────────────────────────────── */
-/* 숫자가 가변폭 글꼴에서 흔들리지 않도록 모노스페이스 + tabular-nums를 쓴다. */
+/* ── tabular numerals ──────────────────────────────────────────── */
+/* 숫자가 흔들리지 않도록 본문 글꼴 그대로 tabular-nums만 쓴다(모노스페이스 없음). */
 .mono-num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.01em;
 }
 
 /* ── emphasis ──────────────────────────────────────────────────── */

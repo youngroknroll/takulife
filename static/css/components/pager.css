@@ -48,6 +48,11 @@
     border-color: var(--select);
     color: var(--on-select);
   }
+  /* 현재 쪽은 <span>이라 이 링크 hover와 겹치지 않는다. hover에만 밑줄을 더한다. */
+  a.pager-page:hover {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
 }
 
 a.pager-arrow:focus-visible,

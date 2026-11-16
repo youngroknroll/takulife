@@ -142,13 +142,13 @@
 .day-mobile-dot[data-category="concert"] { background: var(--dot-concert); }
 
 /* 반전된 칸(선택·hover·포커스) 안의 점은 파랑 위 대비가 낮아 흰 1px 테두리를 두른다. */
-.day-cell[data-selected="true"] :is(.day-item-cat, .day-mobile-dot, .day-dot),
-.day-cell[href]:focus-visible :is(.day-item-cat, .day-mobile-dot, .day-dot) {
+.day-cell[data-selected="true"] :is(.day-item-cat, .day-mobile-dot, .day-dot, .home-cal-dot),
+.day-cell[href]:focus-visible :is(.day-item-cat, .day-mobile-dot, .day-dot, .home-cal-dot) {
   border: var(--bw-1) solid var(--on-select);
 }
 
 @media (hover: hover) {
-  .day-cell[href]:hover :is(.day-item-cat, .day-mobile-dot, .day-dot) {
+  .day-cell[href]:hover :is(.day-item-cat, .day-mobile-dot, .day-dot, .home-cal-dot) {
     border: var(--bw-1) solid var(--on-select);
   }
 }
