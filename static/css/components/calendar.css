@@ -1,135 +1,168 @@
-/* ── calendar.css — shared month-grid component ─────────────────
- * templates/core/partials/_calendar_grid.html(행사 달력)과
- * _archive_calendar_grid.html(내 활동 달력)이 같은 .month-grid/.day-cell
- * 뼈대를 공유하고, 칸 내용만 다르다(행사=제목, 활동=종류별 점).
- * <table> 없이 순수 CSS grid만 쓴다.
- *
- * 범례 점 색(일정=--up-*, 찜=--pink-*, 상태 변경=--brand-*, 방문=--mint-*,
- * 굿즈=--amber-*, --rose-*는 오류 패널 전용이라 종류 표시에는 절대 안
- * 씀)은 `.day-dot[data-kind]`에만 적용된다 — 행사 달력은 data-kind
- * 속성을 안 넣으므로 아래 `.day-dot` 기본(브랜드색 원)에는 영향이 없다.
+/* ── calendar.css — 공용 월 격자 (DOS) ──────────────────────────
+ * 행사 달력(_calendar_grid.html)·홈 달력(_home_event_calendar.html)·활동 달력
+ * (_archive_calendar_grid.html)이 같은 .month-grid/.day-cell 뼈대를 쓴다.
+ * 쪽 전용 규칙은 각 쪽 CSS에 두고, 여기에는 쪽 이름이 들어간 선택자를 쓰지 않는다.
+ * <table> 없이 순수 CSS grid만 쓴다. 카테고리 점은 창 안에서만 놓는다.
  */
+
+/* 칸 사이 간격이 곧 단선이다 — 격자 배경을 단선색으로 깔고 칸이 표면을 덮는다. */
 .month-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 0.375rem;
+  gap: var(--bw-1);
+  background: var(--rule);
+}
+
+/* 요일 머리는 단선 배경 없이 창 표면 위에 놓는다. */
+.month-grid-head {
+  background: transparent;
+  margin-top: var(--space-3);
 }
 
 .month-grid-weekday {
   text-align: center;
-  padding: 0.25rem 0;
-  font-size: var(--fs-xs);
-  font-weight: 700;
-  color: var(--muted);
+  padding: var(--space-1) 0;
+  font-size: var(--fs-1);
+  font-weight: var(--fw-regular);
+  color: var(--ink-2);
 }
 
-/* 실제 날짜 칸(<a>)과 연도 경계를 메우는 빈 칸(<span data-void>)이 같은
-   박스 스타일을 공유해, 빈 칸 때문에 그리드에 구멍이 생기지 않는다. */
+/* 실제 날짜 칸(<a>)과 빈 칸(<span data-void>)이 같은 박스를 공유해 구멍이 없다. */
 .day-cell {
   display: flex;
   flex-direction: column;
-  gap: 0.125rem;
-  min-height: 6.5rem; /* 데스크톱/태블릿 */
-  padding: 0.375rem 0.3125rem;
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  gap: var(--space-1);
+  min-height: 5.5rem;
+  padding: var(--space-1);
   background: var(--surface);
-  color: var(--text);
+  color: var(--ink);
   text-decoration: none;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
-
-.day-cell:hover {
-  border-color: var(--brand);
-}
-
-/* 포커스 아웃라인은 base.css의 전역 a:focus 규칙을 그대로 쓴다(여기서
-   다시 정의하지 않음). */
 
 .day-cell[data-void] {
-  border-color: transparent;
-  background: transparent;
+  background: var(--surface);
   cursor: default;
 }
 
+/* 오늘은 border가 아니라 안쪽 outline이다 — border는 내용 폭을 줄여
+   좁은 칸에서 점이 넘친다. */
 .day-cell[data-today="true"] {
-  border: 2px solid var(--brand);
-}
-
-.day-cell[data-selected="true"] {
-  background: var(--brand-soft);
-}
-
-.day-cell[data-selected="true"] .day-num {
-  color: var(--brand-ink);
-  font-weight: 700;
+  outline: var(--bw-2) solid var(--ink);
+  outline-offset: -2px;
 }
 
 .day-cell[data-in-month="false"] {
-  background: var(--bg);
+  color: var(--ink-2);
 }
 
-.day-cell[data-in-month="false"] .day-num {
-  color: var(--muted);
+/* 선택 = 반전. 오늘이 선택되면 검은 outline이 파랑 위에서 묻히므로 흰색으로 바꾼다. */
+.day-cell[data-selected="true"] {
+  background: var(--select);
+  color: var(--on-select);
 }
 
-/* 다른 달 칸의 일정 제목도 흐리게 처리해 .day-num/.day-more와 톤을
-   맞춘다 — 안 그러면 이번 달과 글자 진하기가 같아 눈에 안 띈다. */
-.day-cell[data-in-month="false"] .day-item {
-  color: var(--muted);
+.day-cell[data-today="true"][data-selected="true"] {
+  outline-color: var(--on-select);
+}
+
+/* 칸 hover·포커스도 반전이다. 포커스 링은 칸 안쪽 흰색이다. */
+@media (hover: hover) {
+  .day-cell[href]:hover {
+    background: var(--select);
+    color: var(--on-select);
+  }
+}
+
+.day-cell[href]:focus-visible,
+.day-cell[href][data-today="true"]:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+  outline: var(--bw-2) solid var(--on-select);
+  outline-offset: -2px;
 }
 
 .day-num {
-  font-size: var(--fs-sm);
-  font-weight: 600;
+  font-size: var(--fs-2);
+  font-weight: var(--fw-regular);
 }
 
-/* 데스크톱: 일정 제목 최대 2개(한 줄 말줄임)와 "외 N개" 표시. 모바일에서는
-   아래 미디어쿼리로 숨긴다. */
+/* 데스크톱: 일정 제목 최대 2개(한 줄 말줄임)와 "외 N개". 좁은 화면은 아래에서 숨긴다. */
 .day-items {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  margin-top: 2px;
+  gap: var(--space-1);
 }
 
 .day-item {
-  font-size: var(--fs-xs);
-  line-height: 1.25;
-  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--fs-1);
+  min-width: 0;
+}
+
+.day-item-title {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: var(--text);
+  white-space: nowrap;
 }
 
 .day-more {
-  font-size: var(--fs-xs);
-  color: var(--muted);
+  font-size: var(--fs-1);
+  color: inherit;
 }
 
-/* 모바일: 제목 없이 점과 총 개수만 표시. 기본은 숨김이고, 아래 45rem
-   미디어쿼리에서만 보인다. */
+/* 카테고리 점: 7개 슬러그만 색을 갖고, 지정 없는 것은 보조 글자색이다. */
+.day-item-cat,
+.day-mobile-dot,
+.day-dot {
+  display: inline-block;
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--ink-2);
+}
+
+.day-item-cat[data-category="popup_store"],
+.day-mobile-dot[data-category="popup_store"] { background: var(--dot-popup_store); }
+.day-item-cat[data-category="collaboration_cafe"],
+.day-mobile-dot[data-category="collaboration_cafe"] { background: var(--dot-collaboration_cafe); }
+.day-item-cat[data-category="theater_bonus"],
+.day-mobile-dot[data-category="theater_bonus"] { background: var(--dot-theater_bonus); }
+.day-item-cat[data-category="goods_reservation"],
+.day-mobile-dot[data-category="goods_reservation"] { background: var(--dot-goods_reservation); }
+.day-item-cat[data-category="exhibition"],
+.day-mobile-dot[data-category="exhibition"] { background: var(--dot-exhibition); }
+.day-item-cat[data-category="fan_meeting"],
+.day-mobile-dot[data-category="fan_meeting"] { background: var(--dot-fan_meeting); }
+.day-item-cat[data-category="concert"],
+.day-mobile-dot[data-category="concert"] { background: var(--dot-concert); }
+
+/* 반전된 칸(선택·hover·포커스) 안의 점은 파랑 위 대비가 낮아 흰 1px 테두리를 두른다. */
+.day-cell[data-selected="true"] :is(.day-item-cat, .day-mobile-dot, .day-dot),
+.day-cell[href]:focus-visible :is(.day-item-cat, .day-mobile-dot, .day-dot) {
+  border: var(--bw-1) solid var(--on-select);
+}
+
+@media (hover: hover) {
+  .day-cell[href]:hover :is(.day-item-cat, .day-mobile-dot, .day-dot) {
+    border: var(--bw-1) solid var(--on-select);
+  }
+}
+
+/* 좁은 화면: 제목 없이 점과 총 개수만 표시한다. 기본은 숨김이다. */
 .day-mobile-meta {
   display: none;
   align-items: center;
-  gap: 0.25rem;
+  gap: var(--space-1);
   margin-top: auto;
 }
 
-/* 행사 달력은 종류가 하나뿐이라 --brand 색 점 하나만 쓴다. data-kind
-   속성이 없는 기본 규칙이라 아래 [data-kind] 색상 재정의의 영향을
-   받지 않는다. */
-.day-dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--brand);
-}
-
-/* 내 활동 달력에 보이는 4개 종류의 점 색. "상태 변경(status)"은 서버에서
-   걸러져 실제로는 어느 화면에도 렌더되지 않으므로 전용 규칙을 따로 두지
-   않았다 — 혹시 나타나도 이 기본 [data-kind] 규칙으로만 떨어진다. */
+/* 활동 달력의 종류 점(.day-dot[data-kind]) 색은 아직 이 파일이 맡는다. 옛 토큰
+   이름이라 지금은 무채색 별칭으로 풀린다 — 활동 달력 작업에서 형태 표지로 바꾼다. */
 .day-dot[data-kind] {
   border: none;
 }
@@ -150,79 +183,78 @@
   background: var(--amber-ink);
 }
 
-/* 내 활동 달력의 모바일 전용 종류 점 줄(칸당 최대 3개, 템플릿에서
-   |slice:":3"으로 제한). 데스크톱 칸은 대신 제목을 보여주므로 이 줄은
-   모바일에서만 쓰고, 기본은 숨김이며 아래 45rem 미디어쿼리에서 보인다. */
-.day-mobile-dots {
+.day-mobile-dots,
+.day-mobile-cats {
   display: none;
   flex-wrap: wrap;
-  gap: 3px;
+  gap: var(--space-1);
+}
+
+.day-mobile-dots {
   margin-top: auto;
 }
 
 .day-count {
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  color: var(--text);
+  font-size: var(--fs-1);
+  color: inherit;
 }
 
-/* ── legend (Activity calendar only — 5 kind dot + label pairs) ── */
+/* ── legend (활동 달력 전용 — 종류 점 + 라벨 쌍) ─────────────── */
 .calendar-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  margin: 0.75rem 0 1.25rem;
-  font-size: var(--fs-xs);
-  color: var(--muted);
+  gap: var(--space-2) var(--space-3);
+  margin: var(--space-3) 0;
+  font-size: var(--fs-1);
+  color: var(--ink-2);
 }
 
 .legend-item {
   display: inline-flex;
   align-items: center;
-  gap: 0.3125rem;
+  gap: var(--space-1);
 }
 
-/* ── error panel ──────────────────────────────────────────────
-   --rose-*는 이 오류 패널 전용이다 — 종류 표시 점 색으로는 절대 쓰지
-   않는다. */
+/* ── error panel: 창 안 오류 상자(오류색 2px 테두리) ─────────── */
 .calendar-error-panel {
-  border-color: var(--rose-border);
-  background: var(--rose-soft);
+  border: var(--bw-2) solid var(--error);
+  background: var(--surface);
+  color: var(--error);
 }
 
 @media (max-width: 45rem) {
-  .month-grid {
-    gap: 2px;
-  }
-  /* 320px 화면에서는 내용 너비 288px를 7칸으로 나누면 칸당 39~41px라
-     44px 너비를 지킬 수 없다(계산상 불가능, 알려진 예외). 세로
-     44px 최소 높이는 유지한다. */
+  /* 320px에서 칸당 폭이 약 37px라 44px를 지킬 수 없다(계산상 불가능, 알려진
+     예외). 점은 줄이고 칸 여백도 줄여 점 4개와 숫자를 한 칸에 담는다. */
   .day-cell {
-    min-height: 44px;
-    padding: 0.25rem 0.125rem;
-    border-radius: 6px;
+    min-height: 2.75rem;
+    padding: var(--space-1) 0.1875rem;
   }
+
   .day-items {
     display: none;
   }
+
   .day-mobile-meta {
     display: flex;
+    flex-wrap: wrap;
+    row-gap: 0.125rem;
   }
-  .day-mobile-dots {
+
+  .day-mobile-dots,
+  .day-mobile-cats {
     display: flex;
+    gap: 0.125rem;
+  }
+
+  .day-mobile-dot {
+    width: 0.375rem;
+    height: 0.375rem;
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .day-cell {
-    transition: none;
-  }
-}
-
-/* 범위 밖 월 이동 글리프: 자리는 유지하되 흐리게 하고 상호작용을 끈다.
-   pointer-events: none이 마우스 hover 발생 자체를 막아, 페이지별 스킨의
-   :hover 색 전환 규칙과 충돌하지 않는다. */
+/* 범위 밖 월 이동 글리프: 자리는 유지하고 흐린 색으로 바꿔 상호작용을 끈다.
+   pointer-events: none이 hover 발생 자체를 막아 쪽별 hover 규칙과 겹치지 않는다. */
 .calendar-month-glyph.is-off {
-  opacity: 0.4;
+  color: var(--off);
   pointer-events: none;
 }

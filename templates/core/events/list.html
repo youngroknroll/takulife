@@ -42,7 +42,7 @@
     </div>
 
     <section class="layout">
-      <aside class="panel filters">
+      <aside class="panel filters window">
         {% translate "필터 열기 ▾" as filter_open_label %}
         {% translate "필터 닫기 ▴" as filter_close_label %}
         <button class="filter-toggle" type="button" data-expanded="false" data-controls="filter-body"
@@ -78,6 +78,7 @@
                 <li>
                   <label class="filter-check"{% if lang %} lang="{{ lang }}"{% endif %}>
                     <input type="checkbox" name="category" value="{{ slug }}"{% if slug in selected_category %} checked{% endif %}>
+                    <span class="dot" data-category="{{ slug }}" aria-hidden="true"></span>
                     {{ label }}
                   </label>
                 </li>
@@ -119,10 +120,10 @@
         </div>
       </aside>
 
-      <article class="panel results">
+      <article class="panel results window">
         {% if page_obj %}
-          <header class="results-head">
-            <h2 class="results-title">{% blocktranslate trimmed count counter=total_count %}검색 결과 <span class="results-count">{{ counter }}</span>개{% plural %}검색 결과 <span class="results-count">{{ counter }}</span>개{% endblocktranslate %}</h2>
+          <header class="results-head window-head">
+            <h2 class="results-title window-title">{% blocktranslate trimmed count counter=total_count %}검색 결과 <span class="results-count">{{ counter }}</span>개{% plural %}검색 결과 <span class="results-count">{{ counter }}</span>개{% endblocktranslate %}</h2>
             {# 옵션이 평범한 GET 링크라 JS 드롭다운 대신 <details>를 쓴다 — #}
             {# 네이티브 disclosure만으로 키보드 조작과 무JS 대체 수단이 공짜로 #}
             {# 생긴다. event_list.js는 바깥 클릭 시 닫는 동작만 더한다. #}
@@ -146,6 +147,13 @@
               <a class="applied-clear" href="/events/">{% translate "전체 해제" %}</a>
             </div>
           {% endif %}
+
+          {# 열 머리 줄: 넓은 화면에서 행의 칸 이름을 보여 준다. 스크린 리더에는 숨긴다. #}
+          <div class="event-index-head" aria-hidden="true">
+            <span class="eih-date">{% translate "날짜" context "목록 열 머리" %}</span>
+            <span class="eih-main">{% translate "작품 · 제목" context "목록 열 머리" %}</span>
+            <span class="eih-actions"><span class="eih-status">{% translate "상태" %}</span><span class="eih-interest">{% translate "찜" context "통계" %}</span><span class="eih-visit">{% translate "방문" context "목록 열 머리" %}</span></span>
+          </div>
 
           <div class="event-rows">
             {% for row in event_rows %}

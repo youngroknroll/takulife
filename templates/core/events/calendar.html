@@ -48,7 +48,7 @@
     </div>
 
     <section class="layout">
-      <aside class="panel filters">
+      <aside class="panel filters window">
         {% translate "필터 열기 ▾" as filter_open_label %}
         {% translate "필터 닫기 ▴" as filter_close_label %}
         <button class="filter-toggle" type="button" data-expanded="false" data-controls="filter-body"
@@ -83,6 +83,7 @@
                 <li>
                   <label class="filter-check"{% if lang %} lang="{{ lang }}"{% endif %}>
                     <input type="checkbox" name="category" value="{{ slug }}"{% if slug in selected_category %} checked{% endif %}>
+                    <span class="dot" data-category="{{ slug }}" aria-hidden="true"></span>
                     {{ label }}
                   </label>
                 </li>
@@ -118,7 +119,7 @@
         </div>
       </aside>
 
-      <article class="panel results">
+      <article class="panel results window">
         {% if active_filter_chips %}
           <div class="applied-filters">
             {% for chip in active_filter_chips %}
@@ -131,9 +132,11 @@
         {% translate "월 이동" as month_nav_label %}
         {% translate "이전 달" as prev_month_label %}
         {% translate "다음 달" as next_month_label %}
-        <nav class="calendar-month-nav" aria-label="{{ month_nav_label }}">
-          <h2 class="calendar-month-label">
+        <nav class="calendar-month-nav window-head" aria-label="{{ month_nav_label }}">
+          <h2 class="calendar-month-label window-title">
+            <span aria-hidden="true">[</span>
             <span class="calendar-month-year">{{ selected_date|date:"Y" }}</span><span class="calendar-month-sep">·</span><span class="calendar-month-name">{{ selected_date|date:"F" }}</span>
+            <span aria-hidden="true">]</span>
           </h2>
           <div class="calendar-month-controls">
             {% if prev_month %}
@@ -166,7 +169,7 @@
 
         {% include "core/partials/_calendar_grid.html" with weeks=weeks extra_query=extra_query %}
 
-        <section class="date-detail-section" id="selected-date" tabindex="-1">
+        <section class="date-detail-section window-section" id="selected-date" tabindex="-1">
           <div class="date-detail-head">
             <h2>{{ selected_date|date:"MONTH_DAY_FORMAT" }} <span class="date-detail-weekday">{{ selected_date|date:"l" }}</span></h2>
             {% if selected_events %}<span class="date-detail-count">{% blocktranslate trimmed count counter=selected_events|length %}이벤트 {{ counter }}건{% plural %}이벤트 {{ counter }}건{% endblocktranslate %}</span>{% endif %}

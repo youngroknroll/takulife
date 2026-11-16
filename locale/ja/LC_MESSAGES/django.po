@@ -3117,3 +3117,18 @@ msgstr "紐づけられた訪問記録"
 #, python-format
 msgid "검색: %(q)s"
 msgstr "検索: %(q)s"
+
+#: templates/core/events/list.html
+msgctxt "목록 열 머리"
+msgid "날짜"
+msgstr "日付"
+
+#: templates/core/events/list.html
+msgctxt "목록 열 머리"
+msgid "작품 · 제목"
+msgstr "作品 · タイトル"
+
+#: templates/core/events/list.html
+msgctxt "목록 열 머리"
+msgid "방문"
+msgstr "訪問"

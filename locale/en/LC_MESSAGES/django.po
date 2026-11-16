@@ -3136,3 +3136,18 @@ msgstr "Linked visit record"
 #, python-format
 msgid "검색: %(q)s"
 msgstr "Search: %(q)s"
+
+#: templates/core/events/list.html
+msgctxt "목록 열 머리"
+msgid "날짜"
+msgstr "Date"
+
+#: templates/core/events/list.html
+msgctxt "목록 열 머리"
+msgid "작품 · 제목"
+msgstr "Series · Title"
+
+#: templates/core/events/list.html
+msgctxt "목록 열 머리"
+msgid "방문"
+msgstr "Visit"
