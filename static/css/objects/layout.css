@@ -43,8 +43,7 @@
 .rule-list li::before {
   content: "·";
   flex: none;
-  color: var(--brand-ink);
-  font-weight: 700;
+  color: var(--ink);
   line-height: 1.5;
 }
 .side-list {
@@ -55,22 +54,17 @@
   gap: 0.5rem;
 }
 .side-list li {
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  background: var(--bg-card);
+  border: var(--bw-1) solid var(--rule);
+  background: var(--surface);
   padding: 0.5625rem 0.625rem;
 }
-/* .back-link와 같은 규칙: brand-ink, 평소엔 밑줄 없음, 호버 시 밑줄.
-   글자 크기는 변형(--row 등)과 무관하게 같은 컴포넌트는 같은 크기여야
-   한다는 판단으로 통일했다. 터치 타깃 높이는 .side-list li의 패딩이 담당한다. */
+/* 창 표면 안 링크라 --link 색에 항상 밑줄. 글자 크기는 변형과 무관하게
+   같게 통일했다. 터치 타깃 높이는 .side-list li의 패딩이 담당한다. */
 .side-list a {
-  color: var(--brand-ink);
-  text-decoration: none;
-  font-size: var(--fs-xs);
-  font-weight: 600;
-}
-.side-list a:hover {
+  color: var(--link);
   text-decoration: underline;
+  text-underline-offset: 0.2em;
+  font-size: var(--fs-1);
 }
 
 /* 칩 그룹을 감싸는 컨테이너다 */

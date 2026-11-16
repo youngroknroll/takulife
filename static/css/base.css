@@ -23,21 +23,68 @@
   box-sizing: border-box;
 }
 
-/* 링크에 밑줄을 넣지 않는다 — 색과 문맥만으로 링크임을 알 수 있게 한다. */
+/* 앵커로 이동할 때 고정 헤더와 하단 탭 바 뒤에 목표가 가려지지 않게 한다. */
+html {
+  scroll-padding-top: calc(var(--site-header-h) + var(--space-2));
+}
+
+/* 글자가 든 본문 링크(클래스 없는 a)만 항상 밑줄을 켠다. 버튼·탭·행처럼
+   클래스가 있는 링크는 각 컴포넌트가 자기 모양을 정한다. 바탕 위 링크는
+   글자색(--ink), 창 표면 안 링크는 --link 색이다(cards.css). */
 a {
+  color: var(--ink);
   text-decoration: none;
+}
+
+a:not([class]) {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+@media (hover: hover) {
+  a:not([class]):hover {
+    background: var(--select);
+    color: var(--on-select);
+    text-decoration: none;
+  }
+}
+
+a:not([class]):focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+  text-decoration: none;
+}
+
+/* 굵은 글자는 쪽 h1과 로고뿐이다. 나머지 제목·강조 요소는 본문과 같은 굵기. */
+h1, h2, h3, h4 {
+  font-weight: var(--fw-regular);
+}
+
+h1 {
+  font-weight: var(--fw-strong);
+}
+
+b, strong, th {
+  font-weight: var(--fw-regular);
+}
+
+::selection {
+  background: var(--select);
+  color: var(--on-select);
 }
 
 /* ── body ───────────────────────────────────────────────────── */
 body {
   margin: 0;
-  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Hiragino Sans", "Yu Gothic", "Noto Sans JP", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
-  line-height: 1.6;
-  color: var(--text);
-  background:
-    radial-gradient(160% 90% at 100% -10%, var(--surface) 0%, transparent 45%),
-    radial-gradient(120% 70% at -10% -20%, var(--surface) 0%, transparent 40%),
-    var(--bg);
+  font-family: var(--font);
+  font-size: var(--fs-3);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-base);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  background: var(--bg);
 }
 
 /* ── page wrapper ───────────────────────────────────────────── */
@@ -48,6 +95,8 @@ body {
 }
 
 /* ── site-wide messages (django.contrib.messages) ──────────── */
+/* 바탕 위에 놓이므로 항목마다 자기 표면과 테두리를 가진다. 종류는 색이
+   아니라 테두리 굵기·글자색으로 구분한다(오류·경고만 2px 오류색). */
 .site-messages {
   max-width: 1120px;
   margin: 0.75rem auto 0;
@@ -56,34 +105,28 @@ body {
 }
 
 .site-message {
-  margin: 0 0 0.5rem;
-  padding: 0.625rem 0.75rem;
-  border-radius: 8px;
-  font-size: 0.88rem;
+  margin: 0 0 var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface);
+  color: var(--ink);
+  border: var(--bw-1) solid var(--ink);
+  font-size: var(--fs-2);
 }
 
 .site-message-error {
-  background: var(--rose-soft);
-  color: var(--rose-ink);
-}
-
-.site-message-info {
-  border: 1px dashed var(--line);
-  background: var(--bg-soft);
-  color: #46617f;
-}
-
-.site-message-success {
-  background: var(--mint-soft);
-  color: var(--mint-ink);
+  border: var(--bw-2) solid var(--error);
+  color: var(--error);
 }
 
 /* ── focus outline (global) ─────────────────────────────────── */
-a:focus,
-button:focus,
-input:focus,
-textarea:focus,
-select:focus {
-  outline: 2px solid var(--focus);
+/* 키보드 포커스는 어디서나 2px 선택색 링이 보인다. 붙어 있는 요소는
+   각자 outline-offset을 -2px로 바꿔 안쪽에 그린다. */
+:focus-visible {
+  outline: var(--bw-2) solid var(--select);
   outline-offset: 2px;
+}
+
+/* 반전 배경(--select) 위 안쪽 링은 흰색이어야 보인다. */
+:is(.site-nav a, .account-menu-item):focus-visible {
+  outline-color: var(--on-select);
 }

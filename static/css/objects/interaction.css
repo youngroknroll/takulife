@@ -1,64 +1,23 @@
-/* ── interaction feedback: hover lift + loading spinner ──────── */
+/* ── interaction feedback: 반전 hover + loading spinner ──────── */
 /* .is-loading은 요청이 진행 중일 때 TakuAPI.setLoading이 붙였다 떼는 클래스로,
-   버튼을 비활성 스피너로 바꾼다. */
-.hover-lift {
-  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+   버튼을 비활성 스피너로 바꾼다. 아래 hover 표시는 이동·확대 없이 반전
+   (배경 --select + 글자 --on-select)만 쓴다. */
+@media (hover: hover) {
+  .chip:not(.active):hover,
+  .status-btn:not(:disabled):hover,
+  .nav-links a:not(.active):hover,
+  .top-action:hover {
+    background: var(--select);
+    border-color: var(--select);
+    color: var(--on-select);
+  }
 }
 
-.hover-lift:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow);
-  border-color: var(--border-soft);
-}
-
-.hover-lift:active {
-  transform: translateY(0);
-}
-
-.chip,
-.status-btn,
-.status,
-.nav-links a,
-.top-action {
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-}
-
-.chip:not(.active):hover {
-  background: var(--brand-soft);
-  border-color: var(--brand);
-}
-
-.status-btn:hover {
-  border-color: var(--border-soft);
-}
-
-.nav-links a:not(.active):hover {
-  background: var(--brand-soft);
-  border-color: var(--brand);
-}
-
-.top-action:hover {
-  filter: brightness(0.98);
-  border-color: var(--brand);
-}
-
-/* ── glint (카드 호버/포커스 시 반짝이는 ✦ 표시) ──────────────────── */
-/* `<span class="glint">✦</span>`를 .hover-lift가 붙은 요소 안에 두면
-   호버·포커스 시에만 나타난다. */
+/* 카드 위 장식 글리프. 호버 때만 켜지던 반짝임은 없애고 숨겨 둔다. */
 .glint {
   position: absolute;
   opacity: 0;
-  transform: scale(0.7);
-  color: #fff;
-  text-shadow: 0 0 7px rgba(28, 34, 46, 0.55);
-  transition: opacity 0.15s ease, transform 0.15s ease;
   pointer-events: none;
-}
-
-.hover-lift:hover .glint,
-.hover-lift:focus-within .glint {
-  opacity: 1;
-  transform: scale(1);
 }
 
 .is-loading {
@@ -117,19 +76,8 @@ a.is-loading::after {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  /* 회전을 멈추고 정지된 링만 남긴다. 이 블록이 hover-lift와 glint만 끄고
-   * btn-spin은 계속 돌게 두고 있었다. */
+  /* 회전을 멈추고 정지된 링만 남긴다. */
   .is-loading::after {
     animation: none;
-  }
-  .hover-lift {
-    transition: none;
-  }
-  .hover-lift:hover,
-  .hover-lift:active {
-    transform: none;
-  }
-  .glint {
-    transition: none;
   }
 }
