@@ -58,7 +58,10 @@ class _ChipCollector(HTMLParser):
 
 @pytest.mark.django_db
 class TestStatusPagesQFilter:
-    """q는 /archive/와 /archive/statuses/의 status_rows를 서버에서 함께 필터링한다."""
+    """q는 /archive/와 /archive/statuses/의 status_rows를 서버에서 함께 필터링한다.
+
+    방문 목록(`/archive/visits/`)의 전체 칩도 같은 규칙을 쓴다.
+    """
 
     def test_전체_보기에서_검색어가_행사_제목과_일치하면_해당_행사만_노출된다(
         self, user_client, make_event, make_status
@@ -183,7 +186,7 @@ class TestStatusPagesQFilter:
         assert "q=" in pager_query
 
     def test_전체_보기에서_검색어가_있을_때_상태_칩_링크는_검색어를_유지한다(self, user_client):
-        """core/views.py는 이미 search_suffix를 context에 계산해 두지만(838,845)
+        """web/views/archive.py는 이미 search_suffix를 context에 계산해 두지만(146, 350)
         index.html이 칩 href에서 이를 쓰지 않은 것이 버그였다(2026-07-23 v2
         계획서 §동반 수정 1). 검색 중에 상태 칩을 눌러도 검색어가 조용히
         사라지면 안 된다."""
@@ -192,8 +195,8 @@ class TestStatusPagesQFilter:
         resp = client.get("/archive/?q=test")
 
         # Django가 href 속성의 `{{ search_suffix }}`를 자동 이스케이프해 원본
-        # HTML에는 `&amp;`로 남는다(브라우저가 다시 `&`로 해석 — core/views.py
-        # :836-837 참고). 언이스케이프하지 않으면 이 단언이 `&`를 찾지 못한다.
+        # HTML에는 `&amp;`로 남는다(브라우저가 다시 `&`로 해석 — web/views/archive.py
+        # :140-142 참고). 언이스케이프하지 않으면 이 단언이 `&`를 찾지 못한다.
         content = html.unescape(resp.content.decode())
         assert 'href="/archive/?status=planned&q=test"' in content
 
@@ -231,6 +234,32 @@ class TestStatusPagesQFilter:
         assert len(전체_칩들) == 1
         쿼리 = parse_qs(urlsplit(urljoin(요청_주소, html.unescape(전체_칩들[0]))).query)
         assert 쿼리 == {"q": ["가"], "sort": [정렬]}
+
+    @pytest.mark.parametrize(
+        ("경로", "필터", "정렬"),
+        [
+            pytest.param("/archive/", "status=planned", "created_at", id="기록장"),
+            pytest.param("/archive/statuses/", "status=planned", "created_at", id="나의_일정"),
+            pytest.param("/archive/visits/", "filter=unofficial", "oldest", id="방문_목록"),
+        ],
+    )
+    def test_전체_칩은_검색어가_없어도_현재_정렬을_유지한다(
+        self, user_client, make_event, make_status, make_entry, make_visit, 경로, 필터, 정렬
+    ):
+        user, client = user_client()
+        make_status(user, event=make_event(title="가나다 행사"), status="planned")
+        entry = make_entry(user, title="가나다 장소")
+        make_visit(user, personal_entry=entry, visited_on=date(2026, 11, 1))
+        요청_주소 = f"{경로}?{필터}&sort={정렬}"
+
+        resp = client.get(요청_주소)
+
+        parser = _ChipCollector()
+        parser.feed(resp.content.decode())
+        전체_칩들 = [href for text, href in parser.chips if text == "전체"]
+        assert len(전체_칩들) == 1
+        쿼리 = parse_qs(urlsplit(urljoin(요청_주소, html.unescape(전체_칩들[0]))).query)
+        assert 쿼리 == {"sort": [정렬]}
 
 
 # ---------------------------------------------------------------------------
