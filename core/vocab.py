@@ -198,7 +198,7 @@ EVENT_STATUS_LABELS: dict[str, str] = dict(EVENT_STATUS)
 # 쓰이는데, 달력의 상태 필터는 이미 value="" 라디오로 "전체 상태"를
 # 기본값으로 삼고 있어 "all"을 EVENT_STATUS에 넣으면 "전체" 라디오가
 # 중복으로 하나 더 생긴다. 이 라벨 전용 항목은 목록 화면의 status=all이
-# 활성일 때 _active_filter_chips(core/views.py)가 원문 "all" 대신 사람이
+# 활성일 때 _active_filter_chips(web/views/events.py)가 원문 "all" 대신 사람이
 # 읽을 라벨을 보여줄 수 있게 하기 위해서만 존재한다.
 EVENT_STATUS_LABELS["all"] = _("전체")
 

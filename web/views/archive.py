@@ -243,7 +243,7 @@ def archive_visits(request):
     # 안정적으로 유지된다. 라벨은 여기서 해석해 archive/queries.py가
     # core.vocab을 임포트하지 않게 한다(순환 의존 방지).
     pairs = user_visit_category_values(user)
-    # 토큰은 한국어 원문(저장값과 맞대는 값)이고 표시 라벨만 요청 언어로 옮긴다.
+    # 토큰은 고정 7종이면 한국어 원문, 새 카테고리면 DB 라벨이다. 표시 라벨만 요청 언어로 옮긴다.
     label_by_token = {
         CATEGORY_SOURCE_LABELS[slug]: CATEGORY_LABELS[slug] for slug in CATEGORY_SOURCE_LABELS
     }

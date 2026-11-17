@@ -246,6 +246,8 @@ def _subject_view(obj, *, category_labels=None):
     비어 있으며, 굿즈는 기간 날짜가 None이다.
 
     ``category_labels``는 슬러그 -> 라벨 맵이다. 없으면 이 행 한 건만 푼다.
+    여러 행을 그리는 목록은 ``_subject_category_labels``로 만든 맵을 넘겨야
+    한다. 빼먹으면 새 카테고리 행마다 조회가 나간다.
     """
     if obj.event_id is not None:
         event = obj.event

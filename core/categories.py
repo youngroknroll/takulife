@@ -1,5 +1,6 @@
-"""core/categories.py — 카테고리 팔레트 슬롯 색상표(트랙 27 2단계).
+"""core/categories.py — 카테고리 어휘(라벨 해석·언어 판정)와 팔레트 슬롯 색상표.
 
+팔레트 슬롯 색상표(트랙 27 2단계):
 Category.palette_slot(0~PALETTE_SLOT_COUNT-1)이 실제로 어떤 색인지의
 단일 출처. static/css/tokens.css의 --cat-slot-{n}-soft/-ink 값과
 반드시 일치해야 한다 — 여기 값이 바뀌면 CSS도 같이 바꿔야 한다.
@@ -53,9 +54,12 @@ def category_display_labels(slugs) -> dict:
     """슬러그 -> 표시 라벨. 고정 7종은 번역되는 상수 라벨을, 그 밖은 카테고리
     행의 라벨을 한 번의 조회로 푼다. 행이 없으면 슬러그를 그대로 쓰고, 빈
     슬러그는 결과에 넣지 않는다."""
-    unique = {slug for slug in slugs if slug}
+    unique = dict.fromkeys(slug for slug in slugs if slug)
     db_labels = category_labels_for(slug for slug in unique if slug not in CATEGORY_LABELS)
-    return {slug: CATEGORY_LABELS.get(slug) or db_labels.get(slug, slug) for slug in unique}
+    return {
+        slug: CATEGORY_LABELS[slug] if slug in CATEGORY_LABELS else db_labels.get(slug, slug)
+        for slug in unique
+    }
 
 
 def category_label_lang(label) -> str:
