@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n static category_dots %}
+{% load i18n static category_dots category_lang %}
 {% block title %}{% translate "이벤트 목록" context "페이지 제목" %} — {{ project_name }}{% endblock %}
 {% block og_title %}{% translate "이벤트 목록" context "페이지 제목" %} — {{ project_name }}{% endblock %}
 {% block description %}{% translate "서울·경기·인천 등 지역과 카테고리로 팝업스토어, 콜라보 카페, 전시 등 서브컬처 행사를 검색하고 필터링하세요." %}{% endblock %}
@@ -142,7 +142,7 @@
           {% if active_filter_chips %}
             <div class="applied-filters">
               {% for chip in active_filter_chips %}
-                <span class="applied-chip">{{ chip }}</span>
+                <span class="applied-chip"{% if chip in active_filter_ko_chips %} lang="ko"{% endif %}>{{ chip }}</span>
               {% endfor %}
               <a class="applied-clear" href="/events/">{% translate "전체 해제" %}</a>
             </div>
@@ -179,7 +179,7 @@
                   <h2 class="event-index-title" lang="ko"><a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a></h2>
                   <p class="event-index-meta">
                     {% if row.category_label %}
-                      <span class="event-index-cat">{{ row.category_label }}</span>
+                      <span class="event-index-cat"{% category_lang_attr row.category_label %}>{{ row.category_label }}</span>
                       <span class="event-index-dot" aria-hidden="true"></span>
                     {% endif %}
                     {% if row.region_label and row.event.location_name %}
@@ -227,7 +227,7 @@
           {% if active_filter_chips %}
             <div class="applied-filters">
               {% for chip in active_filter_chips %}
-                <span class="applied-chip">{{ chip }}</span>
+                <span class="applied-chip"{% if chip in active_filter_ko_chips %} lang="ko"{% endif %}>{{ chip }}</span>
               {% endfor %}
               <a class="applied-clear" href="/events/">{% translate "전체 해제" %}</a>
             </div>

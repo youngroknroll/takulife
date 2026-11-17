@@ -9,7 +9,12 @@ Category.palette_slot(0~PALETTE_SLOT_COUNT-1)이 실제로 어떤 색인지의
 순서를 core.vocab.CATEGORY 튜플 순서와 맞춰야 한다.
 """
 
+from django.utils import translation
+
 from core.vocab import CATEGORY_LABELS
+
+_HANGUL_FIRST = 0xAC00
+_HANGUL_LAST = 0xD7A3
 
 
 def category_exists(slug: str) -> bool:
@@ -51,6 +56,17 @@ def category_display_labels(slugs) -> dict:
     unique = {slug for slug in slugs if slug}
     db_labels = category_labels_for(slug for slug in unique if slug not in CATEGORY_LABELS)
     return {slug: CATEGORY_LABELS.get(slug) or db_labels.get(slug, slug) for slug in unique}
+
+
+def category_label_lang(label) -> str:
+    """라벨 요소에 붙일 언어 코드. 한국어 화면이 아니고 라벨에 한글이 있을 때만
+    "ko"이고, 그 밖은 빈 문자열이다."""
+    language = translation.get_language()
+    if language is None or language.startswith("ko"):
+        return ""
+    if any(_HANGUL_FIRST <= ord(char) <= _HANGUL_LAST for char in str(label)):
+        return "ko"
+    return ""
 
 
 def reconcile_palette_slot(*, category_slug: str, published_count: int) -> None:

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n static category_dots %}
+{% load i18n static category_dots category_lang %}
 {% block title %}{% translate "이벤트 달력" %} — {{ project_name }}{% endblock %}
 {% block og_title %}{% translate "이벤트 달력" %} — {{ project_name }}{% endblock %}
 {% block description %}{% translate "날짜별로 팝업스토어, 콜라보 카페, 전시 등 서브컬처 행사 일정을 달력에서 한눈에 확인하세요." %}{% endblock %}
@@ -123,7 +123,7 @@
         {% if active_filter_chips %}
           <div class="applied-filters">
             {% for chip in active_filter_chips %}
-              <span class="applied-chip">{{ chip }}</span>
+              <span class="applied-chip"{% if chip in active_filter_ko_chips %} lang="ko"{% endif %}>{{ chip }}</span>
             {% endfor %}
             <a class="applied-clear" href="/events/calendar/">{% translate "전체 해제" %}</a>
           </div>
@@ -182,7 +182,7 @@
                   <div class="agenda-body">
                     <p class="agenda-meta">
                       {% if row.category_label %}
-                        <span class="agenda-cat">{{ row.category_label }}</span>
+                        <span class="agenda-cat"{% category_lang_attr row.category_label %}>{{ row.category_label }}</span>
                       {% endif %}
                       {% if row.category_label and row.status_label %}
                         <span class="agenda-dot" aria-hidden="true"></span>

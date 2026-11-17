@@ -52,7 +52,7 @@
             <a class="chip{% if not selected_filter %} active{% endif %}"{% if not selected_filter %} aria-current="page"{% endif %} href="?{% if has_query %}q={{ q|urlencode }}{% endif %}">{% translate "전체" %}</a>
             {% for chip in category_chips %}
               {% with cat_token="cat:"|add:chip.token %}
-              <a class="chip{% if selected_filter == cat_token %} active{% endif %}"{% if selected_filter == cat_token %} aria-current="page"{% endif %} href="?filter=cat:{{ chip.token|urlencode }}{{ search_suffix }}">{{ chip.label }}</a>
+              <a class="chip{% if selected_filter == cat_token %} active{% endif %}"{% if selected_filter == cat_token %} aria-current="page"{% endif %} href="?filter=cat:{{ chip.token|urlencode }}{{ search_suffix }}"{% if chip.lang %} lang="{{ chip.lang }}"{% endif %}>{{ chip.label }}</a>
               {% endwith %}
             {% endfor %}
             {% if has_unofficial %}

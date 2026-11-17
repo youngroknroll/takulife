@@ -32,7 +32,7 @@ from archive.queries import (
     user_visit_category_values,
     user_visit_record_counts,
 )
-from core.categories import category_display_labels
+from core.categories import category_display_labels, category_label_lang
 from core.query_params import is_safe_pk_string
 from core.vocab import (
     ARCHIVE_INTEREST_SORT,
@@ -252,19 +252,24 @@ def archive_visits(request):
     category_chips = []
     seen_labels: set = set()
     for event_cat, personal_cat in pairs:
+        is_new_category = False
         if event_cat:
             # 새 카테고리는 슬러그가 아니라 DB 라벨을 토큰으로 쓴다.
             token = CATEGORY_SOURCE_LABELS.get(event_cat) or str(event_category_labels[event_cat])
+            is_new_category = event_cat not in CATEGORY_SOURCE_LABELS
         elif personal_cat:
             token = personal_cat
         else:
             continue
         if token not in seen_labels:
             categories.append(token)
+            label = label_by_token.get(token) or personal_category_label(token)
             category_chips.append(
                 {
                     "token": token,
-                    "label": label_by_token.get(token) or personal_category_label(token),
+                    "label": label,
+                    # 개인 항목 칩은 사용자 입력이라 새 카테고리 칩에만 붙인다.
+                    "lang": category_label_lang(label) if is_new_category else "",
                 }
             )
             seen_labels.add(token)
