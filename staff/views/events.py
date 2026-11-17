@@ -95,7 +95,7 @@ def _build_event_rows(events):
     category_labels = category_display_labels(event.category for event in events)
     rows = []
     for event in events:
-        is_published = event.publish_status == Event.PublishStatus.PUBLISHED
+        is_published = event.is_published
         rows.append(
             {
                 "event": event,
@@ -617,7 +617,7 @@ def staff_event_toggle_publish(request, pk):
             # 토글은 읽은 값을 뒤집는 연산이라, 잠그지 않으면 동시 요청이
             # 같은 상태를 읽고 경쟁한다.
             event = get_object_or_404(Event.objects.select_for_update(), pk=pk)
-            if event.publish_status == Event.PublishStatus.PUBLISHED:
+            if event.is_published:
                 unpublish_event(event=event)
                 action = StaffActionLog.Action.EVENT_UNPUBLISH
                 success_message = "게시가 내려갔습니다."

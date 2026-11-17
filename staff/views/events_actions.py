@@ -71,7 +71,7 @@ class StaffEventPublishStatusView(APIView):
         except (MissingOfficialUrlError, DuplicateOfficialUrlError, PublishEventError) as exc:
             return error_response(_republish_error_message(exc), 400)
 
-        is_published = event.publish_status == Event.PublishStatus.PUBLISHED
+        is_published = event.is_published
         return Response(
             {
                 "id": event.id,
@@ -101,7 +101,7 @@ class StaffEventVerifiedView(APIView):
                 )
             )
 
-        is_published = event.publish_status == Event.PublishStatus.PUBLISHED
+        is_published = event.is_published
         return Response(
             {
                 "id": event.id,
@@ -161,7 +161,7 @@ class StaffEventBulkUnpublishView(APIView):
         try:
             with transaction.atomic():
                 event = Event.objects.select_for_update().get(pk=event_id)
-                if event.publish_status == Event.PublishStatus.PUBLISHED:
+                if event.is_published:
                     unpublish_event(event=event)
                     StaffActionLog.objects.create(
                         **_action_log_kwargs(

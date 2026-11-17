@@ -14,7 +14,7 @@
     <div class="events-form-topbar">
       <a class="staff-cta" href="/staff/events/{% if list_query %}?{{ list_query }}{% endif %}">← 목록으로</a>
       <span class="mono events-form-topbar-id">#{{ event.id }}</span>
-      <span class="events-status-badge events-status-badge--{{ event.publish_status }}">{% if event.publish_status == "published" %}게시{% else %}비공개{% endif %}</span>
+      <span class="events-status-badge events-status-badge--{{ event.publish_status }}">{% if event.is_published %}게시{% else %}비공개{% endif %}</span>
     </div>
 
     {% if field_errors.non_field %}
@@ -127,7 +127,7 @@
           </div>
           <div class="events-rail-card-body">
             <p class="events-rail-note">
-              {% if event.publish_status == "published" %}
+              {% if event.is_published %}
                 현재 게시 중입니다. 내리면 공개 사이트에서 즉시 숨겨집니다(재게시 가능).
               {% else %}
                 현재 비공개(초안)입니다. 다시 게시하면 공개 사이트에 노출됩니다.
@@ -135,7 +135,7 @@
             </p>
             <form method="post" action="/staff/events/{{ event.id }}/toggle-publish/{% if list_query %}?{{ list_query }}{% endif %}" data-submit-guard>
               {% csrf_token %}
-              {% if event.publish_status == "published" %}
+              {% if event.is_published %}
                 <button class="events-rail-btn events-rail-btn--neutral" type="submit">게시 내리기</button>
               {% else %}
                 <button class="events-rail-btn events-rail-btn--accent" type="submit">다시 게시</button>
