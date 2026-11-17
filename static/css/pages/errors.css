@@ -47,7 +47,7 @@
   line-height: var(--lh-base);
 }
 
-@media (min-width: 45rem) {
+@media (min-width: 45.01rem) {
   .error-page-title {
     font-size: var(--fs-5);
   }
@@ -103,7 +103,7 @@
   color: inherit;
 }
 
-@media (min-width: 45rem) {
+@media (min-width: 45.01rem) {
   .error-page-link {
     font-size: var(--fs-3);
   }

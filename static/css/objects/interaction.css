@@ -73,6 +73,7 @@ a.is-loading::after {
   left: 50%;
   width: 0.85rem;
   height: 0.85rem;
+  box-sizing: border-box;
   margin: -0.425rem 0 0 -0.425rem;
   vertical-align: baseline;
 }
