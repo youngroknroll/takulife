@@ -19,12 +19,12 @@
       <a href="/events/">{% translate "‹ 행사 목록" %}</a>{% if event.category %}<span aria-hidden="true"> · </span><a href="/events/?category={{ event.category }}">{{ category_label }}</a>{% endif %}
     </nav>
 
-    <div class="event-detail-grid">
+    <div class="event-detail-grid window">
       <div class="event-detail-main">
         {% if category_label %}
           <div class="event-detail-cat-row">
-            <span class="event-detail-cat-bar" aria-hidden="true" style="background: var(--cat-{{ event.category|slugify }}-ink, var(--brand-ink));"></span>
-            <span class="event-detail-cat-label" style="color: var(--cat-{{ event.category|slugify }}-ink, var(--brand-ink));">{{ category_label }}</span>
+            <span class="event-detail-cat-bar" aria-hidden="true" data-category="{{ event.category|slugify }}"></span>
+            <span class="event-detail-cat-label">{{ category_label }}</span>
           </div>
         {% endif %}
         {% if event.work_title %}
@@ -73,7 +73,7 @@
 
         <div class="event-detail-actions">
           <div class="status-row" data-status-error-container>
-            <button class="event-detail-pill event-detail-pill-interest{% if user_interested %} active{% endif %}" type="button"
+            <button class="event-detail-pill event-detail-pill-interest interest-btn{% if user_interested %} active{% endif %}" type="button"
               data-interest-toggle
               data-toast
               data-event-id="{{ event.id }}"
@@ -88,7 +88,7 @@
           {% endif %}
         </div>
 
-        <section class="event-detail-participation">
+        <section class="event-detail-participation window-section">
           <h2>{% translate "참여 상태" %}</h2>
           {% if user_status %}
             <p class="panel-note" style="margin: 0 0 0.625rem;">{% translate "현재 상태:" %} <span class="status {{ user_status }}">{{ user_status_label }}</span></p>
@@ -130,14 +130,14 @@
         </section>
 
         {% if event.summary %}
-          <section class="event-detail-section">
+          <section class="event-detail-section window-section">
             <h2>{% translate "행사 소개" %}</h2>
             <p lang="ko">{{ event.summary }}</p>
           </section>
         {% endif %}
 
         {% if event.official_url %}
-          <section class="event-detail-section">
+          <section class="event-detail-section window-section">
             <h2>{% translate "공식 공지 · 특전" %}</h2>
             {# TODO(backend): 구조화된 공지·특전(EventNotice) 데이터 연결 지점 #}
             <p>{% translate "공식 공지·특전 정보는 아직 준비 중입니다. 운영 시간·예약 등 최신 내용은 공식 페이지에서 확인해 주세요." %}</p>
@@ -147,8 +147,8 @@
     </div>
 
     {% if event.location_name %}
-      <section class="event-detail-location">
-        <h2>{% translate "위치" %}</h2>
+      <section class="event-detail-location window">
+        <h2 class="window-title">{% translate "위치" %}</h2>
         <p class="event-detail-location-name" lang="ko">{{ event.location_name }}</p>
         {% if region_label %}<p class="event-detail-location-region">{{ region_label }}</p>{% endif %}
         <a class="event-detail-location-link" href="https://map.naver.com/p/search/{{ event.location_name|urlencode }}" target="_blank" rel="noopener">{% translate "지도 앱에서 열기" %}</a>
@@ -158,14 +158,14 @@
     {% endif %}
 
     {% if related_events %}
-      <section class="event-detail-related">
-        <div class="event-detail-related-head">
-          <h2>{% translate "이런 행사도 있어요" %}</h2>
+      <section class="event-detail-related window">
+        <div class="event-detail-related-head window-head">
+          <h2 class="window-title">{% translate "이런 행사도 있어요" %}</h2>
           <a href="/events/">{% translate "행사 목록 →" %}</a>
         </div>
         <div class="event-detail-related-rows">
           {% for r in related_events %}
-            <a class="event-detail-related-row" href="/events/{{ r.event.id }}/" style="border-left-color: var(--cat-{{ r.category_slug|slugify }}-ink, var(--brand-ink));">
+            <a class="event-detail-related-row" href="/events/{{ r.event.id }}/" data-category="{{ r.category_slug|slugify }}">
               <span class="event-detail-related-body">
                 {% if r.event.work_title %}<span class="event-detail-related-work" lang="ko">{{ r.event.work_title }}</span>{% endif %}
                 <span class="event-detail-related-title" lang="ko">{{ r.event.title }}</span>
