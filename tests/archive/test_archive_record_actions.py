@@ -202,3 +202,31 @@ class TestVisitGuidanceMoved:
         resp = client.get("/archive/visits/new/")
 
         assert "기록 안내" in resp.content.decode()
+
+
+@pytest.mark.django_db
+def test_비공개_행사의_방문_기록은_상세와_수정_화면이_열리고_행사_상세_링크를_싣지_않으며_삭제하면_홈_기록_대기에_다시_나온다(
+    user_client, make_draft_event, make_status, make_visit
+):
+    user, client = user_client()
+    draft = make_draft_event(id=920_001, title="비공개 방문 행사")
+    make_status(user, event=draft, status=UserEventStatus.Status.VISITED)
+    record = make_visit(user, event=draft, visited_on="2026-06-01", pk=910_001)
+
+    # 상세와 수정 화면은 열리지만 공개 행사 상세로 가는 링크는 싣지 않는다.
+    detail_resp = client.get(f"/archive/visits/{record.id}/")
+    edit_resp = client.get(f"/archive/visits/{record.id}/edit/")
+
+    assert detail_resp.status_code == 200
+    assert f"/events/{draft.id}/" not in _hrefs(detail_resp)
+    assert edit_resp.status_code == 200
+    assert f"/events/{draft.id}/" not in _hrefs(edit_resp)
+
+    # 기록을 지워도 방문 완료 상태는 남고, 홈 기록 대기에 다시 나온다.
+    delete_resp = client.delete(f"/api/visit-records/{record.id}/")
+    home_resp = client.get("/")
+
+    assert delete_resp.status_code == 204
+    status_after = UserEventStatus.objects.get(user=user, event=draft)
+    assert status_after.status == UserEventStatus.Status.VISITED
+    assert f"/archive/visits/new/?subject=event:{draft.id}" in _hrefs(home_resp)

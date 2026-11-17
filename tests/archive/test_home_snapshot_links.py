@@ -201,6 +201,63 @@ def test_홈의_최근_등록한_굿즈_카드는_본인_굿즈의_상세_주소
     assert 굿즈_주소들 == [f"/collection/{굿즈.id}/"]
 
 
+class _굿즈_칸_수집기(HTMLParser):
+    """`li.snapshot-goods-cell`마다 (빈 칸 여부, 안의 `a` 수)를 모은다."""
+
+    def __init__(self):
+        super().__init__()
+        self.칸들 = []
+        self.격자_수 = 0
+        self._칸_안 = False
+
+    def handle_starttag(self, tag, attrs):
+        클래스 = (dict(attrs).get("class") or "").split()
+        if "snapshot-goods-grid" in 클래스:
+            self.격자_수 += 1
+        elif tag == "li" and "snapshot-goods-cell" in 클래스:
+            self._칸_안 = True
+            self.칸들.append({"빈_칸": "snapshot-goods-cell--empty" in 클래스, "링크_수": 0})
+        elif tag == "a" and self._칸_안:
+            self.칸들[-1]["링크_수"] += 1
+
+    def handle_endtag(self, tag):
+        if tag == "li":
+            self._칸_안 = False
+
+
+@pytest.mark.parametrize(
+    "굿즈_수",
+    [
+        pytest.param(0, id="굿즈_0개"),
+        pytest.param(1, id="굿즈_1개"),
+        pytest.param(3, id="굿즈_3개"),
+        pytest.param(4, id="굿즈_4개"),
+        pytest.param(5, id="굿즈_5개"),
+    ],
+)
+def test_최근_굿즈_격자는_굿즈_수와_상관없이_여섯_칸을_채우고_굿즈가_없으면_격자를_내지_않는다(
+    user_client, make_event, make_status, make_collection_item, 굿즈_수
+):
+    user, client = user_client()
+    # 굿즈가 없어도 패널이 그려지도록 기록 대기 행을 하나 둔다.
+    make_status(user, make_event(), status="visited")
+    for 번호 in range(굿즈_수):
+        make_collection_item(user, name=f"굿즈 {번호}")
+
+    resp = client.get("/")
+
+    assert resp.status_code == 200
+    수집기 = _굿즈_칸_수집기()
+    수집기.feed(resp.content.decode())
+    if 굿즈_수 == 0:
+        assert 수집기.격자_수 == 0
+        assert 수집기.칸들 == []
+    else:
+        assert len(수집기.칸들) == 6
+        assert sum(칸["빈_칸"] for 칸 in 수집기.칸들) == 6 - 굿즈_수
+        assert sum(칸["링크_수"] > 0 for 칸 in 수집기.칸들) == 굿즈_수
+
+
 def test_최근_등록한_굿즈_카드의_사진과_이름은_같은_링크_안에_있다(
     user_client, make_collection_item
 ):

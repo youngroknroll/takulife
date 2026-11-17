@@ -211,8 +211,8 @@ class CollectionItemSerializer(serializers.ModelSerializer):
     때문이다.
     """
 
-    # event는 게시된 event로만 한정한다(VisitRecordSerializer/
-    # UserEventStatusSerializer와 같은 보호 장치).
+    # event는 게시된 event로만 한정한다(UserEventStatusSerializer와 같은 보호
+    # 장치). 방문 기록은 별도 규칙(archive.queries.list_user_visit_target_events)이다.
     event = serializers.PrimaryKeyRelatedField(
         queryset=Event.objects.published(), required=False, allow_null=True
     )
