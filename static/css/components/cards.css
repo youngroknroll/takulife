@@ -575,3 +575,19 @@ h1.window-title::after {
     justify-content: space-between;
   }
 }
+
+/* 시리즈 색 연결: .gi-0..gi-12가 --series-ink를 시리즈 토큰에 묶는다.
+   컬렉션·방문 쪽이 같이 쓰므로 쪽 접두사 없이 한 벌만 둔다. */
+.gi-0 { --series-ink: var(--ink-2); }
+.gi-1 { --series-ink: var(--series-1-ink); }
+.gi-2 { --series-ink: var(--series-2-ink); }
+.gi-3 { --series-ink: var(--series-3-ink); }
+.gi-4 { --series-ink: var(--series-4-ink); }
+.gi-5 { --series-ink: var(--series-5-ink); }
+.gi-6 { --series-ink: var(--series-6-ink); }
+.gi-7 { --series-ink: var(--series-7-ink); }
+.gi-8 { --series-ink: var(--series-8-ink); }
+.gi-9 { --series-ink: var(--series-9-ink); }
+.gi-10 { --series-ink: var(--series-10-ink); }
+.gi-11 { --series-ink: var(--series-11-ink); }
+.gi-12 { --series-ink: var(--series-12-ink); }

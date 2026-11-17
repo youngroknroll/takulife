@@ -445,19 +445,6 @@
   }
 }
 
-/* 화면에는 안 보이고 화면읽기 프로그램에는 읽히는 글자("(필수)"). */
-.auth-page .sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
 .auth-required-legend {
   margin: 0 0 var(--space-3);
   font-size: var(--fs-1);

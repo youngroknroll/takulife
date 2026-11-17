@@ -490,20 +490,6 @@
   font-size: var(--fs-2);
 }
 
-/* ── sr-only (페이지 스코프 복제본 — 저장소 전역 유틸 없음, 형제 페이지
-   동일 관례) ─────────────────────────────────────────────────────────── */
-.personal-detail-page .sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
 /* ── 모바일 고정 CTA 바 — cta_visibility.js가 [data-cta-fixed]의 hidden을
    토글한다. 단일 버튼, 하단 탭 막대 바로 위에 놓인다. ───────────────── */
 .personal-detail-page .personal-detail-cta-bar {
