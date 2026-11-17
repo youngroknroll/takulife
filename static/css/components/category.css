@@ -15,3 +15,18 @@
   border: var(--bw-1) solid var(--rule);
   color: var(--ink-2);
 }
+
+/* 스태프가 만든 카테고리의 점 색. 슬롯 번호는 서버가 내려 data-palette-slot에 담는다.
+   고정 카테고리가 반납한 0~6번도 새 카테고리가 받을 수 있어 12줄이 모두 필요하다. */
+[data-palette-slot="0"] { --dot-slot: var(--cat-slot-0-ink); }
+[data-palette-slot="1"] { --dot-slot: var(--cat-slot-1-ink); }
+[data-palette-slot="2"] { --dot-slot: var(--cat-slot-2-ink); }
+[data-palette-slot="3"] { --dot-slot: var(--cat-slot-3-ink); }
+[data-palette-slot="4"] { --dot-slot: var(--cat-slot-4-ink); }
+[data-palette-slot="5"] { --dot-slot: var(--cat-slot-5-ink); }
+[data-palette-slot="6"] { --dot-slot: var(--cat-slot-6-ink); }
+[data-palette-slot="7"] { --dot-slot: var(--cat-slot-7-ink); }
+[data-palette-slot="8"] { --dot-slot: var(--cat-slot-8-ink); }
+[data-palette-slot="9"] { --dot-slot: var(--cat-slot-9-ink); }
+[data-palette-slot="10"] { --dot-slot: var(--cat-slot-10-ink); }
+[data-palette-slot="11"] { --dot-slot: var(--cat-slot-11-ink); }

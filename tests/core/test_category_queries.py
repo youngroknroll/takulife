@@ -10,6 +10,7 @@
 
 import pytest
 
+from core.categories import palette_slot_by_slug
 from core.models import Category
 from core.vocab import CATEGORY, is_valid_category
 
@@ -59,3 +60,35 @@ def test_알_수_없는_슬러그의_라벨_조회는_슬러그를_그대로_돌
     from core.categories import category_label
 
     assert category_label("존재하지_않는_슬러그") == "존재하지_않는_슬러그"
+
+
+def test_슬롯이_배정된_카테고리가_있을_때_슬롯_맵을_조회하면_비활성_포함_배정된_것만_쿼리_한_번으로_돌려준다(
+    django_assert_num_queries,
+):
+    활성 = Category.objects.create(slug="slot_active_market", label="슬롯 활성 마켓")
+    비활성 = Category.objects.create(
+        slug="slot_retired_market", label="슬롯 폐지 마켓", is_active=False
+    )
+    미배정 = Category.objects.create(slug="slot_empty_market", label="슬롯 없는 마켓")
+    Category.objects.filter(pk=미배정.pk).update(palette_slot=None)
+    활성.refresh_from_db()
+    비활성.refresh_from_db()
+
+    with django_assert_num_queries(1):
+        슬롯_맵 = palette_slot_by_slug()
+
+    assert 슬롯_맵[활성.slug] == 활성.palette_slot
+    assert 슬롯_맵[비활성.slug] == 비활성.palette_slot
+    assert 미배정.slug not in 슬롯_맵
+
+
+def test_슬롯이_재배정되면_다음_슬롯_맵_조회가_바뀐_슬롯을_돌려준다():
+    category = Category.objects.create(slug="slot_moved_market", label="슬롯 이동 마켓")
+    바뀌기_전_슬롯 = palette_slot_by_slug()[category.slug]
+    새_슬롯 = Category.PALETTE_SLOT_COUNT - 1
+    assert 바뀌기_전_슬롯 != 새_슬롯
+    Category.objects.filter(pk=category.pk).update(palette_slot=새_슬롯)
+
+    슬롯_맵 = palette_slot_by_slug()
+
+    assert 슬롯_맵[category.slug] == 새_슬롯

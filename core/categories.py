@@ -31,6 +31,17 @@ def category_label(slug: str) -> str:
     return label if label is not None else slug
 
 
+def category_labels_for(slugs) -> dict[str, str]:
+    """슬러그들의 라벨을 한 번의 조회로 slug → label로 돌려준다(정렬 순서 유지).
+    행이 없는 슬러그는 결과에 없다 — 슬러그 폴백은 호출부가 한다."""
+    from core.models import Category
+
+    slugs = list(slugs)
+    if not slugs:
+        return {}
+    return dict(Category.objects.filter(slug__in=slugs).values_list("slug", "label"))
+
+
 def reconcile_palette_slot(*, category_slug: str, published_count: int) -> None:
     """카테고리 팔레트 슬롯 반납·재획득을 판단·수행한다(트랙 27 6단계).
 
@@ -67,6 +78,14 @@ def reconcile_palette_slot(*, category_slug: str, published_count: int) -> None:
     elif not should_have_slot and category.palette_slot is not None:
         category.palette_slot = None
         category.save(update_fields=["palette_slot"])
+
+
+def palette_slot_by_slug() -> dict[str, int]:
+    """슬롯이 배정된 모든 카테고리(비활성 포함)의 슬러그 → 슬롯 번호.
+    공개 화면의 점 색을 정할 때 쓴다."""
+    from core.models import Category
+
+    return dict(Category.objects.exclude(palette_slot=None).values_list("slug", "palette_slot"))
 
 
 def category_slugs() -> list[str]:
@@ -166,8 +185,8 @@ PALETTE: tuple[dict[str, str], ...] = (
 )
 
 # 슬롯 미배정 카테고리를 스태프 화면에서 렌더할 때만 쓰는 중립색(트랙 27 11단계).
-# 소비자 화면은 이 슬롯 팔레트를 읽지 않는다. 점 색은 슬러그 7개에만 있고(--dot-*),
-# 그 밖의 카테고리는 소비자 화면에서 중립색 점이 된다(트랙 58).
+# 공개 화면은 슬러그 7개에 --dot-* 색을, 그 밖의 카테고리에는 배정 슬롯의 잉크 색을
+# 점에 쓴다(트랙 59). 이 중립색은 스태프 화면의 미배정 카테고리에만 쓴다.
 UNASSIGNED_PALETTE = {
     "light_soft": "#f1f5f9",
     "light_ink": "#64748b",

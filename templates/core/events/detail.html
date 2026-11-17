@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n static %}
+{% load i18n static category_dots %}
 {% block title %}{{ meta_title }}{% endblock %}
 {% block og_title %}{{ meta_title }}{% endblock %}
 {% block description %}{{ meta_description }}{% endblock %}
@@ -23,7 +23,7 @@
       <div class="event-detail-main">
         {% if category_label %}
           <div class="event-detail-cat-row">
-            <span class="event-detail-cat-bar" aria-hidden="true" data-category="{{ event.category|slugify }}"></span>
+            <span class="event-detail-cat-bar" aria-hidden="true" data-category="{{ event.category|slugify }}"{% palette_slot_attr event.category %}></span>
             <span class="event-detail-cat-label">{{ category_label }}</span>
           </div>
         {% endif %}
@@ -165,7 +165,7 @@
         </div>
         <div class="event-detail-related-rows">
           {% for r in related_events %}
-            <a class="event-detail-related-row" href="/events/{{ r.event.id }}/" data-category="{{ r.category_slug|slugify }}">
+            <a class="event-detail-related-row" href="/events/{{ r.event.id }}/" data-category="{{ r.category_slug|slugify }}"{% palette_slot_attr r.category_slug %}>
               <span class="event-detail-related-body">
                 {% if r.event.work_title %}<span class="event-detail-related-work" lang="ko">{{ r.event.work_title }}</span>{% endif %}
                 <span class="event-detail-related-title" lang="ko">{{ r.event.title }}</span>

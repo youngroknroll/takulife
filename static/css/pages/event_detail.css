@@ -8,7 +8,7 @@
   margin: 0 auto;
 }
 
-/* 카테고리 점 색: 7개 슬러그만 색을 갖고 그 밖은 보조 글자색(점에서만 쓴다). */
+/* 카테고리 점 색: 고정 7개 슬러그는 슬러그 색, 스태프가 만든 카테고리는 배정 슬롯 색(--dot-slot, category.css), 미배정은 보조 글자색(점에서만 쓴다). */
 .event-detail-page [data-category="popup_store"] { --event-dot: var(--dot-popup_store); }
 .event-detail-page [data-category="collaboration_cafe"] { --event-dot: var(--dot-collaboration_cafe); }
 .event-detail-page [data-category="theater_bonus"] { --event-dot: var(--dot-theater_bonus); }
@@ -35,7 +35,7 @@
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 50%;
-  background: var(--event-dot, var(--ink-2));
+  background: var(--event-dot, var(--dot-slot, var(--ink-2)));
 }
 .event-detail-page .event-detail-cat-label {
   font-size: var(--fs-2);
@@ -324,7 +324,7 @@
   height: 0.5rem;
   margin-right: var(--space-1);
   border-radius: 50%;
-  background: var(--event-dot, var(--ink-2));
+  background: var(--event-dot, var(--dot-slot, var(--ink-2)));
 }
 .event-detail-page .event-detail-related-tone {
   justify-self: end;

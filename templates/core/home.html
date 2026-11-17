@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n static %}
+{% load i18n static category_dots %}
 {% block title %}{{ brand_name_ko }} {{ project_name }} — {% translate "굿즈 컬렉션·서브컬처 이벤트 기록" %}{% endblock %}
 {% block og_title %}{{ brand_name_ko }} {{ project_name }} — {% translate "굿즈 컬렉션·서브컬처 이벤트 기록" %}{% endblock %}
 {% block robots_meta %}{% endblock %}
@@ -123,7 +123,7 @@
       <div class="cat-browse">
         {% for tile in category_tiles %}
           <a class="cat-dot" href="/events/?category={{ tile.slug }}">
-            <span class="cat-dot-swatch" data-category="{{ tile.slug }}" aria-hidden="true"></span>
+            <span class="cat-dot-swatch" data-category="{{ tile.slug }}"{% palette_slot_attr tile.slug %} aria-hidden="true"></span>
             <span class="cat-dot-info">
               <span class="cat-name"{% if tile.lang %} lang="{{ tile.lang }}"{% endif %}>{{ tile.label }}</span>
               <span class="cat-count">{% blocktranslate trimmed count counter=tile.count %}{{ counter }}개{% plural %}{{ counter }}개{% endblocktranslate %}</span>

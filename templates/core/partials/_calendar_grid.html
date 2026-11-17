@@ -1,4 +1,4 @@
-{% load i18n %}{% comment %}
+{% load i18n category_dots %}{% comment %}
 이벤트 달력(향후 활동 달력도 같은 계약을 쓸 예정) 공용 월 그리드다. <table>
 없이 요일 머리글과 날짜 셀을 같은 CSS grid의 형제로 둔다.
 스타일: static/css/components/calendar.css.
@@ -49,7 +49,7 @@
           <span class="day-num">{{ day.date|date:"j" }}</span>
           {% if day.items %}
             <span class="day-items">
-              {% for item in day.items %}<span class="day-item"><span class="day-item-cat" data-category="{{ item.category_slug }}" aria-hidden="true"></span><span class="day-item-title" lang="ko" title="{{ item.title }}">{{ item.title }}</span></span>{% endfor %}
+              {% for item in day.items %}<span class="day-item"><span class="day-item-cat" data-category="{{ item.category_slug }}"{% palette_slot_attr item.category_slug %} aria-hidden="true"></span><span class="day-item-title" lang="ko" title="{{ item.title }}">{{ item.title }}</span></span>{% endfor %}
               {% if day.more_count %}<span class="day-more">{% blocktranslate trimmed count counter=day.more_count %}외 {{ counter }}개{% plural %}외 {{ counter }}개{% endblocktranslate %}</span>{% endif %}
             </span>
           {% endif %}
@@ -57,7 +57,7 @@
             <span class="day-mobile-meta">
               {% if day.items %}
                 <span class="day-mobile-cats" aria-hidden="true">
-                  {% for item in day.items %}<span class="day-mobile-dot" data-category="{{ item.category_slug }}"></span>{% endfor %}
+                  {% for item in day.items %}<span class="day-mobile-dot" data-category="{{ item.category_slug }}"{% palette_slot_attr item.category_slug %}></span>{% endfor %}
                 </span>
               {% else %}
                 <span class="day-dot"></span>
@@ -77,7 +77,7 @@
           <span class="day-num">{{ day.date|date:"j" }}</span>
           {% if day.items %}
             <span class="day-items">
-              {% for item in day.items %}<span class="day-item"><span class="day-item-cat" data-category="{{ item.category_slug }}" aria-hidden="true"></span><span class="day-item-title" lang="ko" title="{{ item.title }}">{{ item.title }}</span></span>{% endfor %}
+              {% for item in day.items %}<span class="day-item"><span class="day-item-cat" data-category="{{ item.category_slug }}"{% palette_slot_attr item.category_slug %} aria-hidden="true"></span><span class="day-item-title" lang="ko" title="{{ item.title }}">{{ item.title }}</span></span>{% endfor %}
               {% if day.more_count %}<span class="day-more">{% blocktranslate trimmed count counter=day.more_count %}외 {{ counter }}개{% plural %}외 {{ counter }}개{% endblocktranslate %}</span>{% endif %}
             </span>
           {% endif %}
@@ -85,7 +85,7 @@
             <span class="day-mobile-meta">
               {% if day.items %}
                 <span class="day-mobile-cats" aria-hidden="true">
-                  {% for item in day.items %}<span class="day-mobile-dot" data-category="{{ item.category_slug }}"></span>{% endfor %}
+                  {% for item in day.items %}<span class="day-mobile-dot" data-category="{{ item.category_slug }}"{% palette_slot_attr item.category_slug %}></span>{% endfor %}
                 </span>
               {% else %}
                 <span class="day-dot"></span>

@@ -305,7 +305,7 @@
     width: 0.5rem;
     height: 0.5rem;
     border-radius: 50%;
-    background: var(--ink-2);
+    background: var(--dot-slot, var(--ink-2));
   }
   .cat-dot-swatch[data-category="popup_store"] { background: var(--dot-popup_store); }
   .cat-dot-swatch[data-category="collaboration_cafe"] { background: var(--dot-collaboration_cafe); }

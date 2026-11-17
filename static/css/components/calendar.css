@@ -114,7 +114,7 @@
   color: inherit;
 }
 
-/* 카테고리 점: 7개 슬러그만 색을 갖고, 지정 없는 것은 보조 글자색이다. */
+/* 카테고리 점: 고정 7개 슬러그는 슬러그 색, 스태프가 만든 카테고리는 배정 슬롯 색(--dot-slot), 지정 없는 것은 보조 글자색이다. */
 .day-item-cat,
 .day-mobile-dot,
 .day-dot {
@@ -124,6 +124,12 @@
   height: 0.5rem;
   border-radius: 50%;
   background: var(--ink-2);
+}
+
+/* .day-dot은 활동 달력 종류 점이라 슬롯 색을 읽지 않는다. */
+.day-item-cat,
+.day-mobile-dot {
+  background: var(--dot-slot, var(--ink-2));
 }
 
 .day-item-cat[data-category="popup_store"],
