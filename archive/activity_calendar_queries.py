@@ -25,7 +25,6 @@ from archive.models import (
     UserEventStatus,
     VisitRecord,
 )
-from events.models import Event
 
 # ---------------------------------------------------------------------------
 # 개인 활동 달력 월별 조회. 5개의 읽기 소스를 하나의 평평한 달력 항목
@@ -158,7 +157,7 @@ def _goods_acquired_items(user, month_start, month_end):
 def _published_event_url(event):
     """게시된 행사면 상세 주소를, 아니면 None을 돌려준다. 게시되지 않은
     행사의 상세는 404라 연결하지 않는다."""
-    if event is not None and event.publish_status == Event.PublishStatus.PUBLISHED:
+    if event is not None and event.is_published:
         return reverse("event-detail-page", args=[event.pk])
     return None
 

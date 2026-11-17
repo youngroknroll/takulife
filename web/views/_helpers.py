@@ -16,7 +16,6 @@ from core.vocab import (
     REGION_LABELS,
     personal_category_label,
 )
-from events.models import Event
 from events.presenters import derive_event_display, is_recently_added
 
 
@@ -253,7 +252,7 @@ def _subject_view(obj, *, category_labels=None):
     """
     if obj.event_id is not None:
         event = obj.event
-        is_published = event.publish_status == Event.PublishStatus.PUBLISHED
+        is_published = event.is_published
         if category_labels is None:
             category_labels = category_display_labels([event.category])
         return {

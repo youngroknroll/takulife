@@ -37,6 +37,11 @@ class Event(models.Model):
     def __str__(self):
         return self.title
 
+    @property
+    def is_published(self):
+        """게시 상태인지 쿼리 없이 판정한다(published() 조회와 같은 기준)."""
+        return self.publish_status == self.PublishStatus.PUBLISHED
+
     def needs_reverification(self, *, today):
         """D-7 재확인 대상인지 쿼리 없이 판정한다(목록 행마다 재조회 금지).
 

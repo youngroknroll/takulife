@@ -17,7 +17,6 @@ from archive.models import (
 from archive.signals import _delete_file_best_effort
 from core.analytics import record_event
 from core.models import AnalyticsEvent
-from events.models import Event
 
 MAX_PHOTOS_PER_RECORD = 5
 
@@ -637,14 +636,16 @@ def create_visit_record(
 
 def _ensure_visited_status(*, user, event, personal_entry, existing):
     """VISITED 상태 행을 경쟁 삽입 1회 재시도로 보장한다. 새 atomic을 열지
-    않으므로 반드시 호출부의 atomic 블록 안에서 실행해야 한다."""
+    않으므로 반드시 호출부의 atomic 블록 안에서 실행해야 한다. 상태 행이
+    없고 행사가 게시되지 않았으면 VisitTargetUnavailableError를 내며, 그
+    시점에 바깥 트랜잭션이 롤백된다."""
     # 동시 완료 요청을 직렬화해 planned 이중 전환과 활동·분석 중복을 막는다.
     status_row = existing.select_for_update().first()
 
     if status_row is None:
         # 게시되지 않은 행사에는 새 상태를 만들지 않는다. 검증과 저장 사이에
         # 본인이 방문 완료 표시를 지운 경우가 여기로 온다.
-        if event is not None and event.publish_status != Event.PublishStatus.PUBLISHED:
+        if event is not None and not event.is_published:
             raise VisitTargetUnavailableError
         try:
             create_user_event_status(
@@ -683,7 +684,9 @@ def complete_visit_with_record(
     되어 있어 생성/mark_visited 어느 분기도 다시 실행되지 않기
     때문이다. 동시 요청이 먼저 행을 만들어 버린 경우(경쟁 삽입)에는
     재조회로 그 행을 이어받아 완료를 이어가고, 재조회에도 없으면
-    예측 밖 상태라 예외를 그대로 전파한다(무한 재시도 금지).
+    예측 밖 상태라 예외를 그대로 전파한다(무한 재시도 금지). 상태 행이 없고
+    행사가 게시되지 않았으면 VisitTargetUnavailableError를 내며, 이때 이
+    트랜잭션이 롤백돼 아무것도 저장되지 않는다.
     """
     with transaction.atomic():
         existing = UserEventStatus.objects.filter(user=user)
