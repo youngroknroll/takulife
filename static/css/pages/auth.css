@@ -1,11 +1,14 @@
-/* auth.css — 12개 인증 화면 공용 스타일. account_settings.css와 같은
-   시각 언어를 쓰지만 클래스명은 공유하지 않는다(두 시트는 같이 로드되지
-   않음). 가드레일은 docs/FE/auth-editorial.md 참조. */
+/* auth.css — 12개 인증 화면 공용 스타일(DOS 형태). 폼 패널과 안내 패널이
+   각각 창(.window)이고, 폼 패널의 h1이 창 제목이다(마크업의 window·
+   window-title 클래스, 대괄호는 공용 h1.window-title 규칙). 포커스는
+   base.css의 전역 링을 쓰고 여기서 지우지 않는다. 가드레일은
+   docs/FE/auth-editorial.md 참조. */
 
-/* 카드 위아래 여백을 같게 만든다 — 아래만 120px이라 카드가 붕 떠 보였다.
-   .page의 기본 아래 여백(5rem)과 푸터의 위 여백(2.5rem)은 전역 규칙이라
-   여기서 이 화면들에만 덮어쓴다. */
+/* 카드 위아래 여백을 같게 만든다. .page의 기본 아래 여백(5rem)과 푸터의
+   위 여백은 전역 규칙이라 이 화면들에만 덮어쓴다. 창 제목이 테두리 위로
+   반 줄 올라오므로 위쪽도 조금 띄운다. */
 .auth-page {
+  padding-top: var(--space-5);
   padding-bottom: 1.625rem;
 }
 
@@ -13,199 +16,161 @@
   margin-top: 0;
 }
 
-/* ── shell: declare panel (left, brand context) + form panel (right) ────
-   왼쪽(브랜드 안내)은 화면 폭에 맞춰 늘어나고, 오른쪽(입력 폼)은 29.25rem로
-   고정한다 — 반대로 하면 폼이 큰 화면에서 지나치게 넓어진다. */
+/* ── 틀: 안내 창(왼쪽, 가변) + 폼 창(오른쪽, 29.25rem 고정) ────────────
+   폼이 큰 화면에서 지나치게 넓어지지 않게 폼 쪽을 고정한다. */
 .auth-shell {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 29.25rem;
-  gap: 0;
+  gap: var(--space-4);
   align-items: stretch;
-  /* .page가 이미 폭·상하 여백을 잡아준다 — 카드 자체는 다른 화면과 같은
-     테두리·둥근 모서리를 갖는 패널로만 존재한다. */
-  border: 1px solid var(--line);
-  border-radius: var(--radius-card);
-  overflow: hidden;
 }
 
-/* 이미 로그인한 채로 여는 화면에는 브랜드 소개 패널을 띄우지 않는다 —
-   가운데 한 칸으로만 보여준다. */
+/* 이미 로그인한 채로 여는 화면에는 안내 창을 띄우지 않는다. */
 .auth-shell.is-standalone {
   grid-template-columns: minmax(0, 1fr);
 }
 
+.auth-shell.is-standalone .auth-panel-form {
+  width: 100%;
+  max-width: 29.25rem;
+  margin: 0 auto;
+}
+
+@media (min-width: 45.0625rem) {
+  .auth-panel-declare.window,
+  .auth-panel-form.window {
+    padding-inline: var(--space-4);
+  }
+}
+
+/* ── 안내 창(제목 없는 창) ──────────────────────────────────────────── */
 .auth-panel-declare {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  position: relative;
   overflow: hidden;
-  padding: 3.25rem 2.75rem 2.75rem;
-  background: var(--bg-soft);
-  border-right: 1px solid var(--line);
+  padding-block: var(--space-5);
 }
 
 .auth-panel-form {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  width: 100%;
-  background: var(--surface);
-  padding: 3.25rem 2.75rem 2.875rem;
 }
 
-.auth-shell.is-standalone .auth-panel-form {
-  max-width: 29.25rem;
-  margin: 0 auto;
-}
-
-/* ── kicker (both panels: "TAKULIFE ACCOUNT" left, "계정" right — D4) ──── */
 .auth-kicker {
-  margin: 0 0 0.5rem;
-  font-size: 0.71875rem;
-  font-weight: 800;
-  color: var(--brand-ink);
+  margin: 0 0 var(--space-2);
+  color: var(--ink-2);
+  font-size: var(--fs-1);
+  font-weight: var(--fw-regular);
   overflow-wrap: anywhere;
 }
 
-.auth-panel-declare .auth-kicker {
-  letter-spacing: 0.14em;
-}
-
-.auth-panel-form .auth-kicker {
-  letter-spacing: 0.1em;
-}
-
-/* keep-all: 한국어는 기본 규칙상 글자 단위로 끊겨 「덕질 라이프 / 를」처럼
-   조사만 떨어져 나온다. 어절 단위로 끊어 그 고아 줄을 막는다. */
+/* keep-all: 한국어는 기본 규칙상 글자 단위로 끊겨 조사만 떨어져 나온다.
+   어절 단위로 끊어 그 고아 줄을 막는다. */
 .auth-panel-declare h2 {
   position: relative;
-  z-index: 1;
-  margin: 0 0 0.875rem;
-  font-size: 2.5rem;
-  font-weight: 800;
-  letter-spacing: -0.025em;
-  line-height: 1.18;
+  margin: 0 0 var(--space-3);
+  font-size: var(--fs-5);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-tight);
   word-break: keep-all;
-  color: var(--text);
+  color: var(--ink);
 }
 
-/* 폼 패널이 폭 고정이라 화면이 좁아지면 선언 패널만 줄어든다 — 40px 글자가
-   안 들어가 여기서 한 단계 줄인다. 64rem은 기존에 쓰던 경계값 재사용. */
+/* 폼 창이 좁아지면 안내 창만 줄어든다 — 큰 글자가 안 들어가 한 단계 줄인다. */
 @media (max-width: 64rem) {
-  /* 카드 폭이 줄어드는 구간에서 폼 열까지 468px로 붙잡아 두면 줄어드는 몫을
-     왼쪽 소개 패널이 전부 떠안아 제목과 설명이 잘게 끊긴다. 반대로 폼을
-     너무 좁히면 링크 힌트가 어절 중간에서 끊긴다 — 양쪽이 같이 줄어들게 한다. */
   .auth-shell {
     grid-template-columns: minmax(0, 1fr) clamp(22rem, 50%, 29.25rem);
   }
 
   .auth-panel-declare h2 {
-    font-size: 1.75rem;
+    font-size: var(--fs-4);
   }
 }
 
-/* 장식용 글자(✦)라 패널 경계를 넘어가는데, 패널의 overflow:hidden(위)이
-   잘라내 준다 — 그 속성을 지우면 가로 스크롤이 생긴다(docs/FE/auth-editorial.md A9).
-   클릭·선택 대상도 아니게 막아둔다. */
+/* 장식 글자(✦): 무채색 큰 글자를 창 오른쪽 아래에 깐다. 창 안에 들어와
+   있고 클릭 대상이 아니다. */
 .auth-glyph {
   position: absolute;
-  right: -1.125rem;
-  bottom: -2.875rem;
-  font-size: 11.875rem;
+  right: var(--space-3);
+  bottom: var(--space-2);
+  font-size: 6rem;
+  font-weight: var(--fw-regular);
   line-height: 1;
-  color: var(--line);
-  opacity: 0.4;
+  color: var(--bg);
   pointer-events: none;
   user-select: none;
 }
 
-/* 1.5px는 화면에서 1px로 내려가 평범한 구분선과 같아진다 — 정수 2px로 간다
-   (docs/FE/auth-editorial.md A10). */
 .auth-rule {
   position: relative;
-  z-index: 1;
-  margin: 0 0 1rem;
+  margin: 0 0 var(--space-3);
   border: none;
-  border-top: 2px solid var(--brand);
+  border-top: var(--bw-1) solid var(--ink);
   width: 4rem;
 }
 
-/* ── declare-panel domain rows: 공용 .rule-list와는 다른 별개 컴포넌트다
-   (안내 불릿용 .rule-list는 건드리지 않는다). ───────────────────────────── */
+/* 안내 창의 도메인 행: 행마다 1px 단선. */
 .auth-panel-domains {
   position: relative;
-  z-index: 1;
   margin: 0;
   padding: 0;
   list-style: none;
   max-width: 25rem;
-  border-top: 1px solid var(--line);
+  border-top: var(--bw-1) solid var(--rule);
 }
 
 .auth-panel-domains li {
   display: flex;
   align-items: center;
-  gap: 0.8125rem;
-  padding: 0.8125rem 0.125rem;
-  border-bottom: 1px solid var(--line);
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-bottom: var(--bw-1) solid var(--rule);
   /* 좁은 칸에서 "행사"/"전시"가 글자 단위로 끊기는 것을 막는다. */
   word-break: keep-all;
 }
 
 .auth-panel-domain-tick {
   flex: none;
-  width: 3px;
-  height: 1.0625rem;
-  border-radius: 2px;
-  background: var(--brand);
-}
-
-.auth-panel-domain-tick.is-mint {
-  background: var(--mint-ink);
+  width: var(--bw-2);
+  height: 1rem;
+  background: var(--ink);
 }
 
 .auth-panel-domain-name {
   flex: none;
   min-width: 3.625rem;
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: var(--text);
+  font-size: var(--fs-2);
+  font-weight: var(--fw-regular);
+  color: var(--ink);
 }
 
 .auth-panel-domain-desc {
-  font-size: 0.78125rem;
-  color: var(--muted);
+  font-size: var(--fs-1);
+  color: var(--ink-2);
 }
 
+/* 쪽 h1은 창 제목이다(위치·굵기는 공용 window-title과 base.css가 정한다). */
 .auth-title {
-  position: relative;
-  z-index: 1;
-  margin: 0 0 0.5rem;
-  font-size: var(--fs-xl);
-  font-weight: 800;
-  color: var(--text);
   word-break: keep-all;
 }
 
 .auth-description {
-  margin: 0 0 1.25rem;
-  font-size: 0.875rem;
-  line-height: 1.6;
-  color: var(--muted);
+  margin: 0 0 var(--space-3);
+  font-size: var(--fs-2);
+  line-height: var(--lh-base);
+  color: var(--ink-2);
 }
 
-/* 모든 오류 배너가 이 레시피 하나를 공유한다 —
-   account_settings.css의 오류 배너와 동일. */
+/* 폼 전체 오류 상자: 1px 오류색 테두리 + 오류색 글자. */
 .auth-error-banner {
-  margin: 0 0 1.25rem;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--rose-border);
-  border-radius: 0.625rem;
-  background: var(--rose-soft);
-  color: var(--rose-ink);
-  font-size: 0.8125rem;
-  font-weight: 600;
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: var(--bw-1) solid var(--error);
+  background: var(--surface);
+  color: var(--error);
+  font-size: var(--fs-2);
 }
 
 .auth-error-banner ul {
@@ -213,251 +178,255 @@
   padding-left: 1.125rem;
 }
 
-/* ── form fields (_auth_field.html) ───────────────────────────────────── */
+/* ── 입력(_auth_field.html) ─────────────────────────────────────────── */
 .auth-form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  margin-bottom: 1.25rem;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
 }
 
 .auth-field label {
   display: block;
-  margin-bottom: 0.375rem;
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: var(--muted);
+  margin-bottom: var(--space-1);
+  font-size: var(--fs-2);
+  font-weight: var(--fw-regular);
+  color: var(--ink);
 }
 
 .auth-required {
-  color: var(--brand-ink);
+  color: var(--ink);
 }
 
-/* 다른 화면의 입력창보다 옅은 테두리(--border-soft)를 의도적으로 쓴다 —
-   실수로 다른 값을 넣은 것이 아니다. */
 .auth-field input {
   width: 100%;
-  min-height: 2.75rem;
-  padding: 0 0.875rem;
-  border: 1px solid var(--border-soft);
-  border-radius: 10px;
+  min-height: var(--hit-lg);
+  padding: 0 var(--space-2);
+  border: var(--bw-1) solid var(--ink);
+  border-radius: 0;
   background: var(--surface);
-  color: var(--text);
-  font-size: 0.9rem;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--fs-3);
 }
 
-/* 마우스 클릭엔 안 뜨고 키보드 이동에만 뜨는 포커스 링이다.
-   기본 아웃라인 위에 겹쳐 그릴 뿐 지우지 않는다. */
-.auth-field input:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 1px;
-  border-color: var(--brand);
-  box-shadow: 0 0 0 3px var(--brand-soft);
+/* 오류 입력은 색에만 기대지 않고 2px 테두리로 알린다. */
+.auth-field input[aria-invalid="true"] {
+  border-width: var(--bw-2);
 }
 
 .field-error {
-  margin: 0.375rem 0 0;
+  margin: var(--space-1) 0 0;
   padding: 0;
   list-style: none;
-  color: var(--rose-ink);
-  font-size: 0.75rem;
-  font-weight: 600;
+  color: var(--error);
+  font-size: var(--fs-2);
 }
 
 .field-error li {
   margin: 0;
 }
 
-/* 필드 아래 보조 문구(닉네임 형식 안내 등) — .auth-form의 gap이 있어
-   위 여백은 최소로만 얹는다. */
+/* 필드 아래 보조 문구(닉네임 형식 안내 등). */
 .auth-panel-form form .auth-field-hint {
-  margin: 0.25rem 0 0;
-  font-size: 0.75rem;
-  color: var(--muted);
+  margin: var(--space-1) 0 0;
+  font-size: var(--fs-1);
+  color: var(--ink-2);
 }
 
-/* ── terms-agreement checkbox (signup only) ───────────────────────────── */
+/* ── 약관 동의 체크박스(가입 화면만) ────────────────────────────────── */
 .auth-consent {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
-  gap: 0.625rem;
-  margin: 0.125rem 0 1.25rem;
+  gap: var(--space-2);
 }
 
 .auth-consent label {
-  font-size: 0.8125rem;
-  line-height: 1.5;
-  color: var(--muted);
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-1) 0;
+  font-size: var(--fs-2);
+  line-height: var(--lh-base);
+  color: var(--ink-2);
 }
 
 .auth-consent label a {
-  color: var(--brand-ink);
+  color: var(--link);
   text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 
 .auth-consent input[type="checkbox"] {
-  appearance: none;
-  position: relative;
   flex: none;
-  width: 1.125rem;
-  height: 1.125rem;
-  margin-top: 0.125rem;
-  border: 2px solid var(--line);
-  border-radius: 4px;
-  background: var(--surface);
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: var(--space-1) 0 0;
+  accent-color: var(--select);
   cursor: pointer;
 }
 
-.auth-consent input[type="checkbox"]:checked {
-  border-color: var(--brand);
-  background: var(--brand);
+/* 동의 오류: 오류 줄 + 체크박스 둘레 오류색 선(포커스 중에는 전역 링을 둔다). */
+.auth-consent input[aria-invalid="true"]:not(:focus-visible) {
+  outline: var(--bw-2) solid var(--error);
+  outline-offset: 1px;
 }
 
-.auth-consent input[type="checkbox"]:checked::after {
-  content: "";
-  position: absolute;
-  left: 0.25rem;
-  top: 0.0625rem;
-  width: 0.3125rem;
-  height: 0.5625rem;
-  border: solid #fff;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
+.auth-consent .field-error {
+  flex-basis: 100%;
+  margin: 0;
 }
 
-.auth-consent input[type="checkbox"]:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
-}
-
-/* 동의 오류도 다른 오류와 같은 rose 색을 쓴다. */
-.auth-consent.is-error input[type="checkbox"] {
-  border-color: var(--rose-ink);
-}
-
-/* 완전한 알약 모양(999px)이 이 시안의 기본 버튼 형태다. */
-.auth-submit {
-  display: inline-flex;
+/* ── 제출·소셜 버튼: 주 = 2px, 소셜 = 1px. 긴 번역 라벨은 줄바꿈한다. ── */
+.auth-submit,
+.btn-social {
+  display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 3rem;
-  padding: 0 1.5rem;
-  border: none;
-  border-radius: 999px;
-  background: var(--brand);
-  color: #fff;
-  font-size: 0.9375rem;
-  font-weight: 700;
+  min-height: var(--hit-lg);
+  padding: var(--space-1) var(--space-3);
+  border-style: solid;
+  border-color: var(--ink);
+  border-radius: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-3);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-tight);
+  text-align: center;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.auth-submit {
+  border-width: var(--bw-2);
   cursor: pointer;
 }
 
-.auth-submit:hover {
-  background: var(--brand-ink);
+.btn-social {
+  border-width: var(--bw-1);
 }
 
-.auth-submit:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
+@media (hover: hover) {
+  .auth-submit:not(:disabled):hover,
+  .btn-social:hover {
+    border-color: var(--select);
+    background: var(--select);
+    color: var(--on-select);
+  }
 }
 
-/* ── social login divider + button (unchanged visual language) ───────── */
+.auth-submit:focus-visible,
+.btn-social:focus-visible {
+  border-color: var(--select);
+  background: var(--select);
+  color: var(--on-select);
+}
+
+/* 제출 중(data-submit-guard)에는 비활성 모양이 된다. */
+.auth-submit:disabled {
+  border-color: var(--off);
+  background: transparent;
+  color: var(--off);
+  cursor: not-allowed;
+}
+
+.auth-submit.is-loading:disabled {
+  border-color: var(--ink-2);
+  color: var(--ink-2);
+}
+
+/* ── 또는 구분선 ────────────────────────────────────────────────────── */
 .auth-divider {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin: 1rem 0;
-  color: var(--muted);
-  font-size: var(--fs-sm);
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+  color: var(--ink-2);
+  font-size: var(--fs-2);
 }
 
 .auth-divider::before,
 .auth-divider::after {
   content: "";
   flex: 1;
-  height: 1px;
-  background: var(--line);
+  height: 0;
+  border-top: var(--bw-1) solid var(--rule);
 }
 
-.btn-social {
-  display: block;
-  padding: 0.6875rem 0.75rem;
-  min-height: 44px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface);
-  color: var(--text);
-  font-size: var(--fs-base);
-  font-weight: 600;
-  text-align: center;
-  text-decoration: none;
-}
-
-.btn-social:hover {
-  background: var(--bg-card);
-}
-
-/* ── link rows: 행 전체를 <a> 하나로 감싼다 — 라벨만 링크고 나머지는
-   눌러도 반응 없는 상태를 만들지 않기 위해서다. ─────────────────────── */
+/* ── 링크 행: 행 전체를 <a> 하나로 감싼다. 행마다 1px 단선, 가리키거나
+   키보드로 가면 반전한다. ─────────────────────────────────────────── */
 .auth-links {
-  margin: 1.25rem 0 0;
+  margin: var(--space-3) 0 0;
   padding: 0;
   list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  border-top: var(--bw-1) solid var(--rule);
+}
+
+.auth-links-row {
+  border-bottom: var(--bw-1) solid var(--rule);
 }
 
 .auth-links-row a {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 0.875rem;
-  border: 1px solid var(--line);
-  border-radius: 0.625rem;
-  color: var(--text);
+  gap: var(--space-2);
+  min-height: var(--hit-lg);
+  padding: var(--space-2) var(--space-1);
+  color: var(--ink);
   text-decoration: none;
 }
 
-.auth-links-row a:hover {
-  background: var(--bg-soft);
+.auth-links-row a:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
 }
 
-.auth-links-row a:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
+@media (hover: hover) {
+  .auth-links-row a:hover {
+    background: var(--select);
+    color: var(--on-select);
+  }
 }
 
 .auth-links-label {
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: var(--brand-ink);
+  min-width: 0;
+  font-size: var(--fs-2);
+  font-weight: var(--fw-regular);
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 
 .auth-links-hint {
   flex: 1;
   min-width: 0;
-  font-size: 0.78125rem;
-  color: var(--muted);
+  font-size: var(--fs-1);
+  color: inherit;
 }
 
 .auth-links-arrow {
   flex: none;
   margin-left: auto;
-  color: var(--muted);
+  color: inherit;
 }
 
-/* 힌트는 라벨을 보조하는 문구다. 폭이 좁아지면 「이메일 / 만 있으 / 면 시작」처럼
-   어절 중간에서 끊겨 오히려 읽기 어려워지므로 그 구간에서는 감춘다. */
+/* 힌트는 라벨을 보조하는 문구다. 폭이 좁아지면 어절 중간에서 끊겨 오히려
+   읽기 어려워지므로 그 구간에서는 감춘다. */
 @media (max-width: 56.25rem) {
   .auth-links-hint {
     display: none;
   }
 }
 
-/* ── mobile: 선언 패널을 display:none으로 통째로 지운다. order로
-   순서를 바꾸지 않는다 — 탭 순서와 화면 순서가 어긋난다. ──────────── */
+/* ── 모바일: 안내 창은 통째로 감춘다. order로 순서를 바꾸지 않는다 —
+   탭 순서와 화면 순서가 어긋난다. ──────────────────────────────────── */
 @media (max-width: 45rem) {
+  .auth-page {
+    padding-top: var(--space-3);
+  }
+
   .auth-shell {
     display: block;
   }
@@ -466,24 +435,17 @@
     display: none;
   }
 
-  .auth-panel-form {
-    max-width: none;
-    /* .page가 이미 모바일 바깥 여백(1rem)을 주므로, 여기는 카드 안쪽
-       여백을 리터럴 1rem으로 고정한다 — overflow:hidden인 카드에서
-       포커스 링이 잘리지 않도록 여유를 남긴다. */
-    padding: 1.75rem 1rem;
-  }
-
   .auth-shell.is-standalone .auth-panel-form {
-    padding-top: 1.75rem;
-    padding-bottom: 1.75rem;
+    max-width: none;
   }
 
-  .auth-title {
-    font-size: var(--fs-xl-mobile);
+  /* 창 제목이 창 안 첫 줄로 내려오므로 아래 내용과 간격을 둔다. */
+  .auth-page .auth-title {
+    margin-bottom: var(--space-2);
   }
 }
 
+/* 화면에는 안 보이고 화면읽기 프로그램에는 읽히는 글자("(필수)"). */
 .auth-page .sr-only {
   position: absolute;
   width: 1px;
@@ -497,7 +459,7 @@
 }
 
 .auth-required-legend {
-  margin: 0 0 1.25rem;
-  font-size: 0.78rem;
-  color: var(--muted);
+  margin: 0 0 var(--space-3);
+  font-size: var(--fs-1);
+  color: var(--ink-2);
 }
