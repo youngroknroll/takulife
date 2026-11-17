@@ -59,10 +59,8 @@
             <span class="status {{ row.status_slug }}">{{ row.status_label }}</span>
             <div class="record-row-actions">
               {% if row.status_slug == 'visited' %}
-                {% if row.review_text %}
-                  {% if row.visit_record_id %}
-                    <a class="record-row-edit-link" href="/archive/visits/{{ row.visit_record_id }}/edit/">{% translate "수정" %}</a>
-                  {% endif %}
+                {% if row.visit_record_id %}
+                  <a class="record-row-edit-link" href="/archive/visits/{{ row.visit_record_id }}/edit/">{% translate "수정" %}</a>
                 {% else %}
                   <a class="record-row-add-link" href="/archive/visits/new/?subject={{ row.subject.subject_type }}:{{ row.subject.subject_id }}">{% translate "＋ 기록" %}</a>
                 {% endif %}

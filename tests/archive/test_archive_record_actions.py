@@ -7,9 +7,13 @@
   이제 작성 페이지(/archive/visits/new/)에 있다.
 """
 
+import html
+import re
+
 import pytest
 
-from archive.models import UserEventStatus
+from archive.models import PersonalEntry, UserEventStatus, VisitRecord
+from events.models import Event
 
 pytestmark = pytest.mark.web
 
@@ -57,6 +61,119 @@ class TestArchiveRecordPageActions:
 
         # 행별 기록 바로가기는 ?subject=를 갖지만 일반 기록 추가 링크는 갖지 않는다.
         assert b"/archive/visits/new/?subject=" not in resp.content
+
+
+def _hrefs(resp):
+    return [html.unescape(href) for href in re.findall(r'href="([^"]*)"', resp.content.decode())]
+
+
+def _official_event_subject(user):
+    event = Event.objects.create(
+        pk=920_001, title="공식 행사", publish_status=Event.PublishStatus.PUBLISHED
+    )
+    return {"event": event}
+
+
+def _personal_place_subject(user):
+    entry = PersonalEntry.objects.create(
+        pk=920_001, user=user, kind=PersonalEntry.Kind.PLACE, title="직접 등록 장소"
+    )
+    return {"personal_entry": entry}
+
+
+_NO_MEMO = [("2026-06-01", "")]
+_OLD_MEMO_THEN_NEW_NO_MEMO = [("2026-05-01", "좋았다"), ("2026-06-01", "")]
+_WITH_MEMO = [("2026-06-01", "좋았다")]
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("path", "build_subject", "records"),
+    [
+        pytest.param(
+            "/archive/", _official_event_subject, _NO_MEMO, id="기록장_공식_행사_메모_없음"
+        ),
+        pytest.param(
+            "/archive/statuses/",
+            _official_event_subject,
+            _NO_MEMO,
+            id="상태_목록_공식_행사_메모_없음",
+        ),
+        pytest.param(
+            "/archive/", _personal_place_subject, _NO_MEMO, id="기록장_직접_등록_메모_없음"
+        ),
+        pytest.param(
+            "/archive/statuses/",
+            _personal_place_subject,
+            _NO_MEMO,
+            id="상태_목록_직접_등록_메모_없음",
+        ),
+        pytest.param(
+            "/archive/statuses/",
+            _official_event_subject,
+            _OLD_MEMO_THEN_NEW_NO_MEMO,
+            id="상태_목록_공식_행사_최신_기록만_메모_없음",
+        ),
+        pytest.param(
+            "/archive/", _official_event_subject, _WITH_MEMO, id="기록장_공식_행사_메모_있음"
+        ),
+        pytest.param(
+            "/archive/statuses/",
+            _official_event_subject,
+            _WITH_MEMO,
+            id="상태_목록_공식_행사_메모_있음",
+        ),
+    ],
+)
+def test_방문_완료_행에_방문_기록이_있으면_메모와_상관없이_가장_최근_기록의_수정_링크가_나오고_기록_추가_링크는_나오지_않는다(
+    user_client, path, build_subject, records
+):
+    user, client = user_client()
+    subject = build_subject(user)
+    UserEventStatus.objects.create(user=user, status=UserEventStatus.Status.VISITED, **subject)
+    record_ids = {}
+    for number, (visited_on, short_review) in enumerate(records, start=910_001):
+        VisitRecord.objects.create(
+            pk=number, user=user, visited_on=visited_on, short_review=short_review, **subject
+        )
+        record_ids[visited_on] = number
+    newest_id = record_ids[max(record_ids)]
+    older_ids = [number for number in record_ids.values() if number != newest_id]
+
+    hrefs = _hrefs(client.get(path))
+
+    assert f"/archive/visits/{newest_id}/edit/" in hrefs
+    for older_id in older_ids:
+        assert f"/archive/visits/{older_id}/edit/" not in hrefs
+    assert not [href for href in hrefs if href.startswith("/archive/visits/new/?subject=")]
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("path", "build_subject", "subject_type"),
+    [
+        pytest.param("/archive/", _official_event_subject, "event", id="기록장_공식_행사"),
+        pytest.param(
+            "/archive/statuses/", _official_event_subject, "event", id="상태_목록_공식_행사"
+        ),
+        pytest.param("/archive/", _personal_place_subject, "personal", id="기록장_직접_등록"),
+        pytest.param(
+            "/archive/statuses/", _personal_place_subject, "personal", id="상태_목록_직접_등록"
+        ),
+    ],
+)
+def test_방문_완료_행에_방문_기록이_없으면_기록_추가_링크만_나오고_수정_링크는_나오지_않는다(
+    user_client, path, build_subject, subject_type
+):
+    user, client = user_client()
+    subject = build_subject(user)
+    UserEventStatus.objects.create(user=user, status=UserEventStatus.Status.VISITED, **subject)
+    subject_id = 920_001
+
+    hrefs = _hrefs(client.get(path))
+
+    assert f"/archive/visits/new/?subject={subject_type}:{subject_id}" in hrefs
+    assert not [href for href in hrefs if re.fullmatch(r"/archive/visits/\d+/edit/", href)]
 
 
 @pytest.mark.django_db

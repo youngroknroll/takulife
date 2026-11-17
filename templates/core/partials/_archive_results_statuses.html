@@ -78,10 +78,8 @@ margin-right:auto가 첫 자식에만 걸리기 때문이다.
                   data-status="planned"
                   data-status-id="{{ row.status_id }}" data-reload-on-success>{% blocktranslate trimmed with label=row.label_planned %}{{ label }}으로{% endblocktranslate %}</button>
               {% elif row.status_slug == 'visited' %}
-                {% if row.review_text %}
-                  {% if row.visit_record_id %}
-                    <a class="record-row-edit-link" href="/archive/visits/{{ row.visit_record_id }}/edit/">{% translate "수정" %}</a>
-                  {% endif %}
+                {% if row.visit_record_id %}
+                  <a class="record-row-edit-link" href="/archive/visits/{{ row.visit_record_id }}/edit/">{% translate "수정" %}</a>
                 {% else %}
                   <a class="record-row-add-link" href="/archive/visits/new/?subject={{ row.subject.subject_type }}:{{ row.subject.subject_id }}">{% translate "＋ 기록" %}</a>
                 {% endif %}
