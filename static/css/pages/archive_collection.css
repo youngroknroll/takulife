@@ -841,16 +841,35 @@
 /* ── /collection/new/·수정 폼 ──────────────────────────────────── */
 /* 이 폼은 archive_visits.css의 공유 클래스를 이 파일로 완전히 옮겼다 —
    절반만 옮기면 폼 스타일이 조용히 빠지므로 전부 `.collection-page` 스코프다.
-   창 구성은 이 폼을 맡는 다음 단계에서 다룬다. 여기서는 모양만 DOS 값으로 둔다. */
+   쪽 머리(뒤로 가기·h1·부제)는 바탕 위에 두고, 폼 전체가 창(.window) 하나다.
+   h1이 폼 바깥 <section>에 있어 창 제목으로 올리지 못한다. */
 
 .collection-page .collection-form-head {
-  padding-bottom: var(--space-3);
+  max-width: 56.25rem;
   margin-bottom: var(--space-4);
-  border-bottom: var(--bw-2) solid var(--ink);
 }
 .collection-page .collection-form-head h1 {
   margin: var(--space-2) 0;
   font-size: var(--fs-5);
+}
+.collection-page .collection-form-head .back-link {
+  display: inline-block;
+  color: var(--ink);
+  font-size: var(--fs-2);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+@media (hover: hover) {
+  .collection-page .collection-form-head .back-link:hover {
+    background: var(--select);
+    color: var(--on-select);
+    text-decoration: none;
+  }
+}
+.collection-page .collection-form-head .back-link:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+  text-decoration: none;
 }
 .collection-page .collection-form-subtitle {
   display: flex;
@@ -872,12 +891,13 @@
 }
 
 /* DOM 순서는 필드-다음-이미지(이름이 탭 순서상 먼저 오도록)라 이미지는
-   grid 배치만으로 왼쪽 열로 옮긴다. */
+   grid 배치만으로 왼쪽 열로 옮긴다. 두 열 사이는 필드 열 왼쪽의 1px 세로
+   단선이다. */
 .collection-page .collection-form-grid {
   display: grid;
   grid-template-columns: 18.75rem minmax(0, 1fr);
-  gap: var(--space-5);
-  align-items: start;
+  column-gap: var(--space-4);
+  align-items: stretch;
 }
 .collection-page .collection-form-fields {
   grid-column: 2;
@@ -885,6 +905,9 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  min-width: 0;
+  padding-left: var(--space-4);
+  border-left: var(--bw-1) solid var(--rule);
 }
 .collection-page .collection-form-image {
   grid-column: 1;
@@ -953,7 +976,6 @@
   border: var(--bw-1) solid var(--ink);
   background: var(--off);
   cursor: pointer;
-  overflow: hidden;
 }
 .collection-page .collection-form-dropzone:has(input:focus-visible) {
   outline: var(--bw-2) solid var(--select);
@@ -998,6 +1020,20 @@
   color: var(--ink);
   font: inherit;
   width: 100%;
+}
+/* 오류 입력은 색만이 아니라 2px 테두리 + 오류색 글자로 알린다. */
+.collection-page .collection-form input[aria-invalid="true"],
+.collection-page .collection-form select[aria-invalid="true"] {
+  border-width: var(--bw-2);
+  border-color: var(--error);
+  color: var(--error);
+}
+.collection-page .collection-form-checkbox input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  min-height: 0;
+  margin: 0;
+  accent-color: var(--select);
 }
 
 /* ── 구분선 + 상세 본문 ────────────────────────────────────────── */
@@ -1131,6 +1167,18 @@
   text-decoration: underline;
   text-underline-offset: 0.2em;
 }
+@media (hover: hover) {
+  .collection-page .collection-form-cancel:hover {
+    background: var(--select);
+    color: var(--on-select);
+    text-decoration: none;
+  }
+}
+.collection-page .collection-form-cancel:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+  text-decoration: none;
+}
 .collection-page .collection-form-note {
   margin: 0 0 0 auto;
   color: var(--ink-2);
@@ -1140,16 +1188,19 @@
 @media (max-width: 45rem) {
   .collection-page .collection-form-grid {
     grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--space-3);
   }
   .collection-page .collection-form-fields {
     grid-column: 1;
     grid-row: 2;
+    padding-left: 0;
+    border-left: 0;
   }
   .collection-page .collection-form-image {
     grid-column: 1;
     grid-row: 1;
     max-width: 9.375rem;
-    margin: 0 auto var(--space-3);
+    margin: 0 auto;
   }
   .collection-page .collection-form-row--split,
   .collection-page .collection-form-row--even,
@@ -1157,10 +1208,10 @@
     grid-template-columns: 1fr;
   }
   /* 하단 고정 바로 만들어 긴 폼 끝까지 스크롤하지 않아도 제출/취소에
-     닿을 수 있게 한다. 폼에 준 하단 여백은 이 바가 마지막 필드를
-     가리지 않게 하기 위함이다. */
+     닿을 수 있게 한다. 폼 아래 여백은 이 바가 마지막 필드를 가리지 않게
+     하기 위함이며, 창 안이 아니라 창 바깥에 둔다. */
   .collection-page .collection-form {
-    padding-bottom: calc(5rem + var(--site-tabbar-h, 0px));
+    margin-bottom: calc(5rem + var(--site-tabbar-h, 0px));
   }
   /* 고정 바가 푸터 끝을 덮지 않게 문서 끝에 바 높이만큼 여백 */
   body:has(.collection-page .collection-form-actions) {

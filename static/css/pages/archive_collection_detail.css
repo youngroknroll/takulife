@@ -1,40 +1,44 @@
-/* archive_collection_detail.css — /collection/<id>/ 전용 읽기 전용
-   상세 페이지. archive_visit_detail.css의 2단 그리드/갤러리 칼럼/
-   ≤45rem 단일 칼럼+고정 액션바 구조를 그대로 따른다. 오직
-   `.collection-detail-page` 스코프에서만 동작하며 archive_collection.css/
-   collection.js 등 공용 파일은 수정하지 않는다 — 필요한 조각(계열색
-   재바인딩, 이미지 없음 대체, 상태 배지, 위험 버튼 스킨)을 페이지
-   스코프로 복제해서 쓴다(half-swap 시 공용 파일이 조용히 깨지는 문제
-   회피). 색상은 #fff(브랜드 버튼 텍스트) 외 전부 tokens.css 기존
-   토큰이다. */
+/* archive_collection_detail.css — /collection/<id>/ 전용 읽기 전용 상세 쪽 (DOS 형태).
+   `.collection-detail-page` 스코프에서만 동작하고 공용 파일은 건드리지 않는다.
+   본문 전체(표지 열 + 정보 열)가 창(.window) 하나다. 제목이 긴 굿즈 이름이
+   h1이라 창 제목으로 올리지 않고 창 안 첫 줄에 둔다. 시리즈(작품) 색은
+   작품 줄의 점에만 쓴다. 색 값은 토큰만 쓴다. */
 
 .collection-detail-page {
   max-width: 53rem;
   margin: 0 auto;
 }
 
+/* 뒤로 가기 링크는 바탕 위라 글자색(--ink) + 밑줄이다. */
 .collection-detail-page .collection-detail-back-link {
   display: inline-block;
-  margin-bottom: 0.875rem;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--brand-ink);
+  margin-bottom: var(--space-3);
+  font-size: var(--fs-2);
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+@media (hover: hover) {
+  .collection-detail-page .collection-detail-back-link:hover {
+    background: var(--select);
+    color: var(--on-select);
+    text-decoration: none;
+  }
+}
+.collection-detail-page .collection-detail-back-link:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
   text-decoration: none;
 }
-.collection-detail-page .collection-detail-back-link:hover {
-  text-decoration: underline;
-}
 
-/* ── global (top-of-page) error banner ───────────────────────────────── */
+/* ── 쪽 위 오류 상자: 비면 숨기고, 글자가 들어오면 오류색 테두리 ──── */
 .collection-detail-page .collection-detail-global-error {
-  margin: 0 0 1.25rem;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--rose-border);
-  border-radius: 0.5625rem;
-  background: var(--rose-soft);
-  color: var(--rose-ink);
-  font-size: 0.8125rem;
-  font-weight: 600;
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: var(--bw-1) solid var(--error);
+  background: var(--surface);
+  color: var(--error);
+  font-size: var(--fs-2);
 }
 .collection-detail-page .collection-detail-global-error:empty {
   display: none;
@@ -43,22 +47,23 @@
   border: 0;
 }
 
-/* ── two-column grid ─────────────────────────────────────────────────── */
+/* ── 창 안 2열: 표지 | 정보 ──────────────────────────────────────── */
 .collection-detail-page .collection-detail-grid {
   display: grid;
   grid-template-columns: 20.5rem minmax(0, 1fr);
-  gap: 2.375rem;
+  gap: var(--space-5);
   align-items: start;
 }
+.collection-detail-page .collection-detail-main {
+  min-width: 0;
+}
 
-/* ── cover ───────────────────────────────────────────────────────────── */
+/* ── 표지 ─────────────────────────────────────────────────────────── */
 .collection-detail-page .collection-detail-cover {
   position: relative;
   aspect-ratio: 3 / 4;
-  border-radius: 13px;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  background: var(--bg-soft);
+  border: var(--bw-1) solid var(--rule);
+  background: var(--off);
 }
 .collection-detail-page .collection-detail-cover img {
   width: 100%;
@@ -67,10 +72,7 @@
   display: block;
 }
 
-/* ── no-image fallback ─────────────────────────────────────────── */
-/* .gcard-noimg는 `.collection-page` 아래에서만 존재해 이 페이지에서 그
-   이름을 쓰면 아무 스타일도 안 먹는다. 그래서 값만 이 페이지 전용
-   이름으로 옮겨 왔다. */
+/* 이미지가 없으면 유형 글자만 가운데에 둔다. 시리즈 색 막대는 장식이라 숨긴다. */
 .collection-detail-page .collection-detail-noimg {
   position: relative;
   width: 100%;
@@ -80,273 +82,272 @@
   justify-content: center;
 }
 .collection-detail-page .collection-detail-bar {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 4px;
-  height: 100%;
-  background: var(--series-ink, var(--muted));
+  display: none;
 }
 .collection-detail-page .collection-detail-noimg-label {
-  padding: 0 1.25rem;
+  padding: 0 var(--space-3);
   max-width: 80%;
-  color: var(--muted);
-  font-size: 1rem;
-  font-weight: 700;
+  color: var(--ink);
+  font-size: var(--fs-3);
   text-align: center;
-  line-height: 1.35;
+  line-height: var(--lh-tight);
   overflow-wrap: anywhere;
 }
 
-/* ── status badges (보유/구함/교환/미보유) ─────────────────────────── */
-/* 표지 왼쪽 위에 둔다 — 세로형 표지의 가장 밝은 모서리(주로 오른쪽 위)와
-   겹치지 않게 하기 위해서다. 배지 글자 자체가 상태를 말하므로 aria-hidden은
-   쓰지 않는다. */
+/* ── 상태 배지: 색이 아니라 테두리 모양으로 구분(목록과 같은 값) ───── */
+/* 보유 = 선택색 채움, 구함 = 1px 실선, 교환 = 3px 이중선, 미보유 = 1px 점선.
+   표지 왼쪽 위에 얹고 배지 자체 표면이 판 역할을 한다. 글자가 상태를 말하므로
+   aria-hidden은 쓰지 않는다. */
 .collection-detail-page .collection-detail-pill {
   position: absolute;
-  left: 0.75rem;
-  top: 0.75rem;
+  left: var(--space-2);
+  top: var(--space-2);
   display: inline-flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.25rem;
+  gap: var(--space-1);
   pointer-events: none;
 }
 .collection-detail-page .collection-detail-pill-tag {
   display: inline-flex;
   align-items: center;
-  padding: 0.25rem 0.6875rem;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 700;
+  padding: calc(var(--space-1) / 2) var(--space-2);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-1);
   white-space: nowrap;
 }
 .collection-detail-page .collection-detail-pill-tag.is-owned {
-  background: var(--mint-soft);
-  color: var(--mint-ink);
+  padding: calc(var(--space-1) / 2 + var(--bw-1)) calc(var(--space-2) + var(--bw-1));
+  background: var(--select);
+  color: var(--on-select);
 }
 .collection-detail-page .collection-detail-pill-tag.is-wanted {
-  background: var(--amber-soft);
-  color: var(--amber-ink);
+  padding: calc(var(--space-1) / 2 + var(--bw-1)) calc(var(--space-2) + var(--bw-1));
+  border: var(--bw-1) solid var(--ink);
 }
 .collection-detail-page .collection-detail-pill-tag.is-tradeable {
-  background: var(--up-soft);
-  color: var(--up-ink);
+  border: var(--bw-3) double var(--ink);
 }
 .collection-detail-page .collection-detail-pill-tag.is-none {
-  background: var(--end-soft);
-  color: var(--end-ink);
+  padding: calc(var(--space-1) / 2 + var(--bw-1)) calc(var(--space-2) + var(--bw-1));
+  border: var(--bw-1) dashed var(--rule);
+  color: var(--ink-2);
 }
 
-/* ── actions (desktop): 수정 → 삭제, both DOM order and visual order ── */
+/* ── 동작(데스크톱): 수정 → 삭제, DOM 순서와 시각 순서가 같다 ───────── */
+/* 수정 = 주 버튼(2px 테두리), 삭제 = 오류색 테두리·글자. */
 .collection-detail-page .collection-detail-actions {
   display: flex;
-  gap: 0.5rem;
-  margin-top: 0.625rem;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
 }
 .collection-detail-page .collection-detail-edit-btn {
   flex: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 2.625rem;
-  border-radius: 10px;
-  background: var(--brand);
-  color: #fff;
-  font-size: 0.84rem;
-  font-weight: 700;
+  min-height: var(--hit-lg);
+  border: var(--bw-2) solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-2);
   text-decoration: none;
 }
-.collection-detail-page .collection-detail-edit-btn:hover {
-  background: var(--brand-ink);
-}
-.collection-detail-page .collection-detail-edit-btn.is-item-gone-locked {
-  background: var(--bg-soft);
-  color: var(--muted);
-  pointer-events: none;
-}
 .collection-detail-page .collection-detail-delete-btn {
-  height: 2.625rem;
-  padding: 0 1rem;
-  border-radius: 10px;
-  border: 1px solid var(--rose-border);
+  min-height: var(--hit-lg);
+  padding: 0 var(--space-3);
+  border: var(--bw-1) solid var(--error);
   background: var(--surface);
-  color: var(--rose-ink);
-  font-size: 0.84rem;
-  font-weight: 700;
+  color: var(--error);
+  font-size: var(--fs-2);
   cursor: pointer;
 }
-.collection-detail-page .collection-detail-delete-btn:hover {
-  background: var(--rose-soft);
+@media (hover: hover) {
+  .collection-detail-page .collection-detail-edit-btn:hover {
+    border-color: var(--select);
+    background: var(--select);
+    color: var(--on-select);
+  }
+  .collection-detail-page .collection-detail-delete-btn:not(:disabled):hover {
+    background: var(--error);
+    color: var(--on-select);
+  }
 }
+.collection-detail-page .collection-detail-edit-btn:focus-visible {
+  border-color: var(--select);
+  background: var(--select);
+  color: var(--on-select);
+}
+.collection-detail-page .collection-detail-delete-btn:focus-visible {
+  background: var(--error);
+  color: var(--on-select);
+}
+/* 이미 삭제된 굿즈: 수정 링크는 눌려도 이동하지 않고 비활성 모양이다. */
+.collection-detail-page .collection-detail-edit-btn.is-item-gone-locked,
 .collection-detail-page .collection-detail-delete-btn:disabled {
+  border-color: var(--off);
+  background: transparent;
+  color: var(--off);
   cursor: not-allowed;
-  opacity: 0.6;
 }
-/* 아이콘 글리프는 데스크톱에서 숨김 — 데스크톱은 "삭제" 텍스트
-   라벨을 사용한다. */
+.collection-detail-page .collection-detail-edit-btn.is-item-gone-locked {
+  pointer-events: none;
+}
+/* 아이콘 글리프는 데스크톱에서 숨기고 "삭제" 텍스트 라벨을 쓴다. */
 .collection-detail-page .collection-detail-delete-icon {
   display: none;
 }
 
-/* ── identity line (작품 · 캐릭터) ────────────────────────────────────── */
+/* ── 작품 · 캐릭터 줄 ─────────────────────────────────────────────── */
 .collection-detail-page .collection-detail-identity {
   display: flex;
   align-items: center;
-  gap: 0.5625rem;
-  margin-bottom: 0.5625rem;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
   min-width: 0;
 }
+/* 시리즈 색은 이 점에만 쓴다. */
 .collection-detail-page .collection-detail-bar-dot {
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 2px;
-  background: var(--series-ink, var(--muted));
+  width: 0.625rem;
+  height: 0.625rem;
+  background: var(--series-ink, var(--ink-2));
   flex-shrink: 0;
 }
-.collection-detail-page .collection-detail-work {
-  font-weight: 700;
-  color: var(--series-ink, var(--muted));
-}
-.collection-detail-page .collection-detail-character {
-  font-weight: 600;
-  color: var(--muted);
+.collection-detail-page .collection-detail-work,
+.collection-detail-page .collection-detail-character,
+.collection-detail-page .collection-detail-dot {
+  color: var(--ink-2);
+  font-size: var(--fs-2);
 }
 .collection-detail-page .collection-detail-work,
 .collection-detail-page .collection-detail-character {
-  font-size: 0.78rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.collection-detail-page .collection-detail-dot {
-  color: var(--muted);
-  font-size: 0.78rem;
-}
 
-/* ── title · type ──────────────────────────────────────────────────── */
+/* ── 제목 · 유형 ──────────────────────────────────────────────────── */
 .collection-detail-page .collection-detail-title {
-  margin: 0 0 0.375rem;
-  font-size: var(--fs-xl);
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  color: var(--text);
-  line-height: 1.22;
+  margin: 0 0 var(--space-1);
+  font-size: var(--fs-5);
+  color: var(--ink);
+  line-height: var(--lh-tight);
   overflow-wrap: anywhere;
 }
 .collection-detail-page .collection-detail-type {
-  font-size: 0.9rem;
-  color: var(--muted);
-  margin: 0 0 1.375rem;
+  margin: 0 0 var(--space-4);
+  font-size: var(--fs-2);
+  color: var(--ink-2);
 }
 
-/* ── meta hairline ─────────────────────────────────────────────────── */
+/* ── 메타: 행마다 단선 ────────────────────────────────────────────── */
 .collection-detail-page .collection-detail-meta {
-  margin: 0 0 1.375rem;
-  border-top: 2px solid var(--text);
+  margin: 0 0 var(--space-4);
+  border-top: var(--bw-1) solid var(--rule);
 }
 .collection-detail-page .collection-detail-meta-row {
   display: grid;
   grid-template-columns: 6.875rem 1fr;
-  gap: 0.875rem;
-  padding: 0.75rem 0.125rem;
-  border-bottom: 1px solid var(--line);
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: var(--bw-1) solid var(--rule);
   align-items: baseline;
 }
 .collection-detail-page .collection-detail-meta-row dt {
   margin: 0;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--muted);
+  font-size: var(--fs-2);
+  font-weight: var(--fw-regular);
+  color: var(--ink-2);
 }
 .collection-detail-page .collection-detail-meta-row dd {
   margin: 0;
-  font-size: 0.9rem;
-  color: var(--text);
+  font-size: var(--fs-3);
+  font-weight: var(--fw-regular);
+  color: var(--ink);
   overflow-wrap: anywhere;
 }
+/* 창 표면 안 링크는 --link 색 + 밑줄이다. */
 .collection-detail-page .collection-detail-meta-row dd a {
-  color: var(--brand-ink);
-  font-weight: 600;
+  color: var(--link);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+@media (hover: hover) {
+  .collection-detail-page .collection-detail-meta-row dd a:hover {
+    background: var(--select);
+    color: var(--on-select);
+    text-decoration: none;
+  }
+}
+.collection-detail-page .collection-detail-meta-row dd a:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
   text-decoration: none;
 }
-.collection-detail-page .collection-detail-meta-row dd a:hover {
-  text-decoration: underline;
-}
 .collection-detail-page .collection-detail-meta-lock {
-  color: var(--muted);
-  font-size: 0.75rem;
-  margin-left: 0.5rem;
+  color: var(--ink-2);
+  font-size: var(--fs-1);
+  margin-left: var(--space-2);
   white-space: nowrap;
 }
 
-/* ── memo ──────────────────────────────────────────────────────────── */
+/* ── 메모: 창 안 구획(위 단선 + 소제목) ───────────────────────────── */
 .collection-detail-page .collection-detail-memo-head {
-  margin: 0 0 0.375rem;
-  font-size: 0.875rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  color: var(--text);
+  margin: 0 0 var(--space-2);
+  font-size: var(--fs-3);
+  font-weight: var(--fw-regular);
+  color: var(--ink);
 }
 .collection-detail-page .collection-detail-memo {
-  margin: 0 0 1.25rem;
-  font-size: 0.9rem;
-  line-height: 1.7;
-  color: var(--text);
+  margin: 0 0 var(--space-4);
+  font-size: var(--fs-3);
+  line-height: var(--lh-base);
+  color: var(--ink);
   overflow-wrap: anywhere;
 }
 
-/* ── trade banner ──────────────────────────────────────────────── */
-/* 교환 수량은 실제 데이터라 정보 쪽은 색을 살리고, 버튼은 교환 기능이
-   아직 열리지 않아 눌리는 것처럼 보이지 않게 한 단계 흐리게 뒀다. */
+/* ── 교환 안내: 1px 테두리 상자 ───────────────────────────────────── */
+/* 교환 버튼은 기능이 열리기 전이라 비활성 모양(--off)으로 둔다. */
 .collection-detail-page .collection-detail-trade-banner {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.875rem 1rem;
-  border: 1px solid var(--up-ink);
-  border-radius: 11px;
-  background: var(--up-soft);
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: var(--bw-1) solid var(--ink);
+  background: var(--surface);
 }
 .collection-detail-page .collection-detail-trade-title {
   margin: 0;
-  font-size: 0.84rem;
-  font-weight: 700;
-  color: var(--up-ink);
+  font-size: var(--fs-2);
+  color: var(--ink);
 }
 .collection-detail-page .collection-detail-trade-note {
-  margin: 0.125rem 0 0;
-  font-size: 0.78rem;
-  color: var(--up-ink);
-  opacity: 0.85;
+  margin: var(--space-1) 0 0;
+  font-size: var(--fs-1);
+  color: var(--ink-2);
 }
 .collection-detail-page .collection-detail-trade-cta {
   margin-left: auto;
   flex-shrink: 0;
-  height: 2.375rem;
-  padding: 0 1rem;
-  border-radius: 9px;
-  border: 1px solid var(--line);
-  background: var(--bg-soft);
-  color: var(--muted);
-  font-size: 0.8125rem;
-  font-weight: 700;
+  min-height: var(--hit-md);
+  padding: var(--space-1) var(--space-3);
+  border: var(--bw-1) solid var(--off);
+  background: transparent;
+  color: var(--off);
+  font-size: var(--fs-2);
   cursor: not-allowed;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.0625rem;
 }
 .collection-detail-page .collection-detail-trade-hint {
-  font-size: 0.625rem;
-  font-weight: 600;
+  font-size: var(--fs-1);
 }
 
-/* ── .gi-N series-ink rebinding ────────────────────────────────── */
-/* 반드시 있어야 한다 — 이 블록이 없으면 색 막대·점·작품명이 전부 밋밋한
-   회색으로 렌더된다(실제로 발생했던 결함). 값은 다른 상세 페이지의 같은
-   블록과 동일하되 이 페이지 스코프로 복사한 것이다. */
-.collection-detail-page .gi-0 { --series-ink: var(--muted); }
+/* ── 시리즈 색 연결: .gi-N이 --series-ink를 시리즈 토큰에 묶는다 ───── */
+/* 쓰는 곳은 작품 줄의 점 하나뿐이다. */
+.collection-detail-page .gi-0 { --series-ink: var(--ink-2); }
 .collection-detail-page .gi-1 { --series-ink: var(--series-1-ink); }
 .collection-detail-page .gi-2 { --series-ink: var(--series-2-ink); }
 .collection-detail-page .gi-3 { --series-ink: var(--series-3-ink); }
@@ -360,21 +361,19 @@
 .collection-detail-page .gi-11 { --series-ink: var(--series-11-ink); }
 .collection-detail-page .gi-12 { --series-ink: var(--series-12-ink); }
 
-/* ── narrow (≤45rem): single column, fixed bottom action bar ─────────── */
+/* ── 좁은 화면(≤45rem): 1열, 하단 고정 동작 바 ───────────────────── */
 @media (max-width: 45rem) {
-  /* 하단 고정 바를 위한 여백 — 바 자체 콘텐츠(상하 패딩 0.625rem +
-     버튼 높이 약 2.75rem + safe-area) 기준으로 여유를 둔 값이며 시안의
-     고정 64px 값이 아니다. 맨 아래까지 스크롤해 마지막 메타 행/메모
-     문단이 가려지지 않는지 확인할 것. */
+  /* 하단 고정 바(위아래 여백 + 버튼 높이 + 안전 영역)가 마지막 줄을 가리지
+     않게 쪽과 문서 끝에 여백을 둔다. */
   .collection-detail-page {
     padding-bottom: calc(6rem + var(--site-tabbar-h, 0px));
   }
-  /* 고정 바가 푸터 끝을 덮지 않게 문서 끝에 바 높이만큼 여백 */
   body:has(.collection-detail-page .collection-detail-actions) {
     padding-bottom: calc(6rem + var(--site-tabbar-h, 0px));
   }
   .collection-detail-page .collection-detail-grid {
     grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
   }
   .collection-detail-page .collection-detail-gallery {
     grid-row: 1;
@@ -383,21 +382,11 @@
     grid-row: 2;
   }
   .collection-detail-page .collection-detail-title {
-    font-size: var(--fs-xl-mobile);
-    line-height: 1.25;
+    font-size: var(--fs-4);
   }
   .collection-detail-page .collection-detail-meta-row {
     grid-template-columns: 5.375rem 1fr;
-    gap: 0.625rem;
-    padding: 0.5625rem 0;
-  }
-  .collection-detail-page .collection-detail-pill {
-    left: 0.625rem;
-    top: 0.625rem;
-  }
-  .collection-detail-page .collection-detail-pill-tag {
-    font-size: 0.66rem;
-    padding: 0.1875rem 0.625rem;
+    gap: var(--space-2);
   }
   .collection-detail-page .collection-detail-trade-banner {
     flex-direction: column;
@@ -408,11 +397,8 @@
     width: 100%;
   }
 
-  /* 고정, 전폭 액션 바(BIR 승인된 시안 변경 — 시안은 떠 있는 인셋
-     카드). DOM 순서는 항상 수정 → 삭제(D5) — `order`나 row-reverse,
-     grid-column 반전을 쓰지 않는다. 과거 트랙에서 `order` 반전이
-     WCAG 2.4.3 탭 순서 위반으로 판정된 적이 있어, 시안의 모바일
-     프레임이 삭제를 왼쪽에 두더라도 이 페이지는 반복하지 않는다. */
+  /* 고정 전폭 바. DOM 순서는 항상 수정 → 삭제이고 order·row-reverse를 쓰지
+     않는다(WCAG 2.4.3). 배경은 불투명 표면이라 아래 내용이 비치지 않는다. */
   .collection-detail-page .collection-detail-actions {
     position: fixed;
     left: 0;
@@ -420,19 +406,13 @@
     bottom: var(--site-tabbar-h, 0px);
     z-index: 20;
     margin-top: 0;
-    padding: 0.625rem var(--page-pad-x) calc(0.625rem + env(safe-area-inset-bottom));
-    border-top: 1px solid var(--line);
-    background: var(--chrome-glass-cta);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-  }
-  .collection-detail-page .collection-detail-edit-btn {
-    height: 2.75rem;
+    padding: var(--space-2) var(--page-pad-x) calc(var(--space-2) + env(safe-area-inset-bottom));
+    border-top: var(--bw-2) solid var(--ink);
+    background: var(--surface);
   }
   .collection-detail-page .collection-detail-delete-btn {
     flex: none;
-    width: 2.75rem;
-    height: 2.75rem;
+    width: var(--hit-lg);
     padding: 0;
   }
   .collection-detail-page .collection-detail-delete-text {
@@ -440,7 +420,6 @@
   }
   .collection-detail-page .collection-detail-delete-icon {
     display: inline;
-    font-size: 1.1rem;
+    font-size: var(--fs-3);
   }
-
 }
