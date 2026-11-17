@@ -202,10 +202,10 @@ Frontend Review Evidence이며, 이것 없이 다시 구현하면 게이트를 �
 - `prefetch_related("photos")` Deferred Note — 방문 기록 섹션이 사진 썸네일을
   렌더하기로 하면 `archive/queries.py`의 `list_visit_records_for_personal_entry`에
   복원 필요(현재 미렌더라 제거됨)
-- **사진 삭제 성공 후 포커스 소실** — `personal_edit.js:190` `removeBtn.remove()`
+- **사진 삭제 성공 후 포커스 소실** — `personal_edit.js:213` `removeBtn.remove()`
   뒤 포커스 이동이 지금도 없다 `[코드 2026-11-17]`. 방문 쪽은 트랙 58에서 고쳤다: 삭제 뒤 남은
-  삭제 단추나 추가 단추로 포커스를 옮긴다 `[코드 visit_edit.js:227-237, visit_create.js:113-117]`.
-  이력: 그 전에는 `visit_edit.js:222-229`에 같은 패턴이 있어 **저장소 전역 선재 부채**였다.
+  삭제 단추나 추가 단추로 포커스를 옮긴다 `[코드 visit_edit.js:247-257, visit_create.js:142-146]`.
+  이력: 그 전에는 `visit_edit.js:242-249`에 같은 패턴이 있어 **저장소 전역 선재 부채**였다.
   BIR이 정보성으로 남김
 - **수정 화면 사진 입력에 라벨 2개** — `for="personal-image"`가 드롭존과
   `사진 교체` 버튼 둘 다에 걸려 접근 가능한 이름이 `"사진을 선택하세요 사진 교체"`로

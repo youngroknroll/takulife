@@ -159,7 +159,7 @@ SMTP 미설정이라 **신규 가입 자체가 동작하지 않는다.** 실사�
 
 | # | 결정 | 근거 |
 |---|---|---|
-| 1 | **"의미 있는 수정" = 실제 값 변경만** | 기존 `ActivityLogEntry.Kind.COLLECTION_ITEM_ORGANIZED`를 쓴다 — `quantity`·`is_wanted`·`tradeable_quantity`·`acquired_on` 중 **값이 실제로 바뀔 때만** 기록된다(`archive/services.py:522-535` `[실측 rg 2026-10-27]`). ⚠️ 이건 이벤트가 아니라 **도메인 테이블**이라 `core/analytics.py`가 아니라 `archive` 쪽에서 읽어야 한다 |
+| 1 | **"의미 있는 수정" = 실제 값 변경만** | 기존 `ActivityLogEntry.Kind.COLLECTION_ITEM_ORGANIZED`를 쓴다 — `quantity`·`is_wanted`·`tradeable_quantity`·`acquired_on` 중 **값이 실제로 바뀔 때만** 기록된다(`archive/services.py:527-540` `[실측 rg 2026-10-27]`). ⚠️ 이건 이벤트가 아니라 **도메인 테이블**이라 `core/analytics.py`가 아니라 `archive` 쪽에서 읽어야 한다 |
 | 2 | **구함·교환은 보조 축으로 분리** | 북극성 헤드카운트에 넣지 않는다. 교환 게이트 승인 전이라 핵심 지표를 교환 쪽으로 기울이지 않는다 |
 | 3 | **노출은 스태프 대시보드 기존 행 교체** | `staff/views/__init__.py:284` `[실측 rg 2026-11-12]`의 `weekly_active_user_count`(13종 이벤트를 전부 합친 값)를 컬렉션 기여 기준으로 바꾼다. 새 대시보드 섹션은 만들지 않는다 |
 | 4 | **월 = KST 달력월** | `AGENTS.md`가 "monthly"와 "four-week"를 별개 지표로 나열한다 — 후자가 롤링이므로 전자는 달력월로 읽는 것이 문서 내적으로 일관된다. ⚠️ `created_at`은 UTC aware로 저장되므로 경계 계산은 KST 기준이어야 한다. 이 저장소는 이미 타임존 오표시 결함을 겪었다(PR #255) |
@@ -167,7 +167,7 @@ SMTP 미설정이라 **신규 가입 자체가 동작하지 않는다.** 실사�
 #### 미해결 결정 (착수 시 사용자에게 물어라)
 
 - `collection_item_linked_to_visit` — 생성 시점 링크와 사후 재링크를 구분해 셀지.
-  같은 이벤트명을 공유한다(`archive/services.py:419`·`:557` `COLLECTION_ITEM_LINKED_TO_VISIT` 호출 `[실측 rg 2026-11-12]`; `:564`는 `MARKED_WANTED`라 바로잡음)
+  같은 이벤트명을 공유한다(`archive/services.py:424`·`:562` `COLLECTION_ITEM_LINKED_TO_VISIT` 호출 `[실측 rg 2026-11-12]`; `:569`는 `MARKED_WANTED`라 바로잡음)
 - `visit_photo_added` — 같은 달 `visit_record_created`와 별개 기여로 셀지,
   완성도 축에만 반영할지
 
@@ -594,8 +594,8 @@ F10 MFA(2026-07-01 `auth-hardening` 결정).
 - **`record-action-link` 접근 가능한 이름** — 해소(2026-11-18): 홈 '기록 대기' 행은 `aria-labelledby`(자기 id + 같은 행 제목 id, 새 번역 문자열 없음)로 행마다 이름이 다르다. 템플릿에서 이 클래스를 쓰는 곳은 `templates/core/partials/_home_collection_snapshot.html:77` 하나뿐이다 `[실측 rg 2026-11-18]`. 내 활동 목록에는 이 클래스가 없다.
 - **`static/js/shared/status.js:40` 죽은 `interested` 라벨** — 쓰이는 템플릿이 없다 `[코드 BIR 확인]`. 정리는 트리거 없음.
 - **AI 검수 후 보류한 용어 제안** — 낮은 확신이라 반영하지 않았다. 목록은 `docs/BE/i18n.md` "AI 검수 기록". 트리거: 원어민 검수 도입.
-- **스태프가 새로 만든 카테고리의 번역과 행·상세·칩 표시** — 새 카테고리도 자동으로 en·ja·zh-hans가 등록돼야 한다는 사용자 결정(2026-10-22)에 따라 트랙 44-4가 맡는다(`Category.label_translations` 초안, 러너 파이프라인). 슬러그가 그대로 나오는 행·상세·칩(`web/views/_helpers.py:67, :161` `[실측 rg 2026-10-27]`)도 그 슬라이스에서 라벨 조회로 바꾼다. 그 전까지 새 카테고리는 한국어 라벨이다.
-- **개인 항목 검색의 다국어 일치** — `archive/queries.py:324` `icontains`는 한국어 저장값만 맞춘다(영어 `exhibition` 검색은 안 걸린다). 트리거: 다국어 검색 요구.
+- **스태프가 새로 만든 카테고리의 번역과 행·상세·칩 표시** — 새 카테고리도 자동으로 en·ja·zh-hans가 등록돼야 한다는 사용자 결정(2026-10-22)에 따라 트랙 44-4가 맡는다(`Category.label_translations` 초안, 러너 파이프라인). 슬러그가 그대로 나오던 행·상세·칩(`web/views/_helpers.py:67, :161` `[실측 rg 2026-10-27, 그 시점의 줄]`)은 트랙 59에서 DB 라벨 조회로 바뀌었다(`core.categories.category_display_labels` `[코드]`, 가드레일 `docs/BE/category-vocabulary.md`). 그 슬라이스에는 번역 등록만 남는다. 그 전까지 새 카테고리는 한국어 라벨이다.
+- **개인 항목 검색의 다국어 일치** — `archive/queries.py:341` `icontains`는 한국어 저장값만 맞춘다(영어 `exhibition` 검색은 안 걸린다). 트리거: 다국어 검색 요구.
 - **`lang="ko"`를 못 붙이는 곳** — 활동 달력 항목 라벨(출처 플래그 없음, `CalendarActivityItem` 변경 필요), `alt`, 제목+날짜 혼합 `<option>`·컬렉션 상세 연결 방문 값 문자열. 트리거: 스크린리더 사용자 피드백 또는 도메인 변경 시.
 - **테스트가 실제 `media/`에 쓴다** — `MEDIA_ROOT`를 테스트가 재정의하지 않아 사진 행 15개 대비 파일 8004개가 쌓여 있다 `[실측 2026-10-23]`. 43-3과 무관한 기존 문제. 트리거: 디스크 사용량 확인 시.
 - **브라우저 미확인 항목** — 라이트 테마, 중국어 하단 고정 CTA, `/jsi18n/` 차단의 브라우저 재현, 로그인 상태 해제 확인 모달·상태 패널의 영어·일본어·중국어 동작, 실제 터치·스크린리더, 폭 385~919px 전 구간, 일부 사진만 성공하는 부분 실패, ja·zh 링크 접근 가능한 이름. 미확인 상태로 두는 것을 사용자가 수용했다(2026-10-22, 43-3 범위는 최종 보고에서 재확인). 트리거: 다음 UI 트랙 브라우저 검증.
