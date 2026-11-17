@@ -10,12 +10,12 @@
 {% endblock %}
 
 {% block content %}
-  <main class="page collection-page collection-edit-page" id="content">
+  <main class="page collection-page collection-edit-page window" id="content">
     <a class="collection-edit-back-link" href="/collection/{{ item.id }}/">{% translate "← 굿즈 상세로" %}</a>
-    <div id="collection-global-error" class="form-error" style="margin-bottom:8px;" aria-live="polite"></div>
+    <div id="collection-global-error" class="form-error" aria-live="polite"></div>
 
     <section class="collection-form-head">
-      <h1>{% translate "굿즈 수정" %}</h1>
+      <h1 class="window-title">{% translate "굿즈 수정" %}</h1>
       <p class="collection-form-subtitle">
         <span class="collection-edit-subtitle-text">
           <span class="collection-edit-subtitle-name" title="{{ item.name }}">{{ item.name }}</span>
@@ -25,7 +25,7 @@
       </p>
     </section>
 
-    <form id="collection-edit-form" class="collection-form window" data-item-id="{{ item.id }}" novalidate>
+    <form id="collection-edit-form" class="collection-form" data-item-id="{{ item.id }}" novalidate>
       <div class="collection-form-grid">
         <div class="collection-form-fields">
           <div class="collection-form-group">

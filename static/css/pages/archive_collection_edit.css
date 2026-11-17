@@ -3,12 +3,12 @@
    archive_collection.css와 함께 로드돼 `.collection-form-*` 클래스는 전부
    그대로 재사용한다. 이 파일은 수정 쪽에만 있는 부분(뒤로가기 링크, 보유/구함
    토글, "상세 정보" 구분선, 읽기 전용 방문 기록 상자, 커버 열 + 동작 줄)만
-   더한다. 폼 전체가 창(.window) 하나다.
+   더한다. <main>이 창(.page.window) 하나다.
 
    전부 `.collection-edit-page` 스코프다 — 이 템플릿의 <main>이
    `.collection-page`와 함께 갖는 쪽 루트 클래스다. */
 
-/* 뒤로 가기 링크는 바탕 위라 글자색(--ink) + 밑줄이다. */
+/* 뒤로 가기 링크는 창 안 첫 줄이고 글자색(--ink) + 밑줄이다. */
 .collection-edit-page .collection-edit-back-link {
   display: inline-block;
   margin-bottom: var(--space-3);
@@ -245,12 +245,12 @@
 @media (hover: hover) {
   .collection-edit-page .collection-edit-delete:not(:disabled):hover {
     background: var(--error);
-    color: var(--on-select);
+    color: var(--surface);
   }
 }
 .collection-edit-page .collection-edit-delete:focus-visible {
   background: var(--error);
-  color: var(--on-select);
+  color: var(--surface);
 }
 /* 취소 = 링크(등록 쪽과 같다). */
 .collection-edit-page .collection-edit-cancel {
@@ -258,7 +258,7 @@
   align-items: center;
   min-height: var(--hit-md);
   padding: 0 var(--space-1);
-  color: var(--ink);
+  color: var(--link);
   font-size: var(--fs-2);
   text-decoration: underline;
   text-underline-offset: 0.2em;
@@ -323,17 +323,14 @@
 }
 
 @media (max-width: 45rem) {
-  /* 하단 고정 바 높이만큼 여백을 남겨 삭제 버튼과 오류 상자가 끝까지
-     스크롤해도 가려지지 않게 한다. */
-  .collection-edit-page {
-    padding-bottom: calc(6rem + var(--site-tabbar-h, 0px));
-  }
+  /* 하단 고정 바 높이만큼 문서 끝에 여백을 남겨 삭제 버튼과 오류 상자가
+     끝까지 스크롤해도 가려지지 않게 한다. 여백은 이 한 곳에만 둔다. */
   body:has(.collection-edit-page .collection-edit-actions) {
     padding-bottom: calc(6rem + var(--site-tabbar-h, 0px));
   }
-  /* 쪽 여백이 이미 있으니 폼 아래 여백은 겹치지 않게 뺀다. */
-  .collection-edit-page .collection-form {
-    margin-bottom: 0;
+  /* Tab으로 이동한 필드가 고정 바 뒤에 가려지지 않게 스크롤 여유를 둔다. */
+  html:has(.collection-edit-page .collection-edit-actions) {
+    scroll-padding-bottom: calc(4.5rem + var(--site-tabbar-h, 0px));
   }
 
   /* 클래스 3개짜리 특이도라 archive_collection.css의 2클래스 규칙을

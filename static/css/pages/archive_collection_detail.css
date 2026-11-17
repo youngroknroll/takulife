@@ -41,7 +41,6 @@
   font-size: var(--fs-2);
 }
 .collection-detail-page .collection-detail-global-error:empty {
-  display: none;
   margin: 0;
   padding: 0;
   border: 0;
@@ -118,19 +117,19 @@
   white-space: nowrap;
 }
 .collection-detail-page .collection-detail-pill-tag.is-owned {
-  padding: calc(var(--space-1) / 2 + var(--bw-1)) calc(var(--space-2) + var(--bw-1));
+  padding: calc(var(--space-1) / 2 + var(--bw-3)) calc(var(--space-2) + var(--bw-3));
   background: var(--select);
   color: var(--on-select);
 }
 .collection-detail-page .collection-detail-pill-tag.is-wanted {
-  padding: calc(var(--space-1) / 2 + var(--bw-1)) calc(var(--space-2) + var(--bw-1));
+  padding: calc(var(--space-1) / 2 + var(--bw-3) - var(--bw-1)) calc(var(--space-2) + var(--bw-3) - var(--bw-1));
   border: var(--bw-1) solid var(--ink);
 }
 .collection-detail-page .collection-detail-pill-tag.is-tradeable {
   border: var(--bw-3) double var(--ink);
 }
 .collection-detail-page .collection-detail-pill-tag.is-none {
-  padding: calc(var(--space-1) / 2 + var(--bw-1)) calc(var(--space-2) + var(--bw-1));
+  padding: calc(var(--space-1) / 2 + var(--bw-3) - var(--bw-1)) calc(var(--space-2) + var(--bw-3) - var(--bw-1));
   border: var(--bw-1) dashed var(--rule);
   color: var(--ink-2);
 }
@@ -171,7 +170,7 @@
   }
   .collection-detail-page .collection-detail-delete-btn:not(:disabled):hover {
     background: var(--error);
-    color: var(--on-select);
+    color: var(--surface);
   }
 }
 .collection-detail-page .collection-detail-edit-btn:focus-visible {
@@ -181,7 +180,7 @@
 }
 .collection-detail-page .collection-detail-delete-btn:focus-visible {
   background: var(--error);
-  color: var(--on-select);
+  color: var(--surface);
 }
 /* 이미 삭제된 굿즈: 수정 링크는 눌려도 이동하지 않고 비활성 모양이다. */
 .collection-detail-page .collection-detail-edit-btn.is-item-gone-locked,
@@ -211,6 +210,7 @@
 .collection-detail-page .collection-detail-bar-dot {
   width: 0.625rem;
   height: 0.625rem;
+  border-radius: 50%;
   background: var(--series-ink, var(--ink-2));
   flex-shrink: 0;
 }
@@ -370,6 +370,10 @@
   }
   body:has(.collection-detail-page .collection-detail-actions) {
     padding-bottom: calc(6rem + var(--site-tabbar-h, 0px));
+  }
+  /* Tab으로 이동한 요소가 고정 바 뒤에 가려지지 않게 스크롤 여유를 둔다. */
+  html:has(.collection-detail-page .collection-detail-actions) {
+    scroll-padding-bottom: calc(4.5rem + var(--site-tabbar-h, 0px));
   }
   .collection-detail-page .collection-detail-grid {
     grid-template-columns: minmax(0, 1fr);

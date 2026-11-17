@@ -301,6 +301,11 @@
   .collection-page [data-expanded="false"] .collection-work-list {
     display: none;
   }
+  /* 접힌 창은 토글 한 줄뿐이라 위아래 패딩을 0으로 둔다. */
+  .collection-page .collection-facet-group--work[data-expanded="false"] {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
   .collection-page [data-expanded="true"] .collection-work-list {
     display: flex;
     flex-direction: row;
@@ -417,6 +422,7 @@
   width: 0.625rem;
   height: 0.625rem;
   border: var(--bw-1) solid transparent;
+  border-radius: 50%;
   background: var(--series-ink, var(--ink-2));
   background-clip: padding-box;
 }
@@ -465,7 +471,7 @@
 /* ── 상태 배지(보유/구함/교환/미보유): 색이 아니라 테두리 모양으로 구분 ── */
 /* .collection-pill은 배지 낱개(.collection-pill-tag) 1~3개를 감싸는 래퍼다.
    보유 = 선택색 채움, 구함 = 1px 실선, 교환 = 3px 이중선, 미보유 = 1px 점선.
-   테두리 굵기 차이는 안쪽 여백으로 메워 배지 높이를 같게 둔다. */
+   테두리 굵기 차이는 안쪽 여백으로 메워 배지 높이를 28px로 같게 둔다. */
 .collection-page .collection-pill {
   display: inline-flex;
   align-items: center;
@@ -482,24 +488,32 @@
   white-space: nowrap;
 }
 .collection-page .collection-pill-tag.is-owned {
-  padding: calc(var(--space-1) / 2 + var(--bw-1)) calc(var(--space-2) + var(--bw-1));
+  padding: calc(var(--space-1) / 2 + var(--bw-3)) calc(var(--space-2) + var(--bw-3));
   background: var(--select);
   color: var(--on-select);
 }
 .collection-page .collection-pill-tag.is-wanted {
-  padding: calc(var(--space-1) / 2 + var(--bw-1)) calc(var(--space-2) + var(--bw-1));
+  padding: calc(var(--space-1) / 2 + var(--bw-3) - var(--bw-1)) calc(var(--space-2) + var(--bw-3) - var(--bw-1));
   border: var(--bw-1) solid var(--ink);
 }
 .collection-page .collection-pill-tag.is-tradeable {
   border: var(--bw-3) double var(--ink);
 }
 .collection-page .collection-pill-tag.is-none {
-  padding: calc(var(--space-1) / 2 + var(--bw-1)) calc(var(--space-2) + var(--bw-1));
+  padding: calc(var(--space-1) / 2 + var(--bw-3) - var(--bw-1)) calc(var(--space-2) + var(--bw-3) - var(--bw-1));
   border: var(--bw-1) dashed var(--rule);
   color: var(--ink-2);
 }
 /* 커버 위 배지는 배지 자체 표면이 판 역할을 한다. 세로로 쌓아 오른쪽 정렬해
    3개가 붙어도 타일 밖으로 안 나간다. */
+/* 카드·행 링크를 누르는 동안 cards.css가 자식 글자를 흰색으로 만든다.
+   표면 바탕 배지는 글자색을 되돌려 읽히게 한다. */
+.collection-page a:active .collection-pill-tag:not(.is-owned) {
+  color: var(--ink);
+}
+.collection-page a:active .collection-pill-tag.is-none {
+  color: var(--ink-2);
+}
 .collection-page .collection-pill--cover {
   position: absolute;
   top: var(--space-2);
@@ -712,7 +726,7 @@
   }
   .collection-page .collection-delete-btn:hover {
     background: var(--error);
-    color: var(--on-select);
+    color: var(--surface);
   }
 }
 .collection-page .collection-edit-link:focus-visible {
@@ -722,15 +736,15 @@
 }
 .collection-page .collection-delete-btn:focus-visible {
   background: var(--error);
-  color: var(--on-select);
+  color: var(--surface);
 }
 
 .collection-page #collection-global-error.form-error {
   font-size: var(--fs-2);
   color: var(--error);
-  min-height: 1.2em;
 }
 .collection-page #collection-global-error.form-error:not(:empty) {
+  margin-bottom: var(--space-2);
   padding: var(--space-2) var(--space-3);
   border: var(--bw-1) solid var(--error);
   background: var(--surface);
@@ -738,22 +752,22 @@
 
 /* ── 좁은 화면: 머리를 쌓고 툴바를 줄바꿈, 검색은 전폭 ────────────── */
 @media (max-width: 45rem) {
-  /* 열을 2개로 둔다 — 제목이 둘을 가로지르고 토글/버튼이 아래 행을 나눠 쓴다. */
+  /* 제목이 첫 줄을 다 쓰고, 토글과 추가 버튼은 한 줄에 들어가면 나란히,
+     좁은 언어(일본어 320px)에서는 버튼이 다음 줄로 내려가 겹치지 않는다. */
   .collection-page .collection-head {
-    grid-template-columns: minmax(0, 1fr) auto;
+    display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--space-2);
   }
   .collection-page .collection-head-title {
-    grid-column: 1 / -1;
+    flex: 1 0 100%;
   }
   .collection-page .collection-view-toggle {
-    grid-column: 1;
-    justify-self: start;
     align-self: auto;
   }
   .collection-page .collection-head-actions {
-    grid-column: 2;
+    margin-left: auto;
   }
   .collection-page .collection-head-title h1 {
     font-size: var(--fs-4);
@@ -841,19 +855,15 @@
 /* ── /collection/new/·수정 폼 ──────────────────────────────────── */
 /* 이 폼은 archive_visits.css의 공유 클래스를 이 파일로 완전히 옮겼다 —
    절반만 옮기면 폼 스타일이 조용히 빠지므로 전부 `.collection-page` 스코프다.
-   쪽 머리(뒤로 가기·h1·부제)는 바탕 위에 두고, 폼 전체가 창(.window) 하나다.
-   h1이 폼 바깥 <section>에 있어 창 제목으로 올리지 못한다. */
+   <main>이 창(.page.window, 폭·여백은 cards.css) 하나이고 h1이 창 제목이다.
+   뒤로 가기·부제·필수 안내는 창 안 머리다. */
 
 .collection-page .collection-form-head {
-  max-width: 56.25rem;
   margin-bottom: var(--space-4);
-}
-.collection-page .collection-form-head h1 {
-  margin: var(--space-2) 0;
-  font-size: var(--fs-5);
 }
 .collection-page .collection-form-head .back-link {
   display: inline-block;
+  margin-bottom: var(--space-2);
   color: var(--ink);
   font-size: var(--fs-2);
   text-decoration: underline;
@@ -884,10 +894,6 @@
   flex: none;
   color: var(--ink-2);
   font-size: var(--fs-1);
-}
-
-.collection-page .collection-form {
-  max-width: 56.25rem;
 }
 
 /* DOM 순서는 필드-다음-이미지(이름이 탭 순서상 먼저 오도록)라 이미지는
@@ -1021,12 +1027,11 @@
   font: inherit;
   width: 100%;
 }
-/* 오류 입력은 색만이 아니라 2px 테두리 + 오류색 글자로 알린다. */
+/* 오류 입력은 2px --ink 테두리로 알린다(글자색은 그대로). 오류 문구는 오류 상자가 맡는다. */
 .collection-page .collection-form input[aria-invalid="true"],
 .collection-page .collection-form select[aria-invalid="true"] {
   border-width: var(--bw-2);
-  border-color: var(--error);
-  color: var(--error);
+  border-color: var(--ink);
 }
 .collection-page .collection-form-checkbox input[type="checkbox"] {
   width: 1rem;
@@ -1034,6 +1039,19 @@
   min-height: 0;
   margin: 0;
   accent-color: var(--select);
+}
+
+/* 스크린리더 전용 보조 텍스트(이 페이지 복제본 — 전역 유틸리티가 없다). */
+.collection-page .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* ── 구분선 + 상세 본문 ────────────────────────────────────────── */
@@ -1112,7 +1130,7 @@
   white-space: nowrap;
 }
 
-/* ── 오류 상자: 비어 있으면 아예 숨긴다 ─────────────────────────── */
+/* ── 오류 상자: 낭독 영역이라 숨기지 않고, 비면 높이만 0으로 둔다 ──── */
 .collection-page .collection-form-error {
   margin: var(--space-3) 0 0;
   padding: var(--space-2) var(--space-3);
@@ -1122,7 +1140,6 @@
   font-size: var(--fs-2);
 }
 .collection-page .collection-form-error:empty {
-  display: none;
   margin: 0;
   padding: 0;
   border: 0;
@@ -1162,7 +1179,7 @@
   min-height: var(--hit-md);
   padding: 0 var(--space-1);
   border: 0;
-  color: var(--ink);
+  color: var(--link);
   font-size: var(--fs-2);
   text-decoration: underline;
   text-underline-offset: 0.2em;
@@ -1208,10 +1225,10 @@
     grid-template-columns: 1fr;
   }
   /* 하단 고정 바로 만들어 긴 폼 끝까지 스크롤하지 않아도 제출/취소에
-     닿을 수 있게 한다. 폼 아래 여백은 이 바가 마지막 필드를 가리지 않게
-     하기 위함이며, 창 안이 아니라 창 바깥에 둔다. */
-  .collection-page .collection-form {
-    margin-bottom: calc(5rem + var(--site-tabbar-h, 0px));
+     닿을 수 있게 한다. 바가 마지막 필드를 가리지 않게 하는 여백은 문서 끝
+     한 곳(아래 body)에만 둔다. */
+  .collection-page .collection-form-head .window-title {
+    margin: 0 0 var(--space-1);
   }
   /* 고정 바가 푸터 끝을 덮지 않게 문서 끝에 바 높이만큼 여백 */
   body:has(.collection-page .collection-form-actions) {
@@ -1230,5 +1247,9 @@
   }
   .collection-page .collection-form-note {
     display: none;
+  }
+  /* Tab으로 이동한 필드가 고정 바 뒤에 가려지지 않게 스크롤 여유를 둔다. */
+  html:has(.collection-page .collection-form-actions) {
+    scroll-padding-bottom: calc(4.5rem + var(--site-tabbar-h, 0px));
   }
 }

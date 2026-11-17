@@ -123,6 +123,34 @@
   }
 }
 
+/* 폼·상세처럼 <main> 전체가 창인 쪽: 폭·가운데 정렬·여백을 한 곳에서 정한다.
+   제목이 테두리 위로 반 줄 올라오므로 위 여백을 넉넉히 둔다. */
+.page.window {
+  box-sizing: border-box;
+  width: min(56.25rem, 100% - 2 * var(--page-pad-x));
+  max-width: none;
+  margin: var(--space-5) auto;
+  padding: calc(var(--space-3) + 0.5rem) var(--space-3) var(--space-3);
+}
+
+@media (max-width: 45rem) {
+  .page.window {
+    margin-top: var(--space-3);
+    padding: var(--space-3) var(--space-2);
+  }
+}
+
+/* 쪽 제목(h1)이 창 제목일 때 대괄호는 글자 요소 대신 CSS로 둔다. 대체 글자를
+   비워 스크린 리더에는 읽히지 않게 한다. */
+h1.window-title::before {
+  content: "[ ";
+  content: "[ " / "";
+}
+h1.window-title::after {
+  content: " ]";
+  content: " ]" / "";
+}
+
 /* ── 행 반전 + 눌림 반전 (공용) ───────────────────────────────
    행 전체가 링크인 목록 행 3종과 .row-invert를 붙인 행은 키보드 포커스
    (:has(:focus-visible))나 hover(hover 가능한 기기만)에서 배경 --select +
@@ -305,7 +333,7 @@
   color: var(--ink-2);
 }
 
-.window .empty-state {
+.window .empty-state:not(.calendar-error-panel) {
   padding: var(--space-4) var(--space-2);
   border: none;
   background: none;

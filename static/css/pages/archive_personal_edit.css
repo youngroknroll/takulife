@@ -157,6 +157,10 @@
   body:has(.personal-edit-page .personal-edit-actions) {
     padding-bottom: calc(6rem + var(--site-tabbar-h, 0px));
   }
+  /* 포커스가 고정 막대 뒤로 들어가지 않게 스크롤 여백을 막대 높이만큼 둔다. */
+  html:has(.personal-edit-page .personal-edit-actions) {
+    scroll-padding-bottom: calc(4.5rem + var(--site-tabbar-h, 0px));
+  }
 
   .personal-edit-page .personal-edit-actions-row {
     display: block;

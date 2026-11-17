@@ -8,19 +8,19 @@
 {% endblock %}
 
 {% block content %}
-  <main class="page collection-page" id="content">
-    <div id="collection-global-error" class="form-error" style="margin-bottom:8px;" aria-live="polite"></div>
+  <main class="page collection-page window" id="content">
+    <div id="collection-global-error" class="form-error" aria-live="polite"></div>
 
     <section class="collection-form-head">
       <a class="back-link" href="/collection/">{% translate "← 내 컬렉션으로" %}</a>
-      <h1>{% translate "컬렉션 항목 등록" %}</h1>
+      <h1 class="window-title">{% translate "컬렉션 항목 등록" %}</h1>
       <p class="collection-form-subtitle">
         <span>{% translate "내 컬렉션에 새 굿즈를 추가합니다" %}</span>
         <span class="collection-form-legend">{% translate "＊ 표시는 필수" %}</span>
       </p>
     </section>
 
-    <form id="collection-create-form" class="collection-form window" novalidate>
+    <form id="collection-create-form" class="collection-form" novalidate>
       <input type="hidden" name="client_token" value="{{ client_token }}">
 
       <div class="collection-form-grid">

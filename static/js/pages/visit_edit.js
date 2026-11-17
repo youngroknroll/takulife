@@ -150,8 +150,9 @@
       var next = buttons[Math.min(index, buttons.length - 1)];
       if (next) { next.focus(); }
     } else {
-      var input = document.getElementById("visit-photos");
-      if (input) { input.focus(); }
+      // 숨은 파일 입력은 보이지 않으므로 눈에 보이는 추가 단추로 옮긴다.
+      var trigger = document.getElementById("visit-photos-trigger");
+      if (trigger) { trigger.focus(); }
     }
   }
 
@@ -230,6 +231,10 @@
         }
         refreshCover();
         updateTrigger();
+        // 눌렀던 삭제 단추가 사라졌으므로 남은 삭제 단추나 추가 단추로 포커스를 옮긴다.
+        var nextFocus = grid.querySelector("[data-existing-photo-id]") ||
+          document.getElementById("visit-photos-trigger");
+        if (nextFocus) { nextFocus.focus(); }
         return;
       }
 

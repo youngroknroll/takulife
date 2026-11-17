@@ -372,8 +372,8 @@
 }
 .personal-detail-page .personal-detail-promote-form {
   margin-bottom: var(--space-3);
-  padding: var(--space-2) var(--space-3);
-  border: var(--bw-1) solid var(--rule);
+  padding: var(--space-2) 0 0;
+  border-top: var(--bw-1) solid var(--rule);
 }
 .personal-detail-page .promote-note {
   margin: 0 0 var(--space-2);
@@ -513,6 +513,10 @@
   /* 고정 바가 푸터 끝을 덮지 않게 문서 끝에 바 높이만큼 여백 */
   body:has(.personal-detail-page .personal-detail-cta-bar:not([hidden])) {
     padding-bottom: calc(6rem + var(--site-tabbar-h, 0px));
+  }
+  /* 포커스가 고정 막대 뒤로 들어가지 않게 스크롤 여백을 막대 높이만큼 둔다. */
+  html:has(.personal-detail-page .personal-detail-cta-bar:not([hidden])) {
+    scroll-padding-bottom: calc(4.5rem + var(--site-tabbar-h, 0px));
   }
   .personal-detail-page .personal-detail-grid {
     grid-template-columns: minmax(0, 1fr);

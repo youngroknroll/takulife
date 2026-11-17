@@ -1,18 +1,12 @@
 /* archive_visit_create.css — /archive/visits/new/ 전용 작성 페이지(DOS 형태).
-   바탕 위에는 돌아가기 링크·h1·안내만 두고, 폼 전체(.visit-create-grid.window)가
-   쪽의 주 창 하나다. 입력은 1px 테두리, 주 버튼은 2px 테두리, 포커스는
+   <main> 전체가 쪽의 주 창 하나(공용 .page.window)이고 h1이 창 제목이다. 입력은 1px 테두리, 주 버튼은 2px 테두리, 포커스는
    전역 링(base.css)을 그대로 쓴다. 색은 토큰만, 반경·그림자·전환은 쓰지 않는다. */
 
-.visit-create-page {
-  max-width: 51.25rem;
-  margin: 0 auto;
-}
-
-/* ── 바탕 위: 돌아가기 링크 + 머리 ───────────────────────────────── */
+/* ── 창 안 머리: 돌아가기 링크 + 안내 ────────────────────── */
 .visit-create-page .visit-create-back-link {
   display: inline-block;
   margin-bottom: var(--space-3);
-  color: var(--ink);
+  color: var(--link);
   font-size: var(--fs-2);
   text-decoration: underline;
   text-underline-offset: 0.2em;
@@ -25,20 +19,19 @@
   }
 }
 
+/* 머리 구간은 창 안 첫 줄이다. 제목(h1.window-title)은 창 테두리 위에 얹혀
+   흐름에서 빠지므로 안내 글자만 오른쪽에 남고, 아래에 단선을 둔다. */
 .visit-create-page .visit-create-head {
+  padding-bottom: var(--space-3);
   margin-bottom: var(--space-3);
+  border-bottom: var(--bw-1) solid var(--rule);
 }
 .visit-create-page .visit-create-head-row {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: var(--space-1) var(--space-3);
-}
-.visit-create-page .visit-create-head h1 {
-  margin: 0;
-  font-size: var(--fs-5);
-  line-height: var(--lh-tight);
 }
 .visit-create-page .visit-create-legend {
   color: var(--ink-2);
@@ -159,7 +152,7 @@
   cursor: pointer;
 }
 /* 눈에 보이는 22px 단추 둘레에 44px 누름 영역을 만든다. */
-.visit-create-page .photo-preview-remove::after {
+.visit-create-page .photo-preview-remove::before {
   content: "";
   position: absolute;
   top: 50%;
@@ -367,12 +360,16 @@
 
 /* ── 좁은 화면(≤45rem): 1열, 탭 바 위 고정 버튼 막대 ─────────────── */
 @media (max-width: 45rem) {
-  .visit-create-page {
-    padding-bottom: calc(6rem + var(--site-tabbar-h, 0px));
+  .visit-create-page .visit-create-head-row {
+    justify-content: space-between;
   }
   /* 고정 막대가 푸터 끝을 덮지 않게 문서 끝에 막대 높이만큼 여백 */
   body:has(.visit-create-page .visit-create-actions) {
     padding-bottom: calc(6rem + var(--site-tabbar-h, 0px));
+  }
+  /* 포커스가 고정 막대 뒤로 들어가지 않게 스크롤 여백을 막대 높이만큼 둔다. */
+  html:has(.visit-create-page .visit-create-actions) {
+    scroll-padding-bottom: calc(4.5rem + var(--site-tabbar-h, 0px));
   }
   .visit-create-page .visit-create-grid {
     grid-template-columns: minmax(0, 1fr);
