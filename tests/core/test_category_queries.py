@@ -92,3 +92,40 @@ def test_슬롯이_재배정되면_다음_슬롯_맵_조회가_바뀐_슬롯을_
     슬롯_맵 = palette_slot_by_slug()
 
     assert 슬롯_맵[category.slug] == 새_슬롯
+
+
+def test_고정_새_행없음_슬러그를_섞어_넘기면_라벨_맵을_쿼리_한_번으로_돌려준다(
+    django_assert_num_queries,
+):
+    from core.categories import category_display_labels
+
+    Category.objects.create(slug="night_market", label="나이트 마켓")
+
+    with django_assert_num_queries(1):
+        라벨_맵 = category_display_labels(["popup_store", "night_market", "ghost_slug", ""])
+
+    assert set(라벨_맵) == {"popup_store", "night_market", "ghost_slug"}
+    assert str(라벨_맵["popup_store"]) == "팝업스토어"
+    assert str(라벨_맵["night_market"]) == "나이트 마켓"
+    assert str(라벨_맵["ghost_slug"]) == "ghost_slug"
+
+
+@pytest.mark.parametrize(
+    ("슬러그들", "기대_슬러그"),
+    [
+        pytest.param(["popup_store", "exhibition"], {"popup_store", "exhibition"}, id="고정만"),
+        pytest.param(["", ""], set(), id="빈_슬러그만"),
+        pytest.param([], set(), id="빈_입력"),
+    ],
+)
+def test_고정_슬러그나_빈_입력만_넘기면_조회_없이_돌려준다(
+    django_assert_num_queries, 슬러그들, 기대_슬러그
+):
+    from core.categories import category_display_labels
+
+    with django_assert_num_queries(0):
+        라벨_맵 = category_display_labels(슬러그들)
+
+    assert set(라벨_맵) == 기대_슬러그
+    if 기대_슬러그:
+        assert str(라벨_맵["popup_store"]) == "팝업스토어"

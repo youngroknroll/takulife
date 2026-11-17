@@ -9,6 +9,8 @@ Category.palette_slot(0~PALETTE_SLOT_COUNT-1)이 실제로 어떤 색인지의
 순서를 core.vocab.CATEGORY 튜플 순서와 맞춰야 한다.
 """
 
+from core.vocab import CATEGORY_LABELS
+
 
 def category_exists(slug: str) -> bool:
     """슬러그가 Category 행으로 존재하면 True(비활성 포함).
@@ -40,6 +42,15 @@ def category_labels_for(slugs) -> dict[str, str]:
     if not slugs:
         return {}
     return dict(Category.objects.filter(slug__in=slugs).values_list("slug", "label"))
+
+
+def category_display_labels(slugs) -> dict:
+    """슬러그 -> 표시 라벨. 고정 7종은 번역되는 상수 라벨을, 그 밖은 카테고리
+    행의 라벨을 한 번의 조회로 푼다. 행이 없으면 슬러그를 그대로 쓰고, 빈
+    슬러그는 결과에 넣지 않는다."""
+    unique = {slug for slug in slugs if slug}
+    db_labels = category_labels_for(slug for slug in unique if slug not in CATEGORY_LABELS)
+    return {slug: CATEGORY_LABELS.get(slug) or db_labels.get(slug, slug) for slug in unique}
 
 
 def reconcile_palette_slot(*, category_slug: str, published_count: int) -> None:
