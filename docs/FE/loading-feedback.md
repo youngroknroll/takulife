@@ -37,7 +37,7 @@
 
 ## 스피너는 버튼 폭을 바꾸면 안 된다
 
-소비자: `static/css/objects/interaction.css`(58-78, `border-right-color`),
+소비자: `static/css/objects/interaction.css`(`border-right-color`는 `:37`, 스피너 블록 `:29-41`, 겹침 규칙 `:69-79`),
 스태프: `static/css/staff/base.css`(약 177-196, `border-top-color`).
 
 ```css
@@ -48,10 +48,16 @@ button.is-loading, a.is-loading {
 button.is-loading > *, a.is-loading > * { visibility: hidden; }
 button.is-loading::after {
   position: absolute; top: 50%; left: 50%;
-  width: 0.85rem; height: 0.85rem; margin: -0.425rem 0 0 -0.425rem;
+  width: 0.85rem; height: 0.85rem; box-sizing: border-box;
+  margin: -0.425rem 0 0 -0.425rem;
   border: 2px solid currentColor; border-right-color: transparent;
 }
 ```
+
+이 조각은 요약본이다. `border`·`border-right-color`는 실제로 `.is-loading::after`(`interaction.css:29-41`)에,
+나머지는 `button.is-loading::after`(`:69-79`)에 있고 조각은 둘을 합쳤다. `box-sizing: border-box`가 없으면
+테두리(2px×2)가 0.85rem 바깥에 더해져 스피너 상자 중심이 버튼 중심에서 2px 오른쪽·아래로 어긋난다
+(스피너 상자 17.6px → 13.6px, 버튼 중심과의 차 2px → 0px `[실측 2026-11-17 Playwright, 1280px·390px, 컬렉션 등록·방문 목록 삭제·방문 수정·개인 기록 등록의 저장·삭제 버튼]`).
 
 스태프 쪽 규칙(`static/css/staff/base.css:175`)은 아직 `font-size: 0`으로 라벨을 접는다.
 아래 설명은 소비자 쪽 규칙을 기준으로 한다.
@@ -72,6 +78,7 @@ button.is-loading::after {
 **2. 색은 `currentColor`다.** 버튼 8계열의 배경·글자색을 재보니 **정답 색은
 언제나 그 버튼의 글자색**이었다 — 파란 배경엔 흰색, 흰 배경엔 검정, 외곽선
 위험 버튼엔 빨강 `[실측 2026-09-13]`. 열거하지 마라.
+로딩 중 버튼 색은 쪽의 비활성 규칙을 따라 계열마다 `--ink-2`·`--off`·원래 색으로 다르다(트랙 59에서 확인, 통일하지 않음).
 
 **3. `::after`를 절대 위치로 겹친다.** 텍스트 뒤에 이어붙이면 버튼이 커진다.
 실측으로 컬렉션·방문·장소 저장 버튼이 제출 순간 100px → 122px로 커지며
@@ -79,11 +86,10 @@ button.is-loading::after {
 고정폭 셀 안이라 폭이 늘면 셀 경계에서 잘린다.
 
 2026-11-17에 로딩 클래스를 붙이고 폭·높이·글자 크기·글자 채움색·스피너 애니메이션을
-재서 확인했다: 27개 주소(비로그인 3개 포함) × 폭 2개(1280px, 390px)의 버튼 368개에서
-폭·높이 변화 0건, 글자 크기 변화 0건, 채움색 불투명 0건, `btn-spin` 아닌 스피너 0건
-`[실측 2026-11-17 Playwright]`. 같은 스크립트의 `font-size: 0` 방식 측정은
-368개 중 340개가 어긋났다(대부분 글자 크기 0px 판정, 탈퇴 버튼 등은 폭도 줄었다)
-`[실측 2026-11-17 Playwright]`. 🗑 삭제 버튼 2곳, `.status-btn.active`의 `✓ `(`::before`),
+재서 확인했다: 27개 주소(비로그인 3개 포함) × 폭 2개(1280px, 390px)에서
+변경 전(`font-size: 0` 방식)은 버튼 368개 중 340개가 어긋났고(대부분 글자 크기 0px 판정, 탈퇴 버튼 등은 폭도 줄었다),
+변경 뒤(현재 규칙)는 392개 중 0개다: 폭·높이 변화 0건, 글자 크기 변화 0건, 채움색 불투명 0건,
+`btn-spin` 아닌 스피너 0건 `[실측 2026-11-17 Playwright, 로그인 24쪽 + 비로그인 3쪽 × 1280px·390px — 뒤 측정은 로컬 확인용 행사 4건이 더해져 버튼 수가 늘었다]`. 🗑 삭제 버튼 2곳, `.status-btn.active`의 `✓ `(`::before`),
 `.photo-preview-remove`의 `×`, ♥ 찜 버튼은 로딩 상태 스크린샷에서 글리프가 남지
 않았다 `[실측 2026-11-17 Playwright]`.
 
@@ -112,11 +118,11 @@ button.is-loading::after {
 ## 움직임 감소
 
 `prefers-reduced-motion: reduce`에서 회전을 멈추고 정지된 링만 남긴다
-`[코드 interaction.css:86-91]`. 이력: 예전에는 소비자 쪽 블록이 `hover-lift`와 `glint`만 끄고
+`[코드 interaction.css:87-92]`. 이력: 예전에는 소비자 쪽 블록이 `hover-lift`와 `glint`만 끄고
 스피너는 계속 돌게 두고 있었다. `hover-lift` CSS는 트랙 58에서 삭제됐고 `.glint`는
 `interaction.css:17-21`에서 숨겨 둔다. 새로 스피너를 추가할 때 이 처리를 빠뜨리지 마라.
 
-스피너는 `.is-loading::after`를 쓴다 `[코드 interaction.css:29-40]`. 그래서 작은 단추의 누름 영역을
+스피너는 `.is-loading::after`를 쓴다 `[코드 interaction.css:29-41]`. 그래서 작은 단추의 누름 영역을
 넓히는 가상 요소는 `::before`를 쓴다 `[코드 archive_visit_edit.css:171, archive_visit_create.css:155]`.
 `::after`에 누름 영역을 만들면 스피너가 덮어쓴다(트랙 58 BIR 판정).
 
@@ -144,3 +150,27 @@ Playwright로 순회해 "ellipsis가 걸렸고 `scrollWidth > clientWidth`인데
 로드한다. 그래서 "변경 저장" 버튼이 **브라우저 기본 회색 버튼**으로 렌더됐다
 `[실측 배경 rgb(239,239,239)]`. 전 템플릿을 훑어 이런 곳이 더 있는지 확인했고
 이 한 곳뿐이었다 `[실측 2026-09-13]`.
+
+## 기록 폼의 검증 실패 표시
+
+대상은 JS로 제출하는 기록 폼이다: 컬렉션 등록·수정, 개인 기록 등록·수정, 방문 기록 등록·수정, 개인 기록의 공식 제보 폼 2곳, 그리고 컬렉션·개인 기록·방문 기록의 삭제 실패. 헬퍼는 `window.TakuFormFeedback`(`static/js/components/form_feedback.js`)이고 규칙은 다섯 가지다 `[코드 static/js/components/form_feedback.js]`.
+
+1. 제출을 시작하면 이전 표시를 전부 해제한다(`clear`).
+2. 위반 입력에는 `aria-invalid="true"`를 붙이고, 오류 상자 id를 `aria-describedby`에 추가한다(원래 있던 토큰은 보존). 위반이 여럿이면 문서 순서상 첫 입력으로 포커스를 옮긴다(`markInvalid`). 짝 컨트롤(교차 필드 오류에서 반대편 입력)을 세 번째 인자로 넘기면 그 컨트롤이 바뀔 때도 표시가 풀린다.
+3. 입력의 값이 바뀌면(`input`·`change`) 그 입력의 표시만 해제한다.
+4. 입력에 속하지 않는 오류(권한·서버·네트워크)와 삭제 실패는 오류 상자에 `tabindex="-1"`을 주고 포커스한다(`focusError`).
+5. 서버 400 본문의 키가 입력 `name`과 같으면 그 입력을 표시한다(`showServerError`, 키 이름이 다르면 `aliases`로 잇는다).
+
+지켜야 할 것:
+
+- 헬퍼는 소비자 전용이다. 스태프와 공유하는 `static/js/shared/`에 두지 않는다.
+- 새 폼은 페이지 JS 앞에 `form_feedback.js`를 `defer`로 로드하고, 페이지 JS는 `window.TakuFormFeedback &&`로 가드한다.
+- 오류 문장 위치는 폼 아래 그대로다 `[문서 사용자 결정 2026-11-17 "지금 위치 유지"]`. 문구는 호출부의 것이고 헬퍼는 문장을 만들지 않는다.
+- 부드러운 스크롤을 넣지 않는다(모션 예외 4곳 밖, `docs/FE/design-principles.md` ⑦).
+- 새 JS 파일은 `tests/core/test_ui_korean_literal_guard.py`의 목록에 넣는다.
+
+알려진 한계:
+
+- 같은 문장을 연달아 낼 때 스크린리더가 다시 읽게 하는 보조는 없다.
+- 실제 스크린리더 낭독은 확인하지 못했다.
+- 모바일에서 위쪽 입력과 아래 오류 문장이 한 화면에 같이 들어오지 않을 수 있다.
