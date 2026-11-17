@@ -39,7 +39,7 @@
               <span class="event-category unofficial">{% translate "직접 등록" %}</span>
             {% endif %}
             {% if row.subject.category_label %}
-              <span class="record-row-cat"{% if row.subject.category_slug %} style="color: var(--cat-{{ row.subject.category_slug|slugify }}-ink, var(--brand-ink));"{% endif %}>{{ row.subject.category_label }}</span>
+              <span class="record-row-cat"{% if row.subject.category_slug %} data-category="{{ row.subject.category_slug|slugify }}"{% endif %}>{{ row.subject.category_label }}</span>
             {% endif %}
             {% if row.subject.is_official %}
               {% if row.status == 'upcoming' %}

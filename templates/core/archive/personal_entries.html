@@ -45,7 +45,7 @@
     <div id="entry-global-error" class="form-error" style="margin-bottom:8px;" aria-live="polite"></div>
 
     <section class="layout">
-      <aside class="panel" aria-label="{{ personal_aside_label }}">
+      <aside class="panel window" aria-label="{{ personal_aside_label }}">
         <div class="right-section">
           <h2 class="aside-label">{% translate "안내" %}</h2>
           <ul class="rule-list">
@@ -64,9 +64,9 @@
         </div>
       </aside>
 
-      <article class="panel">
-        <div class="results-head">
-          <h2>{% blocktranslate trimmed count counter=page_obj.paginator.count %}직접 등록 아카이브 <span class="results-count">{{ counter }}</span>건{% plural %}직접 등록 아카이브 <span class="results-count">{{ counter }}</span>건{% endblocktranslate %}</h2>
+      <article class="panel window">
+        <div class="results-head window-head">
+          <h2 class="window-title">{% blocktranslate trimmed count counter=page_obj.paginator.count %}직접 등록 아카이브 <span class="results-count">{{ counter }}</span>건{% plural %}직접 등록 아카이브 <span class="results-count">{{ counter }}</span>건{% endblocktranslate %}</h2>
           {# 옵션이 평범한 GET 링크라 JS 드롭다운 대신 <details>를 쓴다 — #}
           {# 네이티브 disclosure만으로 키보드 조작과 무JS 대체 수단이 공짜로 #}
           {# 생긴다(visits.html/statuses.html과 동일한 이유). #}

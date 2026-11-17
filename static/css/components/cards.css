@@ -292,9 +292,23 @@
 .empty-state {
   text-align: center;
   padding: 2.25rem 1rem;
-  border: var(--bw-1) dashed var(--rule);
+  border: var(--bw-1) solid var(--rule);
   background: var(--surface);
   color: var(--ink-2);
+}
+
+/* 창 안에서는 중첩 상자 없이 글자만 둔다(창 테두리가 이미 구획이다). */
+.window .notice {
+  padding: var(--space-2) 0;
+  border: none;
+  background: none;
+  color: var(--ink-2);
+}
+
+.window .empty-state {
+  padding: var(--space-4) var(--space-2);
+  border: none;
+  background: none;
 }
 
 .empty-icon {
