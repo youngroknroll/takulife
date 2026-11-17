@@ -16,6 +16,7 @@ from core.vocab import (
     REGION_LABELS,
     personal_category_label,
 )
+from events.models import Event
 from events.presenters import derive_event_display, is_recently_added
 
 
@@ -242,8 +243,9 @@ def _subject_view(obj, *, category_labels=None):
     UserEventStatus)은 전부 ``event``/``event_id``와 ``personal_entry``를
     노출하는데, 이 함수가 둘을 하나의 dict로 합쳐 템플릿과 JS가 어느 FK가
     설정됐는지로 분기하지 않게 한다. ``subject_type``/``subject_id``는
-    API 응답을 이루고, 비공개 항목(공개 페이지 없음)은 ``detail_url``이
-    비어 있으며, 굿즈는 기간 날짜가 None이다.
+    API 응답을 이루고, 공개 페이지가 없는 항목(직접 등록 항목, 게시되지
+    않은 행사)은 ``detail_url``이 비어 있으며, 굿즈는 기간 날짜가 None이다.
+    게시 여부는 ``Event.objects.published()``와 같은 뜻으로 판단한다.
 
     ``category_labels``는 슬러그 -> 라벨 맵이다. 없으면 이 행 한 건만 푼다.
     여러 행을 그리는 목록은 ``_subject_category_labels``로 만든 맵을 넘겨야
@@ -251,6 +253,7 @@ def _subject_view(obj, *, category_labels=None):
     """
     if obj.event_id is not None:
         event = obj.event
+        is_published = event.publish_status == Event.PublishStatus.PUBLISHED
         if category_labels is None:
             category_labels = category_display_labels([event.category])
         return {
@@ -264,7 +267,7 @@ def _subject_view(obj, *, category_labels=None):
             "kind": "",
             "subject_type": "event",
             "subject_id": event.id,
-            "detail_url": f"/events/{event.id}/",
+            "detail_url": f"/events/{event.id}/" if is_published else "",
         }
     entry = obj.personal_entry
     return {

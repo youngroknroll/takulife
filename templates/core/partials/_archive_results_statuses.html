@@ -52,7 +52,7 @@ margin-right:auto가 첫 자식에만 걸리기 때문이다.
               {% if row.subject.detail_url %}
                 <a href="{{ row.subject.detail_url }}" lang="ko">{{ row.subject.title }}</a>
               {% else %}
-                {{ row.subject.title }}
+                {% if row.subject.is_official %}<span lang="ko">{{ row.subject.title }}</span>{% else %}{{ row.subject.title }}{% endif %}
               {% endif %}
             </h3>
             {% if row.review_text %}

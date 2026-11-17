@@ -47,7 +47,7 @@
               {% if row.subject.detail_url %}
                 <a href="{{ row.subject.detail_url }}" lang="ko">{{ row.subject.title }}</a>
               {% else %}
-                {{ row.subject.title }}
+                {% if row.subject.is_official %}<span lang="ko">{{ row.subject.title }}</span>{% else %}{{ row.subject.title }}{% endif %}
               {% endif %}
             </h3>
             {% if row.review_text %}
