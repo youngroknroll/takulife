@@ -264,7 +264,7 @@
   display: none;
 }
 
-@media (max-width: 56.25rem) {
+@media (max-width: 56.24rem) {
   .collection-page .layout {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto;

@@ -36,7 +36,7 @@
   margin: 0 auto;
 }
 
-@media (min-width: 45.0625rem) {
+@media (min-width: 45.01rem) {
   .auth-panel-declare.window,
   .auth-panel-form.window {
     padding-inline: var(--space-4);

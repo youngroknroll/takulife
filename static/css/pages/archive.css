@@ -842,7 +842,15 @@
   display: none;
 }
 
-/* ── 53.75rem 이하: 한 열로 접고 짧은 탭 라벨을 쓴다 ───────────── */
+/* ── 56.24rem 이하: 사이드바와 결과를 한 열로 접는다 (행사 목록과 같은 짝) ── */
+@media (max-width: 56.24rem) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
+  }
+}
+
+/* ── 53.75rem 이하: 히어로를 다시 배치하고 짧은 탭 라벨·하단 고정 막대를 쓴다 ── */
 @media (max-width: 53.75rem) {
   .hero-activity {
     grid-template-columns: minmax(0, 1fr) auto;
@@ -913,11 +921,6 @@
 
   .nav-links {
     justify-content: flex-start;
-  }
-
-  .layout {
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--space-3);
   }
 
   .activity-page:has(.mobile-cta) {

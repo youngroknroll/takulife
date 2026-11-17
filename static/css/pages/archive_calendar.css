@@ -77,7 +77,7 @@
   min-width: 0;
 }
 
-/* archive.css의 도구줄은 이 지점에서 한 열로 접힌다 — 검색창은 둘째 줄 전폭이다. */
+/* archive.css의 도구줄은 이 지점에서 둘째 줄 전폭 검색창으로 바뀐다. */
 @media (max-width: 53.75rem) {
   .activity-toolbar .calendar-search {
     grid-area: search;
@@ -85,7 +85,10 @@
     max-width: none;
     justify-self: stretch;
   }
+}
 
+/* 범례 창과 달력 창은 56.24rem 이하에서 한 열로 접는다 (행사 목록과 같은 짝). */
+@media (max-width: 56.24rem) {
   .activity-layout {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--space-3);
