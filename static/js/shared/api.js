@@ -302,8 +302,10 @@
       button.disabled = !!isLoading;
       if (isLoading) {
         button.classList.add("is-loading");
+        button.setAttribute("aria-busy", "true");
       } else {
         button.classList.remove("is-loading");
+        button.removeAttribute("aria-busy");
       }
     },
 

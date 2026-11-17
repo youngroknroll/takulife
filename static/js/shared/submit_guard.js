@@ -29,6 +29,7 @@
       }
       button.disabled = true;
       button.classList.add("is-loading");
+      button.setAttribute("aria-busy", "true");
     });
   });
 })();

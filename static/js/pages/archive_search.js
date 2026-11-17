@@ -58,6 +58,11 @@
 
   function setLoading(on) {
     results.classList.toggle("is-loading", on);
+    if (on) {
+      results.setAttribute("aria-busy", "true");
+    } else {
+      results.removeAttribute("aria-busy");
+    }
   }
 
   // 정렬 메뉴는 #archive-results 밖에 있어 처음 로드될 때 한 번만
@@ -189,19 +194,25 @@
       });
   }
 
-  input.addEventListener("input", function (evt) {
-    // 한글 등 조합 입력 중에는 글자가 완성되기 전에도 input 이벤트가
-    // 계속 발생한다. 그 중간 상태로 검색하면 요청이 낭비되고 화면이
-    // 깜빡인다. 조합이 끝나면 브라우저가 isComposing:false인 input을
-    // 한 번 더 보내주므로 이 검사만으로 충분하다.
-    if (evt.isComposing) { return; }
+  function scheduleSearch() {
     if (timer) { window.clearTimeout(timer); }
     var term = input.value.trim();
     syncClearLink(term);
     timer = window.setTimeout(function () {
       runSearch(term, true);
     }, DEBOUNCE_MS);
+  }
+
+  input.addEventListener("input", function (evt) {
+    // 한글 등 조합 입력 중에는 글자가 완성되기 전에도 input 이벤트가
+    // 계속 발생한다. 그 중간 상태로 검색하면 요청이 낭비되고 화면이 깜빡인다.
+    if (evt.isComposing) { return; }
+    scheduleSearch();
   });
+
+  // Chromium은 조합 확정 때 isComposing:false인 input을 따로 보내지 않는다.
+  // 확정은 compositionend에서 잡고, input이 또 오는 브라우저는 같은 타이머를 갈아끼운다.
+  input.addEventListener("compositionend", scheduleSearch);
 
   // Enter(폼 제출)는 전체 새로고침 대신 즉시 검색한다.
   form.addEventListener("submit", function (evt) {
