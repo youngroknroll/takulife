@@ -14,19 +14,6 @@
     margin-bottom: 0;
   }
 
-  /* 창 안의 빈 안내·빈 상태는 중첩 상자 없이 글자만 둔다(점선은 "놓침" 의미). */
-  .section .notice {
-    border: none;
-    background: none;
-    padding: var(--space-2) 0;
-    color: var(--ink-2);
-  }
-  .snapshot-panel .empty-state {
-    border: none;
-    background: none;
-    padding: var(--space-4) var(--space-2);
-  }
-
   /* ── 혼자 놓인 텍스트 링크(더보기·자세히·기록) — 클래스가 있어 전역 링크
      규칙을 못 받으므로 색·밑줄·반전을 직접 준다. 누름 크기는 --hit-sm. */
   .section-more,

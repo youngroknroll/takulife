@@ -463,10 +463,6 @@
   content: " ]";
   content: " ]" / "";
 }
-.collection-page #archive-results .empty-state {
-  border: 0;
-  background: none;
-}
 
 /* ── 상태 배지(보유/구함/교환/미보유): 색이 아니라 테두리 모양으로 구분 ── */
 /* .collection-pill은 배지 낱개(.collection-pill-tag) 1~3개를 감싸는 래퍼다.

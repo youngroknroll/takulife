@@ -646,13 +646,6 @@
   }
 }
 
-/* ── 빈 상태: 창 안 글자 (아이콘 글자는 그대로 둔다) ─────────── */
-.events-page .results .empty-state:not(.calendar-error-panel) {
-  border: none;
-  background: none;
-  padding: var(--space-4) var(--space-2);
-}
-
 /* 반전 행 안의 방문 상태 배지는 배경이 행과 같은 파랑이 되어 모양이 사라진다.
    레이아웃을 밀지 않도록 안쪽 outline으로 윤곽을 낸다. */
 .events-page :is(.event-index-row, .agenda-row):has(:focus-visible) .status {
