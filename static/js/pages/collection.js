@@ -188,7 +188,11 @@
           ? "collection-edit-error"
           : "collection-create-error"
       );
-      if (!validateImageFile(file, errorEl)) { return; }
+      if (!validateImageFile(file, errorEl)) {
+        clearFeedback(input.form);
+        markInvalid([input], errorEl);
+        return;
+      }
       setText(errorEl, "");
       clearFeedback(input.form);
 

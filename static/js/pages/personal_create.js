@@ -106,7 +106,11 @@
       if (!file) { return; }
 
       var errorEl = document.getElementById("personal-create-error");
-      if (!validateImageFile(file, errorEl)) { return; }
+      if (!validateImageFile(file, errorEl)) {
+        clearFeedback(input.form);
+        markInvalid([input], errorEl);
+        return;
+      }
       setText(errorEl, "");
       clearFeedback(input.form);
 

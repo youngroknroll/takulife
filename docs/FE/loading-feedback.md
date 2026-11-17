@@ -37,8 +37,8 @@
 
 ## 스피너는 버튼 폭을 바꾸면 안 된다
 
-소비자: `static/css/objects/interaction.css`(`border-right-color`는 `:37`, 스피너 블록 `:29-41`, 겹침 규칙 `:69-79`),
-스태프: `static/css/staff/base.css`(약 177-196, `border-top-color`).
+소비자: `static/css/objects/interaction.css`(`border-right-color`는 `:37`, 스피너 블록 `:29-40`, 겹침 규칙 `:69-79`),
+스태프: `static/css/staff/base.css`(`.is-loading`·`::after` 블록 `:173-192`, `border-top-color`는 `:189`).
 
 ```css
 button.is-loading, a.is-loading {
@@ -54,7 +54,7 @@ button.is-loading::after {
 }
 ```
 
-이 조각은 요약본이다. `border`·`border-right-color`는 실제로 `.is-loading::after`(`interaction.css:29-41`)에,
+이 조각은 요약본이다. `border`·`border-right-color`는 실제로 `.is-loading::after`(`interaction.css:29-40`)에,
 나머지는 `button.is-loading::after`(`:69-79`)에 있고 조각은 둘을 합쳤다. `box-sizing: border-box`가 없으면
 테두리(2px×2)가 0.85rem 바깥에 더해져 스피너 상자 중심이 버튼 중심에서 2px 오른쪽·아래로 어긋난다
 (스피너 상자 17.6px → 13.6px, 버튼 중심과의 차 2px → 0px `[실측 2026-11-17 Playwright, 1280px·390px, 컬렉션 등록·방문 목록 삭제·방문 수정·개인 기록 등록의 저장·삭제 버튼]`).
@@ -122,7 +122,7 @@ button.is-loading::after {
 스피너는 계속 돌게 두고 있었다. `hover-lift` CSS는 트랙 58에서 삭제됐고 `.glint`는
 `interaction.css:17-21`에서 숨겨 둔다. 새로 스피너를 추가할 때 이 처리를 빠뜨리지 마라.
 
-스피너는 `.is-loading::after`를 쓴다 `[코드 interaction.css:29-41]`. 그래서 작은 단추의 누름 영역을
+스피너는 `.is-loading::after`를 쓴다 `[코드 interaction.css:29-40]`. 그래서 작은 단추의 누름 영역을
 넓히는 가상 요소는 `::before`를 쓴다 `[코드 archive_visit_edit.css:171, archive_visit_create.css:155]`.
 `::after`에 누름 영역을 만들면 스피너가 덮어쓴다(트랙 58 BIR 판정).
 
@@ -166,6 +166,8 @@ Playwright로 순회해 "ellipsis가 걸렸고 `scrollWidth > clientWidth`인데
 - 헬퍼는 소비자 전용이다. 스태프와 공유하는 `static/js/shared/`에 두지 않는다.
 - 새 폼은 페이지 JS 앞에 `form_feedback.js`를 `defer`로 로드하고, 페이지 JS는 `window.TakuFormFeedback &&`로 가드한다.
 - 오류 문장 위치는 폼 아래 그대로다 `[문서 사용자 결정 2026-11-17 "지금 위치 유지"]`. 문구는 호출부의 것이고 헬퍼는 문장을 만들지 않는다.
+- 이미지를 고르는 단계에서 검증에 실패하면 그 폼의 이전 표시를 걷고(`clear`) 이미지 입력을 위반으로 표시한다(`markInvalid`). 그렇지 않으면 다른 입력이 새 오류 문장을 설명으로 가리킨 채 남는다 `[코드 static/js/pages/collection.js, personal_create.js, personal_edit.js]`.
+- 오류가 난 입력이 닫힌 `<details>` 안에 있으면 `markInvalid`가 포커스 전에 조상 `<details>`를 연다. 컬렉션 폼은 이에 더해 서버 400 키가 접힌 그룹의 필드(`DETAIL_KEYS`)이면 `openDetailIfErrored`가 `#collection-detail-fields`를 연다 `[코드 static/js/pages/collection.js]`.
 - 부드러운 스크롤을 넣지 않는다(모션 예외 4곳 밖, `docs/FE/design-principles.md` ⑦).
 - 새 JS 파일은 `tests/core/test_ui_korean_literal_guard.py`의 목록에 넣는다.
 
@@ -173,4 +175,6 @@ Playwright로 순회해 "ellipsis가 걸렸고 `scrollWidth > clientWidth`인데
 
 - 같은 문장을 연달아 낼 때 스크린리더가 다시 읽게 하는 보조는 없다.
 - 실제 스크린리더 낭독은 확인하지 못했다.
+- 짝 컨트롤(`markInvalid` 세 번째 인자)을 고치면, 그 짝과 함께 표시됐던 입력의 표시가 나중에 다른 이유(서버 400)로 다시 달린 것이어도 풀린다. 호출처는 컬렉션 폼의 수량 짝 한 곳이다 `[코드 static/js/pages/collection.js]`.
+- 오류 상자와 상태 상자는 live region이면서 포커스도 받으므로 스크린리더가 같은 문장을 두 번 읽을 수 있다(확인하지 못했다).
 - 모바일에서 위쪽 입력과 아래 오류 문장이 한 화면에 같이 들어오지 않을 수 있다.

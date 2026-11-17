@@ -161,6 +161,8 @@
         if (!file) { return; }
         if (!validateImageFile(file, errorEl)) {
           input.value = "";
+          clearFeedback(form);
+          markInvalid([input], errorEl);
           return;
         }
         setText(errorEl, "");
