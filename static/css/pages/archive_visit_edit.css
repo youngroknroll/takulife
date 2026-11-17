@@ -1,136 +1,120 @@
-/* archive_visit_edit.css — /archive/visits/<id>/edit/ 전용 수정
-   페이지. 형제 페이지 archive_visit_create.css를 구조/토큰/모바일
-   바까지 그대로 미러링한다. `.visit-edit-page` 스코프에서만 동작하며
-   archive_visits.css / photo-upload.css는 수정하지 않는다(목록/상세/
-   작성, 스태프 포스터 업로드 등과 공유되므로) — 필요한 조각을 teal
-   테마로 페이지 스코프 복제해서 쓴다(half-swap 시 폼이 조용히
-   스타일을 잃는 함정 회피).
-
-   TOKEN NOTE: `--border-strong`, `--danger-*`/`--accent*`는
-   tokens.css에 없다(사전 grep 확인). 점선 드롭존/추가 타일 테두리엔
-   `--muted`, 위험 표시엔 `--rose-*`를 쓴다. */
+/* archive_visit_edit.css — /archive/visits/<id>/edit/ 전용 수정 페이지(DOS 형태).
+   작성 페이지(archive_visit_create.css)와 같은 구조다. 바탕 위에는 돌아가기
+   링크·h1·안내만 두고, 폼 전체(.visit-edit-grid.window)가 쪽의 주 창 하나다.
+   색은 토큰만, 반경·그림자·전환은 쓰지 않고 포커스는 전역 링을 쓴다. */
 
 .visit-edit-page {
   max-width: 51.25rem;
   margin: 0 auto;
 }
 
+/* ── 바탕 위: 돌아가기 링크 + 머리 ───────────────────────────────── */
 .visit-edit-page .visit-edit-back-link {
   display: inline-block;
-  margin-bottom: 0.875rem;
-  font-size: var(--fs-md);
-  font-weight: 600;
-  color: var(--teal-ink);
-  text-decoration: none;
-}
-.visit-edit-page .visit-edit-back-link:hover {
+  margin-bottom: var(--space-3);
+  color: var(--ink);
+  font-size: var(--fs-2);
   text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+@media (hover: hover) {
+  .visit-edit-page .visit-edit-back-link:hover {
+    background: var(--select);
+    color: var(--on-select);
+    text-decoration: none;
+  }
 }
 
-/* ── header: title + subtitle, heavy hairline rule ───────────────────── */
 .visit-edit-page .visit-edit-head {
-  padding-bottom: 1.125rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 2px solid var(--text);
+  margin-bottom: var(--space-3);
 }
 .visit-edit-page .visit-edit-head-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: 1rem;
+  gap: var(--space-1) var(--space-3);
 }
 .visit-edit-page .visit-edit-head h1 {
   margin: 0;
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: var(--text);
+  font-size: var(--fs-5);
+  line-height: var(--lh-tight);
 }
 .visit-edit-page .visit-edit-legend {
-  flex: none;
-  color: var(--muted);
-  font-size: 0.78rem;
+  color: var(--ink-2);
+  font-size: var(--fs-1);
 }
 .visit-edit-page .visit-edit-subtitle {
-  margin: 0.5rem 0 0;
-  color: var(--muted);
-  font-size: 0.875rem;
+  margin: var(--space-2) 0 0;
+  color: var(--ink-2);
+  font-size: var(--fs-2);
 }
 
-/* ── global (top-of-page) error banner ───────────────────────────────── */
+/* 맨 위 전체 오류 줄(JS가 글자를 넣는다). 비어 있어도 숨기지 않고 높이만 0. */
 .visit-edit-page .visit-edit-global-error {
-  margin: 0 0 1.25rem;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--rose-border);
-  border-radius: 0.5625rem;
-  background: var(--rose-soft);
-  color: var(--rose-ink);
-  font-size: 0.8125rem;
-  font-weight: 600;
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: var(--bw-1) solid var(--error);
+  background: var(--surface);
+  color: var(--error);
+  font-size: var(--fs-2);
+  overflow-wrap: anywhere;
 }
 .visit-edit-page .visit-edit-global-error:empty {
-  display: none;
   margin: 0;
   padding: 0;
   border: 0;
 }
 
-/* ── two-column grid: 320px photo column, flexible fields column ────────── */
+/* ── 창 안 2열: 사진 | 필드 (열 사이 세로 단선) ─────────────────── */
 .visit-edit-page .visit-edit-grid {
   display: grid;
   grid-template-columns: 20rem minmax(0, 1fr);
-  gap: 2.375rem;
+  gap: var(--space-4);
   align-items: start;
 }
 .visit-edit-page .visit-edit-photo-col {
   grid-column: 1;
   grid-row: 1;
+  min-width: 0;
 }
 .visit-edit-page .visit-edit-fields {
   grid-column: 2;
   grid-row: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
+  min-width: 0;
+  padding-left: var(--space-4);
+  border-left: var(--bw-1) solid var(--rule);
+}
+/* 필드 사이 간격은 margin으로 둔다. 비어 있는 안내 줄이 간격을 만들지 않게. */
+.visit-edit-page .visit-edit-fields > * + * {
+  margin-top: var(--space-3);
 }
 
 .visit-edit-page .visit-edit-field-label {
   display: block;
-  margin: 0 0 0.4375rem;
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: var(--text);
+  margin: 0 0 var(--space-1);
+  color: var(--ink);
+  font-size: var(--fs-2);
 }
 
-/* ── photo mosaic: existing + new grids merged into one 4-col layout ───── */
+/* ── 사진 모자이크: 기존 사진 + 새 미리보기를 한 4열 격자로 ─────── */
 .visit-edit-page .visit-edit-photo-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 0.5rem;
+  gap: var(--space-2);
+  margin-top: 0;
 }
 .visit-edit-page #existing-photo-grid,
 .visit-edit-page #photo-preview-grid {
   display: contents;
 }
-.visit-edit-page .photo-add-tile {
-  border-color: var(--muted);
-}
-.visit-edit-page .photo-add-tile:hover {
-  border-color: var(--teal);
-  color: var(--teal-ink);
-  background: var(--teal-soft);
-}
-.visit-edit-page .photo-add-tile:focus-visible {
-  outline-color: var(--teal);
-}
-/* 빈 상태: 기존 사진도 새 미리보기도 없을 때 — 점선 드롭존이 행
-   전체를 차지한다. */
+/* 빈 상태: 기존 사진도 새 미리보기도 없으면 추가 칸이 행 전체를 쓴다. */
 .visit-edit-page .visit-edit-photo-row:has(#existing-photo-grid[hidden]):has(#photo-preview-grid[hidden]) #visit-photos-trigger {
   grid-column: 1 / -1;
   width: auto;
   height: auto;
   aspect-ratio: 4 / 3;
 }
-/* 사진이 있을 때: 작은 정사각형 추가 타일이 그리드 한 칸을 채운다. */
 .visit-edit-page .visit-edit-photo-row:has(#existing-photo-grid:not([hidden])) #visit-photos-trigger,
 .visit-edit-page .visit-edit-photo-row:has(#photo-preview-grid:not([hidden])) #visit-photos-trigger {
   width: auto;
@@ -138,11 +122,8 @@
   aspect-ratio: 1;
 }
 
-/* archive_visits.css에서 이식 + 재테마한 미리보기 타일(공용 파일을
-   수정하지 않고 페이지 스코프로 복제) — 공용 페이지의 고정 80px 대신
-   그리드 칸을 꽉 채운다. 기존 사진 그리드와 새 미리보기 그리드 모두에
-   적용되며, JS가 대표로 지정한 타일 하나에만 공용 커버 규칙이
-   붙는다(visit_edit.js의 refreshCover()). */
+/* 미리보기 타일: 그리드 칸을 채우고 사진 비율은 잘라서 맞춘다(왜곡 없음).
+   대표 사진은 visit_edit.js가 타일 하나에만 is-cover를 붙인다. */
 .visit-edit-page .photo-preview-tile {
   position: relative;
   width: 100%;
@@ -155,235 +136,261 @@
   aspect-ratio: 4 / 3;
 }
 .visit-edit-page .photo-preview-tile img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 8px;
-  border: 1px solid var(--line);
-  display: block;
+  border: var(--bw-1) solid var(--rule);
 }
 .visit-edit-page .photo-preview-tile.is-cover img {
-  border-color: var(--teal);
-  border-width: 2px;
+  border: var(--bw-2) solid var(--ink);
 }
 .visit-edit-page .photo-preview-cover-badge {
   position: absolute;
-  bottom: 3px;
-  left: 3px;
-  background: var(--teal);
-  color: #fff;
-  font-size: 0.62rem;
-  font-weight: 700;
-  line-height: 1;
-  padding: 0.125rem 0.3125rem;
-  border-radius: 4px;
+  bottom: var(--space-1);
+  left: var(--space-1);
+  padding: 0 var(--space-1);
+  border: var(--bw-1) solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-1);
+  line-height: var(--lh-base);
 }
 .visit-edit-page .photo-preview-remove {
   position: absolute;
-  top: 3px;
-  right: 3px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(0, 0, 0, 0.55);
-  color: #fff;
-  font-size: 0.7rem;
-  line-height: 1;
-  cursor: pointer;
+  top: var(--space-1);
+  right: var(--space-1);
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 1.375rem;
+  height: 1.375rem;
   padding: 0;
+  border: var(--bw-1) solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-1);
+  line-height: 1;
+  cursor: pointer;
 }
+/* 눈에 보이는 22px 단추 둘레에 44px 누름 영역을 만든다. */
 .visit-edit-page .photo-preview-remove::after {
   content: "";
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 44px;
-  height: 44px;
+  width: var(--hit-lg);
+  height: var(--hit-lg);
   transform: translate(-50%, -50%);
 }
-.visit-edit-page .photo-preview-remove:hover {
-  background: rgba(180, 0, 0, 0.75);
+@media (hover: hover) {
+  .visit-edit-page .photo-preview-remove:hover {
+    background: var(--select);
+    color: var(--on-select);
+    border-color: var(--select);
+  }
+}
+.visit-edit-page .photo-preview-remove:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+  border-color: var(--select);
 }
 .visit-edit-page .visit-edit-photo-col .field-hint {
-  margin: 0.5625rem 0 0;
-  color: var(--muted);
-  font-size: 0.72rem;
+  margin: var(--space-2) 0 0;
+  color: var(--ink-2);
+  font-size: var(--fs-1);
 }
 
-/* ── field groups ─────────────────────────────────────────────────────── */
+/* ── 필드 묶음: 라벨 위, 입력 아래 ─────────────────────────────── */
 .visit-edit-page .visit-edit-group {
   display: flex;
   flex-direction: column;
-  gap: 0.4375rem;
+  gap: var(--space-1);
 }
 .visit-edit-page .visit-edit-group label {
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: var(--text);
+  color: var(--ink);
+  font-size: var(--fs-2);
 }
 .visit-edit-page .visit-edit-group .field-hint {
   margin: 0;
-  color: var(--muted);
-  font-size: 0.8125rem;
+  color: var(--ink-2);
+  font-size: var(--fs-1);
 }
 
-/* 읽기 전용 대상 박스 — 수정 페이지에서는 기록이 연결된 대상을 바꿀
-   수 없다. archive_visits.css의 .subject-readonly/.subject-title에서
-   이식 + 페이지 스코프. 페이지는 teal 테마지만 칩 의미는 brand/muted
-   그대로 유지한다(콘텐츠 분류이지 페이지 강조색이 아니므로). */
+/* 읽기 전용 대상 상자: 수정에서는 연결된 대상을 바꿀 수 없다. */
 .visit-edit-page .subject-readonly {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.375rem;
-  border: 1px solid var(--border-soft);
-  border-radius: 8px;
-  padding: 0.625rem 0.75rem;
-  background: var(--bg-soft);
+  gap: var(--space-1) var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border: var(--bw-1) solid var(--rule);
+  background: var(--surface);
 }
 .visit-edit-page .subject-title {
-  font-weight: 700;
-  color: var(--text);
+  color: var(--ink);
+  overflow-wrap: anywhere;
 }
+/* 칩은 색 대신 테두리로 구분한다: 직접 등록 = 단선색, 카테고리 = 글자색. */
 .visit-edit-page .visit-chip {
-  border-radius: var(--radius-chip);
-  padding: 0.25rem 0.5625rem;
-  font-size: var(--fs-xs);
-  font-weight: 700;
+  padding: 0 var(--space-2);
+  border: var(--bw-1) solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-1);
+  line-height: var(--lh-base);
   white-space: nowrap;
-  background: var(--mint-soft);
-  color: var(--mint-ink);
 }
 .visit-edit-page .visit-chip.category {
-  background: var(--brand-soft);
-  color: var(--brand-ink);
   white-space: normal;
   overflow-wrap: anywhere;
 }
 .visit-edit-page .visit-chip.unofficial {
-  background: var(--muted-soft);
-  color: var(--muted);
+  border-color: var(--rule);
+  color: var(--ink-2);
 }
 .visit-edit-page .subject-lock {
   margin-left: auto;
-  color: var(--muted);
-  font-size: 0.75rem;
+  color: var(--ink-2);
+  font-size: var(--fs-1);
 }
 
-/* ── shared input skin ────────────────────────────────────────────────── */
 .visit-edit-page .visit-edit-fields input[type="text"],
 .visit-edit-page .visit-edit-fields input[type="date"] {
-  height: 2.625rem;
-  padding: 0 0.8125rem;
-  border: 1px solid var(--border-soft);
-  border-radius: 0.5625rem;
-  background: var(--surface);
-  color: var(--text);
-  font: inherit;
   width: 100%;
+  min-height: var(--hit-md);
+  padding: var(--space-1) var(--space-2);
+  border: var(--bw-1) solid var(--ink);
+  border-radius: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
 }
-.visit-edit-page .visit-edit-fields input[type="text"]:focus-visible,
-.visit-edit-page .visit-edit-fields input[type="date"]:focus-visible {
-  outline: none;
-  border-color: var(--teal);
-  box-shadow: 0 0 0 3px var(--teal-soft);
+/* 오류 입력은 글자색이 아니라 굵은 테두리로도 알린다. */
+.visit-edit-page .visit-edit-fields [aria-invalid="true"] {
+  border-width: var(--bw-2);
 }
 
-/* ── error/status boxes — hidden entirely while empty ────────────────── */
+/* ── 오류·상태 줄: 비어 있어도 숨기지 않고(읽어 주는 영역) 높이만 0 ── */
 .visit-edit-page .visit-edit-error {
   margin: 0;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--rose-ink);
-}
-.visit-edit-page .visit-edit-error:empty {
-  display: none;
-  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: var(--bw-1) solid var(--error);
+  background: var(--surface);
+  color: var(--error);
+  font-size: var(--fs-2);
+  overflow-wrap: anywhere;
 }
 .visit-edit-page .visit-edit-status {
   margin: 0;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--teal-ink);
+  padding: var(--space-2) var(--space-3);
+  border: var(--bw-1) solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-2);
 }
+.visit-edit-page .visit-edit-error:empty,
 .visit-edit-page .visit-edit-status:empty {
-  display: none;
-  margin: 0;
+  margin-top: 0;
+  padding: 0;
+  border: 0;
 }
 
-/* ── actions row ──────────────────────────────────────────────────────── */
+/* ── 버튼 줄: 저장(주 버튼 2px) + 취소(링크) + 삭제(오류색) ─────── */
 .visit-edit-page .visit-edit-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 1rem;
-  margin-top: 0.5rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid var(--line);
+  gap: var(--space-2) var(--space-3);
+  padding-top: var(--space-3);
+  border-top: var(--bw-1) solid var(--rule);
 }
 .visit-edit-page .visit-edit-submit {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
-  padding: 0 1.5rem;
-  border: 0;
-  border-radius: 10px;
-  background: var(--teal);
-  color: #fff;
-  font-weight: 700;
-  font-size: 0.875rem;
+  min-height: var(--hit-md);
+  padding: var(--space-1) var(--space-3);
+  border: var(--bw-2) solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  line-height: var(--lh-tight);
+  text-align: center;
   cursor: pointer;
 }
-.visit-edit-page .visit-edit-submit:hover {
-  background: var(--teal-ink);
+@media (hover: hover) {
+  .visit-edit-page .visit-edit-submit:not(:disabled):hover {
+    background: var(--select);
+    color: var(--on-select);
+    border-color: var(--select);
+  }
+}
+.visit-edit-page .visit-edit-submit:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+  border-color: var(--select);
+}
+.visit-edit-page .visit-edit-submit:disabled {
+  background: transparent;
+  color: var(--off);
+  border-color: var(--off);
+  cursor: not-allowed;
 }
 .visit-edit-page .visit-edit-cancel {
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
-  padding: 0 0.375rem;
-  border: 0;
-  color: var(--muted);
-  font-size: 0.875rem;
-  font-weight: 600;
-  text-decoration: none;
-}
-.visit-edit-page .visit-edit-cancel:hover {
+  min-height: var(--hit-md);
+  padding: 0 var(--space-1);
+  color: var(--link);
   text-decoration: underline;
   text-underline-offset: 0.2em;
 }
+@media (hover: hover) {
+  .visit-edit-page .visit-edit-cancel:hover {
+    background: var(--select);
+    color: var(--on-select);
+    text-decoration: none;
+  }
+}
 
-/* 위험 삭제 버튼 — 액션 행의 맨 끝에 위치한다. */
+/* 삭제 버튼 — 오류색 테두리·글자, 줄의 맨 끝. 아이콘(🗑)은 좁은 화면에서만 보인다. */
 .visit-edit-page .visit-edit-delete-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.375rem;
+  gap: var(--space-1);
   margin-left: auto;
-  min-height: 44px;
-  padding: 0 1rem;
-  border: 1px solid var(--rose-border);
-  border-radius: 10px;
+  min-height: var(--hit-md);
+  padding: var(--space-1) var(--space-3);
+  border: var(--bw-1) solid var(--error);
   background: var(--surface);
-  color: var(--rose-ink);
-  font-size: 0.8125rem;
-  font-weight: 700;
+  color: var(--error);
+  font: inherit;
+  line-height: var(--lh-tight);
   cursor: pointer;
 }
-.visit-edit-page .visit-edit-delete-btn:hover {
-  background: var(--rose-soft);
-  border-color: var(--rose-border);
+@media (hover: hover) {
+  .visit-edit-page .visit-edit-delete-btn:not(:disabled):hover {
+    background: var(--error);
+    color: var(--surface);
+  }
+}
+.visit-edit-page .visit-edit-delete-btn:focus-visible {
+  background: var(--error);
+  color: var(--surface);
+}
+.visit-edit-page .visit-edit-delete-btn:disabled {
+  background: transparent;
+  color: var(--off);
+  border-color: var(--off);
+  cursor: not-allowed;
 }
 .visit-edit-page .visit-edit-delete-icon {
   display: none;
 }
 
-/* 스크린리더 전용 보조 텍스트(이 페이지 자체 복제본 — 저장소 전역
-   `.sr-only` 유틸리티가 없다; clip 기법은 작성 페이지와 동일). */
+/* 스크린리더 전용 보조 텍스트(이 페이지 복제본 — 전역 유틸리티가 없다). */
 .visit-edit-page .sr-only {
   position: absolute;
   width: 1px;
@@ -396,17 +403,18 @@
   border: 0;
 }
 
-/* ── narrow (≤45rem): single column, fixed bottom action bar ────────────── */
+/* ── 좁은 화면(≤45rem): 1열, 탭 바 위 고정 버튼 막대 ─────────────── */
 @media (max-width: 45rem) {
   .visit-edit-page {
     padding-bottom: calc(6rem + var(--site-tabbar-h, 0px));
   }
-  /* 고정 바가 푸터 끝을 덮지 않게 문서 끝에 바 높이만큼 여백 */
+  /* 고정 막대가 푸터 끝을 덮지 않게 문서 끝에 막대 높이만큼 여백 */
   body:has(.visit-edit-page .visit-edit-actions) {
     padding-bottom: calc(6rem + var(--site-tabbar-h, 0px));
   }
   .visit-edit-page .visit-edit-grid {
     grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
   }
   .visit-edit-page .visit-edit-photo-col {
     grid-column: 1;
@@ -415,11 +423,8 @@
   .visit-edit-page .visit-edit-fields {
     grid-column: 1;
     grid-row: 2;
-  }
-  .visit-edit-page .visit-edit-head-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.25rem;
+    padding-left: 0;
+    border-left: 0;
   }
   .visit-edit-page .visit-edit-actions {
     position: fixed;
@@ -427,22 +432,23 @@
     right: 0;
     bottom: var(--site-tabbar-h, 0px);
     z-index: 20;
+    flex-wrap: nowrap;
     margin-top: 0;
-    padding: 0.625rem var(--page-pad-x) calc(0.625rem + env(safe-area-inset-bottom));
-    border-top: 1px solid var(--line);
-    background: var(--chrome-glass-cta);
+    padding: var(--space-2) var(--page-pad-x) calc(var(--space-2) + env(safe-area-inset-bottom));
+    border-top: var(--bw-2) solid var(--ink);
+    background: var(--surface);
   }
   .visit-edit-page .visit-edit-cancel {
     display: none;
   }
   .visit-edit-page .visit-edit-submit {
     flex: 1;
-    justify-content: center;
+    min-width: 0;
   }
   .visit-edit-page .visit-edit-delete-btn {
     flex: none;
-    min-height: 44px;
-    min-width: 44px;
+    min-width: var(--hit-lg);
+    min-height: var(--hit-lg);
     padding: 0;
   }
   .visit-edit-page .visit-edit-delete-text {
@@ -450,6 +456,6 @@
   }
   .visit-edit-page .visit-edit-delete-icon {
     display: inline;
-    font-size: 1.1rem;
+    font-size: var(--fs-4);
   }
 }

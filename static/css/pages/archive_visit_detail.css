@@ -1,369 +1,379 @@
-/* archive_visit_detail.css — /archive/visits/<id>/ 전용 상세 페이지.
-   형제 페이지 archive_visit_edit.css의 구조/토큰/모바일 고정 바
-   패턴(2단 그리드, 20rem 갤러리 칼럼, ≤45rem 단일 칼럼 + 고정 액션바)을
-   그대로 따른다. 아이콘 전용 스피너 보정은 공용 규칙
-   (objects/interaction.css)이 맡으므로 여기서 다시 두지 않는다.
-   `.visit-detail-page` 스코프에서만 동작하며 archive_collection.css /
-   controls.css 등 공용 파일은 수정하지 않는다 — 필요한 조각(굿즈 타일
-   계열색 재바인딩, 위험 버튼 스킨)을 페이지 스코프로 복제한다
-   (half-swap 시 폼이 조용히 스타일을 잃는 함정 회피). 색상은
-   #fff(브랜드 버튼 텍스트) 외 전부 기존 tokens.css 토큰이다. */
+/* archive_visit_detail.css — /archive/visits/<id>/ 전용 상세 페이지(DOS 형태).
+   바탕 위에는 돌아가기 링크와 전체 오류 줄만 두고, 사진 + 본문 격자
+   (.visit-detail-grid.window)가 쪽의 주 창 하나다. 부 구획(메타·후기·굿즈·
+   원본 행사)은 창 안 단선으로 나눈다. 시리즈 색은 굿즈 칸의 점에만 남긴다.
+   색은 토큰만, 반경·그림자·전환은 쓰지 않고 포커스는 전역 링을 쓴다. */
 
 .visit-detail-page {
   max-width: 51.25rem;
   margin: 0 auto;
 }
 
+/* ── 바탕 위: 돌아가기 링크 + 전체 오류 줄 ─────────────────────── */
 .visit-detail-page .visit-detail-back-link {
   display: inline-block;
-  margin-bottom: 0.875rem;
-  font-size: var(--fs-md);
-  font-weight: 600;
-  color: var(--teal-ink);
-  text-decoration: none;
-}
-.visit-detail-page .visit-detail-back-link:hover {
+  margin-bottom: var(--space-3);
+  color: var(--ink);
+  font-size: var(--fs-2);
   text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+@media (hover: hover) {
+  .visit-detail-page .visit-detail-back-link:hover {
+    background: var(--select);
+    color: var(--on-select);
+    text-decoration: none;
+  }
 }
 
-/* ── global (top-of-page) error banner ───────────────────────────────── */
+/* JS가 글자를 넣는 영역이라 비어 있어도 숨기지 않고 높이만 0으로 둔다. */
 .visit-detail-page .visit-detail-global-error {
-  margin: 0 0 1.25rem;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--rose-border);
-  border-radius: 0.5625rem;
-  background: var(--rose-soft);
-  color: var(--rose-ink);
-  font-size: 0.8125rem;
-  font-weight: 600;
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: var(--bw-1) solid var(--error);
+  background: var(--surface);
+  color: var(--error);
+  font-size: var(--fs-2);
+  overflow-wrap: anywhere;
 }
 .visit-detail-page .visit-detail-global-error:empty {
-  display: none;
   margin: 0;
   padding: 0;
   border: 0;
 }
 
-/* ── two-column grid: 320px gallery column, flexible main column ───────── */
+/* ── 창 안 2열: 사진 | 본문 (열 사이 세로 단선) ────────────────── */
 .visit-detail-page .visit-detail-grid {
   display: grid;
   grid-template-columns: 20rem minmax(0, 1fr);
-  gap: 2.375rem;
+  gap: var(--space-4);
   align-items: start;
 }
 .visit-detail-page .visit-detail-gallery {
   grid-column: 1;
   grid-row: 1;
+  min-width: 0;
 }
 .visit-detail-page .visit-detail-main {
   grid-column: 2;
   grid-row: 1;
+  min-width: 0;
+  padding-left: var(--space-4);
+  border-left: var(--bw-1) solid var(--rule);
 }
 
-/* ── gallery: cover + thumbs ─────────────────────────────────────────── */
+/* ── 사진: 대표 4:3 + 작은 사진 4칸 (비율은 잘라서 맞춘다) ─────── */
 .visit-detail-page .visit-detail-cover {
-  aspect-ratio: 4 / 3;
-  border-radius: 11px;
-  background: var(--bg-soft);
-  border: 1px solid var(--line);
-  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
+  aspect-ratio: 4 / 3;
+  background: var(--off);
+  border: var(--bw-1) solid var(--rule);
 }
 .visit-detail-page .visit-detail-cover img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
 }
 .visit-detail-page .visit-detail-cover-empty {
-  font-size: 2rem;
-  color: var(--muted);
+  font-size: var(--fs-5);
+  color: var(--ink);
 }
 .visit-detail-page .visit-detail-thumbs {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 0.5rem;
-  margin-top: 0.5rem;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
 }
 .visit-detail-page .visit-detail-thumb {
   aspect-ratio: 1;
-  border-radius: 8px;
-  border: 1px solid var(--line);
-  overflow: hidden;
+  border: var(--bw-1) solid var(--rule);
 }
 .visit-detail-page .visit-detail-thumb img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
 }
 .visit-detail-page .visit-detail-photo-hint {
-  margin: 0.5625rem 0 0;
-  color: var(--muted);
-  font-size: 0.8125rem;
+  margin: var(--space-2) 0 0;
+  color: var(--ink-2);
+  font-size: var(--fs-1);
 }
 
-/* ── gallery actions: 기록 수정 (fill) + 삭제 (outline danger) ─────────── */
+/* ── 사진 아래 버튼: 기록 수정(주 버튼 2px) + 삭제(오류색 1px) ──── */
 .visit-detail-page .visit-detail-gallery-actions {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-top: 1.25rem;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
 }
 .visit-detail-page .visit-detail-edit-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: 1;
-  min-height: 44px;
-  padding: 0 1.5rem;
-  border: 0;
-  border-radius: 10px;
-  background: var(--teal);
-  color: #fff;
-  font-weight: 700;
-  font-size: 0.875rem;
+  min-width: 0;
+  min-height: var(--hit-md);
+  padding: var(--space-1) var(--space-3);
+  border: var(--bw-2) solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+  line-height: var(--lh-tight);
+  text-align: center;
   text-decoration: none;
 }
-.visit-detail-page .visit-detail-edit-btn:hover {
-  background: var(--teal-ink);
+@media (hover: hover) {
+  .visit-detail-page .visit-detail-edit-btn:hover {
+    background: var(--select);
+    color: var(--on-select);
+    border-color: var(--select);
+  }
+}
+.visit-detail-page .visit-detail-edit-btn:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+  border-color: var(--select);
 }
 .visit-detail-page .visit-detail-delete-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.375rem;
-  min-height: 44px;
-  padding: 0 1rem;
-  border: 1px solid var(--rose-border);
-  border-radius: 10px;
+  gap: var(--space-1);
+  min-height: var(--hit-md);
+  padding: var(--space-1) var(--space-3);
+  border: var(--bw-1) solid var(--error);
   background: var(--surface);
-  color: var(--rose-ink);
-  font-size: 0.8125rem;
-  font-weight: 700;
+  color: var(--error);
+  font: inherit;
+  line-height: var(--lh-tight);
   cursor: pointer;
 }
-.visit-detail-page .visit-detail-delete-btn:hover {
-  background: var(--rose-soft);
-  border-color: var(--rose-border);
+@media (hover: hover) {
+  .visit-detail-page .visit-detail-delete-btn:not(:disabled):hover {
+    background: var(--error);
+    color: var(--surface);
+  }
+}
+.visit-detail-page .visit-detail-delete-btn:focus-visible {
+  background: var(--error);
+  color: var(--surface);
+}
+.visit-detail-page .visit-detail-delete-btn:disabled {
+  background: transparent;
+  color: var(--off);
+  border-color: var(--off);
+  cursor: not-allowed;
 }
 .visit-detail-page .visit-detail-delete-icon {
   display: none;
 }
 
-/* ── badges row ──────────────────────────────────────────────────────── */
+/* ── 배지 줄: 카테고리는 색 없이 글자로만 ─────────────────────── */
 .visit-detail-page .visit-detail-badges {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.375rem;
-  margin-bottom: 0.625rem;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
 }
-.visit-detail-page .visit-detail-cat {
-  font-size: 0.8125rem;
-  font-weight: 700;
-}
-.visit-detail-page .visit-detail-cat--muted {
-  color: var(--muted);
-}
-.visit-detail-page .visit-detail-dot {
-  color: var(--muted);
-}
+.visit-detail-page .visit-detail-cat,
+.visit-detail-page .visit-detail-dot,
 .visit-detail-page .visit-detail-origin {
-  color: var(--muted);
-  font-weight: 600;
-  font-size: 0.8125rem;
+  color: var(--ink-2);
+  font-size: var(--fs-2);
 }
 
-/* ── title + date row ────────────────────────────────────────────────── */
+/* ── 제목 + 날짜 ──────────────────────────────────────────────── */
 .visit-detail-page .visit-detail-title {
-  margin: 0 0 0.625rem;
-  font-size: 1.75rem;
-  font-weight: 800;
-  color: var(--text);
-  line-height: 1.25;
+  margin: 0 0 var(--space-2);
+  font-size: var(--fs-5);
+  line-height: var(--lh-tight);
+  overflow-wrap: anywhere;
 }
 .visit-detail-page .visit-detail-date-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.625rem;
-  margin-bottom: 1.25rem;
+  gap: var(--space-1) var(--space-2);
+  margin-bottom: var(--space-3);
 }
 .visit-detail-page .visit-detail-date {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: var(--mint-ink);
+  font-size: var(--fs-4);
   font-variant-numeric: tabular-nums;
 }
 .visit-detail-page .visit-detail-weekday {
-  color: var(--muted);
-  font-size: 0.875rem;
+  color: var(--ink-2);
+  font-size: var(--fs-2);
 }
 
-/* ── meta list ───────────────────────────────────────────────────────── */
+/* ── 메타 목록: 행마다 단선 ───────────────────────────────────── */
 .visit-detail-page .visit-detail-meta {
-  margin: 0 0 1.5rem;
-  border-top: 2px solid var(--text);
+  margin: 0 0 var(--space-3);
+  border-top: var(--bw-1) solid var(--rule);
 }
 .visit-detail-page .visit-detail-meta-row {
   display: flex;
-  border-bottom: 1px solid var(--line);
-  padding: 0.625rem 0;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-bottom: var(--bw-1) solid var(--rule);
 }
 .visit-detail-page .visit-detail-meta-row dt {
   flex: 0 0 6.875rem;
-  color: var(--muted);
-  font-weight: 700;
-  font-size: 0.8125rem;
+  color: var(--ink-2);
+  font-size: var(--fs-2);
 }
 .visit-detail-page .visit-detail-meta-row dd {
+  flex: 1;
+  min-width: 0;
   margin: 0;
-  color: var(--text);
-  font-size: 0.875rem;
+  font-size: var(--fs-2);
+  overflow-wrap: anywhere;
 }
 
-/* ── 후기 ─────────────────────────────────────────────────────────────── */
+/* ── 후기 ─────────────────────────────────────────────────────── */
 .visit-detail-page .visit-detail-section-head {
-  margin: 0 0 0.625rem;
-  font-size: 0.8125rem;
-  font-weight: 800;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: var(--muted);
+  margin: 0 0 var(--space-2);
+  font-size: var(--fs-3);
 }
 .visit-detail-page .visit-detail-review {
-  margin: 0 0 1.5rem;
-  color: var(--text);
-  line-height: 1.75;
+  margin: 0 0 var(--space-3);
+  overflow-wrap: anywhere;
 }
 
-/* ── goods section ───────────────────────────────────────────────────── */
+/* ── 이 방문에서 얻은 굿즈 구획 ───────────────────────────────── */
 .visit-detail-page .visit-detail-goods-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  margin: 0 0 0.75rem;
+  gap: var(--space-2) var(--space-3);
+  margin: 0 0 var(--space-2);
+  padding-top: var(--space-3);
+  border-top: var(--bw-1) solid var(--rule);
 }
 .visit-detail-page .visit-detail-goods-head h2 {
   margin: 0;
-  font-size: 1.0625rem;
-  font-weight: 800;
-  color: var(--text);
-}
-.visit-detail-page .visit-detail-goods-head h2 span {
-  color: var(--teal-ink);
+  font-size: var(--fs-3);
 }
 .visit-detail-page .visit-detail-goods-add {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.3125rem 0.875rem;
-  border: 1px solid var(--teal);
-  border-radius: 999px;
-  color: var(--teal-ink);
-  font-size: 0.8125rem;
-  font-weight: 700;
+  gap: var(--space-1);
+  min-height: var(--hit-md);
+  padding: var(--space-1) var(--space-3);
+  border: var(--bw-1) solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-2);
+  line-height: var(--lh-tight);
+  text-align: center;
   text-decoration: none;
-  white-space: nowrap;
 }
-.visit-detail-page .visit-detail-goods-add:hover {
-  background: var(--teal-soft);
+@media (hover: hover) {
+  .visit-detail-page .visit-detail-goods-add:hover {
+    background: var(--select);
+    color: var(--on-select);
+    border-color: var(--select);
+  }
+}
+.visit-detail-page .visit-detail-goods-add:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+  border-color: var(--select);
 }
 
 .visit-detail-page .visit-detail-goods-rows {
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--space-3);
 }
 .visit-detail-page .visit-detail-goods-row {
   display: grid;
-  grid-template-columns: 46px minmax(0, 1fr) auto;
-  gap: 0.875rem;
+  grid-template-columns: 2.875rem minmax(0, 1fr) auto;
+  gap: var(--space-2) var(--space-3);
   align-items: center;
-  border-bottom: 1px solid var(--line);
-  padding: 0.75rem 0;
+  padding: var(--space-2) 0;
+  border-bottom: var(--bw-1) solid var(--rule);
 }
 .visit-detail-page .visit-detail-goods-tile {
   position: relative;
-  width: 46px;
-  height: 46px;
-  border-radius: 8px;
-  background: var(--bg-soft);
-  border: 1px solid var(--line);
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  width: 2.875rem;
+  height: 2.875rem;
+  border: var(--bw-1) solid var(--rule);
+  background: var(--surface);
 }
+/* 시리즈 색은 타일 모서리의 작은 점에만 남긴다(막대·배경 색은 쓰지 않는다). */
 .visit-detail-page .visit-detail-goods-tile::before {
   content: "";
   position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: var(--series-ink);
+  top: var(--space-1);
+  left: var(--space-1);
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--series-ink, var(--ink-2));
 }
 .visit-detail-page .visit-detail-goods-tile-label {
-  font-size: 0.5625rem;
-  font-weight: 700;
-  color: var(--muted);
+  max-width: 100%;
+  padding: 0 var(--space-1);
+  color: var(--ink-2);
+  font-size: var(--fs-1);
   text-align: center;
-  padding: 0 0.25rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .visit-detail-page .visit-detail-goods-name {
   margin: 0;
-  font-weight: 700;
-  color: var(--text);
-  font-size: 0.875rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .visit-detail-page .visit-detail-goods-sub {
-  margin: 0.125rem 0 0;
-  color: var(--muted);
-  font-size: 0.75rem;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: var(--fs-1);
 }
-/* .visit-detail-goods-pill은 1~3개의 -tag 배지를 감싸는 래퍼다(다중
-   배지 지원) — 주 라벨이 아닌 보조 메타 칼럼이라 좁은 화면에서는
-   다음 줄로 넘어간다. */
+/* .visit-detail-goods-pill은 1~3개의 -tag 배지를 감싸는 래퍼다. */
 .visit-detail-page .visit-detail-goods-pill {
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
   flex-wrap: wrap;
-  gap: 0.25rem;
+  gap: var(--space-1);
 }
+/* 상태 배지는 색이 아니라 테두리 모양으로 구분한다(글자 라벨은 항상 있다):
+   보유 = 선택색 채움, 구함 = 1px 실선, 교환 = 3px 이중선, 미보유 = 1px 점선.
+   테두리 굵기 차이는 안쪽 여백으로 메워 배지 높이를 같게 둔다. */
 .visit-detail-page .visit-detail-goods-pill-tag {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.25rem 0.625rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 700;
+  padding: calc(var(--space-1) / 2) var(--space-2);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-1);
   white-space: nowrap;
 }
 .visit-detail-page .visit-detail-goods-pill-tag.is-owned {
-  background: var(--mint-soft);
-  color: var(--mint-ink);
-}
-.visit-detail-page .visit-detail-goods-pill-tag.is-tradeable {
-  background: var(--up-soft);
-  color: var(--up-ink);
+  padding: calc(var(--space-1) / 2 + var(--bw-1)) calc(var(--space-2) + var(--bw-1));
+  background: var(--select);
+  color: var(--on-select);
 }
 .visit-detail-page .visit-detail-goods-pill-tag.is-wanted {
-  background: var(--amber-soft);
-  color: var(--amber-ink);
+  border: var(--bw-1) solid var(--ink);
+}
+.visit-detail-page .visit-detail-goods-pill-tag.is-tradeable {
+  border: var(--bw-3) double var(--ink);
 }
 .visit-detail-page .visit-detail-goods-pill-tag.is-none {
-  background: var(--end-soft);
-  color: var(--end-ink);
+  padding: calc(var(--space-1) / 2 + var(--bw-1)) calc(var(--space-2) + var(--bw-1));
+  border: var(--bw-1) dashed var(--rule);
+  color: var(--ink-2);
 }
 
 .visit-detail-page .visit-detail-goods-empty {
@@ -371,23 +381,20 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  border: 1px dashed var(--border-soft);
-  border-radius: 10px;
-  padding: 1rem 1.25rem;
-  margin-bottom: 1.5rem;
+  gap: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-3);
+  padding: var(--space-3);
+  border: var(--bw-1) solid var(--rule);
 }
 .visit-detail-page .visit-detail-goods-empty .empty-title {
   margin: 0;
-  color: var(--muted);
-  font-size: 0.875rem;
+  color: var(--ink-2);
+  font-size: var(--fs-2);
 }
 
-/* ── series ink rebinding ──────────────────────────────────────── */
-/* `.gi-0`~`.gi-12`이 --series-ink를 시리즈 색 토큰에 연결한다. 이 블록이
-   없으면 굿즈 타일의 색 막대가 밋밋한 회색으로 렌더된다. 값은
-   archive_collection.css의 같은 규칙과 동일하다. */
-.visit-detail-page .gi-0 { --series-ink: var(--muted); }
+/* ── 시리즈 색 연결: .gi-0..gi-12가 --series-ink를 시리즈 토큰에 묶는다.
+   점(타일 모서리)에서만 읽는다. ───────────────────────────────── */
+.visit-detail-page .gi-0 { --series-ink: var(--ink-2); }
 .visit-detail-page .gi-1 { --series-ink: var(--series-1-ink); }
 .visit-detail-page .gi-2 { --series-ink: var(--series-2-ink); }
 .visit-detail-page .gi-3 { --series-ink: var(--series-3-ink); }
@@ -401,31 +408,30 @@
 .visit-detail-page .gi-11 { --series-ink: var(--series-11-ink); }
 .visit-detail-page .gi-12 { --series-ink: var(--series-12-ink); }
 
-/* ── 원본 행사 정보 card ─────────────────────────────────────────────── */
+/* ── 원본 행사 정보 구획 ──────────────────────────────────────── */
 .visit-detail-page .visit-detail-source-card {
-  background: var(--bg-soft);
-  border: 1px solid var(--border-soft);
-  border-radius: 10px;
-  padding: 1rem 1.25rem;
+  padding-top: var(--space-3);
+  border-top: var(--bw-1) solid var(--rule);
 }
 .visit-detail-page .visit-detail-source-label {
-  margin: 0 0 0.375rem;
-  font-weight: 700;
-  color: var(--text);
-  font-size: 0.8125rem;
+  margin: 0 0 var(--space-1);
+  font-size: var(--fs-2);
 }
 .visit-detail-page .visit-detail-source-link {
-  color: var(--teal-ink);
-  font-weight: 700;
-  font-size: 0.875rem;
-  text-decoration: none;
-}
-.visit-detail-page .visit-detail-source-link:hover {
+  color: var(--link);
+  font-size: var(--fs-2);
   text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+@media (hover: hover) {
+  .visit-detail-page .visit-detail-source-link:hover {
+    background: var(--select);
+    color: var(--on-select);
+    text-decoration: none;
+  }
 }
 
-/* 스크린리더 전용 보조 텍스트(페이지 스코프 복제본 — 저장소 전역
-   .sr-only 유틸리티가 없다; clip 기법은 visit_edit.html과 동일). */
+/* 스크린리더 전용 보조 텍스트(이 페이지 복제본 — 전역 유틸리티가 없다). */
 .visit-detail-page .sr-only {
   position: absolute;
   width: 1px;
@@ -438,17 +444,18 @@
   border: 0;
 }
 
-/* ── narrow (≤45rem): single column, fixed bottom action bar ────────────── */
+/* ── 좁은 화면(≤45rem): 1열, 탭 바 위 고정 버튼 막대 ─────────────── */
 @media (max-width: 45rem) {
   .visit-detail-page {
     padding-bottom: calc(6rem + var(--site-tabbar-h, 0px));
   }
-  /* 고정 바가 푸터 끝을 덮지 않게 문서 끝에 바 높이만큼 여백 */
+  /* 고정 막대가 푸터 끝을 덮지 않게 문서 끝에 막대 높이만큼 여백 */
   body:has(.visit-detail-page .visit-detail-gallery-actions) {
     padding-bottom: calc(6rem + var(--site-tabbar-h, 0px));
   }
   .visit-detail-page .visit-detail-grid {
     grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
   }
   .visit-detail-page .visit-detail-gallery {
     grid-column: 1;
@@ -457,15 +464,19 @@
   .visit-detail-page .visit-detail-main {
     grid-column: 1;
     grid-row: 2;
+    padding-left: 0;
+    border-left: 0;
   }
-  /* DOM 순서 = 시각적 순서: 기록 수정(flex:1, 왼쪽) 다음 삭제
-     (아이콘 전용 44x44, 오른쪽) — 병합된 수정 페이지의 모바일 바와
-     정확히 일치. 이전 초안은 `order: -1`로 삭제를 시각적으로 왼쪽에
-     두려 했지만, CSS `order`는 탭 순서를 바꾸지 않는다(WCAG 2.4.3 —
-     기록된 프로젝트 결함 "order=탭순서 불일치"). 그러면 키보드
-     사용자는 기록수정→삭제 순으로 탭 이동하는데 화면에는 삭제가
-     왼쪽에 보이게 된다. 두 브레이크포인트가 하나의 DOM 순서로 둘 다
-     시각적으로 맞을 수 없으므로 반전을 포기한다. */
+  /* 배지 래퍼는 글자 줄 아래로 내려 긴 번역 라벨이 줄을 밀지 않게 한다. */
+  .visit-detail-page .visit-detail-goods-row {
+    grid-template-columns: 2.875rem minmax(0, 1fr);
+  }
+  .visit-detail-page .visit-detail-goods-pill {
+    grid-column: 2;
+    justify-content: flex-start;
+  }
+  /* DOM 순서 = 시각 순서: 기록 수정(왼쪽) 다음 삭제(오른쪽 아이콘). order로
+     뒤집으면 탭 순서와 화면 순서가 어긋난다. */
   .visit-detail-page .visit-detail-gallery-actions {
     position: fixed;
     left: 0;
@@ -473,14 +484,14 @@
     bottom: var(--site-tabbar-h, 0px);
     z-index: 20;
     margin-top: 0;
-    padding: 0.625rem var(--page-pad-x) calc(0.625rem + env(safe-area-inset-bottom));
-    border-top: 1px solid var(--line);
-    background: var(--chrome-glass-cta);
+    padding: var(--space-2) var(--page-pad-x) calc(var(--space-2) + env(safe-area-inset-bottom));
+    border-top: var(--bw-2) solid var(--ink);
+    background: var(--surface);
   }
   .visit-detail-page .visit-detail-delete-btn {
     flex: none;
-    min-height: 44px;
-    min-width: 44px;
+    min-width: var(--hit-lg);
+    min-height: var(--hit-lg);
     padding: 0;
   }
   .visit-detail-page .visit-detail-delete-text {
@@ -488,10 +499,9 @@
   }
   .visit-detail-page .visit-detail-delete-icon {
     display: inline;
-    font-size: 1.1rem;
+    font-size: var(--fs-4);
   }
   .visit-detail-page .visit-detail-edit-btn {
-    flex: 1;
-    justify-content: center;
+    min-height: var(--hit-lg);
   }
 }
