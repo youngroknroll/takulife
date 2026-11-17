@@ -679,6 +679,8 @@ F10 MFA(2026-07-01 `auth-hardening` 결정).
 6. `hscroll.js`의 `matchMedia("(min-width: 45.0625rem)")`가 CSS 짝 값 45.01rem과 다르다.
 7. `templates/core/archive/visit_create.html`의 `#visit-global-error`는 JS가 참조하지 않는 노드다.
 8. 로딩 중 `aria-busy`가 없다(제품 권고).
+9. 폼 오류 표시에서 짝 컨트롤(`markInvalid` 세 번째 인자)을 고치면, 그 짝과 함께 표시됐던 입력의 표시가 나중에 서버 400으로 다시 달린 것이어도 풀린다. 호출처는 컬렉션 폼의 수량 짝 한 곳이다 `[코드 static/js/pages/collection.js]`. BIR 재판정 Low.
+10. 내 활동의 하단 고정 막대(`.mobile-cta`)는 측정한 모든 폭에서 숨김 상태라, 표시 상태에서의 전환 폭(53.75rem)을 브라우저로 재지 못했다. 규칙은 이번 트랙에서 바꾸지 않았다.
 
 ## 착수하지 않는 것
 
