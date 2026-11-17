@@ -32,6 +32,7 @@ from archive.queries import (
     user_visit_category_values,
     user_visit_record_counts,
 )
+from core.categories import category_display_labels
 from core.query_params import is_safe_pk_string
 from core.vocab import (
     ARCHIVE_INTEREST_SORT,
@@ -50,7 +51,13 @@ from core.vocab import (
     personal_category_label,
 )
 from events.models import Event
-from web.views._helpers import _archive_query, _attach_display, _render_archive_list, _subject_view
+from web.views._helpers import (
+    _archive_query,
+    _attach_display,
+    _render_archive_list,
+    _subject_category_labels,
+    _subject_view,
+)
 from web.views.collection import _collection_item_row, _series_ink_classes
 
 
@@ -61,9 +68,11 @@ def _build_archive_status_rows(user_statuses):
     방식으로 렌더링할 수 있도록 균일하고 null 안전한 ``subject`` 뷰
     (비공식은 표시가 붙는다)를 담은 dict를 반환한다.
     """
+    user_statuses = list(user_statuses)
+    category_labels = _subject_category_labels(user_statuses)
     rows = []
     for us in user_statuses:
-        subject = _subject_view(us)
+        subject = _subject_view(us, category_labels=category_labels)
         rows.append(
             {
                 "status_id": us.pk,
@@ -238,12 +247,14 @@ def archive_visits(request):
     label_by_token = {
         CATEGORY_SOURCE_LABELS[slug]: CATEGORY_LABELS[slug] for slug in CATEGORY_SOURCE_LABELS
     }
+    event_category_labels = category_display_labels(event_cat for event_cat, _ in pairs)
     categories = []
     category_chips = []
     seen_labels: set = set()
     for event_cat, personal_cat in pairs:
         if event_cat:
-            token = CATEGORY_SOURCE_LABELS.get(event_cat, event_cat)
+            # 새 카테고리는 슬러그가 아니라 DB 라벨을 토큰으로 쓴다.
+            token = CATEGORY_SOURCE_LABELS.get(event_cat) or str(event_category_labels[event_cat])
         elif personal_cat:
             token = personal_cat
         else:
@@ -279,6 +290,10 @@ def archive_visits(request):
             category_label = label
             category_codes = tuple(
                 code for code, lbl in CATEGORY_SOURCE_LABELS.items() if lbl == label
+            ) + tuple(
+                slug
+                for slug, lbl in event_category_labels.items()
+                if slug not in CATEGORY_SOURCE_LABELS and str(lbl) == label
             )
         # else: 라벨이 비었거나 화이트리스트에 없음 → 필터 없음으로 대체
 
@@ -308,7 +323,7 @@ def archive_visits(request):
             "record_id": record.pk,
             "visited_on": record.visited_on,
             "short_review": record.short_review,
-            "subject": _subject_view(record),
+            "subject": _subject_view(record, category_labels=event_category_labels),
             "photos": list(record.photos.all()),
         }
         for record in page_obj.object_list
@@ -639,6 +654,12 @@ def archive_interests(request):
         display["event"].id: display for display in _attach_display(official_events, user=user)
     }
 
+    # _attach_display가 이미 푼 라벨로 맵을 만들어 추가 조회를 막는다.
+    category_labels = {
+        display["category_slug"]: display["category_label"]
+        for display in display_by_event_id.values()
+    }
+
     interest_rows = []
     for interest in page_interests:
         if interest.event_id:
@@ -647,7 +668,7 @@ def archive_interests(request):
             interest_rows.append(
                 {
                     "interest_id": interest.pk,
-                    "subject": _subject_view(interest),
+                    "subject": _subject_view(interest, category_labels=category_labels),
                     "status": display["status_slug"],
                     "dday": display["dday"],
                     "user_status": user_status,

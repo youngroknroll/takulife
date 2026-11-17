@@ -27,7 +27,7 @@ from archive.queries import (
     user_visit_record_counts,
 )
 from core.calendar_grid import month_grid
-from core.categories import category_labels_for
+from core.categories import category_display_labels, category_labels_for
 from core.presenters import build_website_json_ld
 from core.vocab import (
     ARCHIVE_STATUS_LABELS,
@@ -53,11 +53,11 @@ from web.views._helpers import (
     _attach_display,
     _attach_display_many,
     _bounded_month_param,
-    _category_labels,
     _is_public_calendar_month,
     _parse_public_calendar_date,
     _parse_public_calendar_month,
     _redirect_without_calendar_params,
+    _subject_category_labels,
     _subject_view,
 )
 
@@ -230,9 +230,14 @@ def home(request):
         # statuses가 이미 그것만 걸러낸다) 별도 유도가 필요 없고
         # _subject_view 자체도 derived_status에 의존하지 않으므로 이
         # 원본 슬라이스를 그대로 써도 안전하다.
+        unrecorded_statuses = list(list_user_unrecorded_visited_statuses(user)[:5])
+        unrecorded_category_labels = _subject_category_labels(unrecorded_statuses)
         unrecorded_rows = [
-            {"status_id": row.pk, "subject": _subject_view(row)}
-            for row in list_user_unrecorded_visited_statuses(user)[:5]
+            {
+                "status_id": row.pk,
+                "subject": _subject_view(row, category_labels=unrecorded_category_labels),
+            }
+            for row in unrecorded_statuses
         ]
         upcoming_rows = rows_by_section["upcoming_planned"]
         context.update(
@@ -266,7 +271,7 @@ def _active_filter_chips(*, q, selected_region, selected_category, selected_stat
         chips.append(gettext("검색: %(q)s") % {"q": q})
     for region in selected_region:
         chips.append(REGION_LABELS.get(region, region))
-    labels = _category_labels(selected_category)
+    labels = category_display_labels(selected_category)
     for category in selected_category:
         chips.append(labels.get(category, category))
     if selected_status:
@@ -641,7 +646,7 @@ def event_detail(request, event_id):
     )
 
     region_label = REGION_LABELS.get(event.region, "") if event.region else ""
-    category_label = _category_labels([event.category]).get(event.category, event.category)
+    category_label = category_display_labels([event.category]).get(event.category, event.category)
     meta_description = _build_event_meta_description(event, category_label)
     json_ld_payload = build_event_json_ld(
         event, region_label=region_label, description=meta_description
