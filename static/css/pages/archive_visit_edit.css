@@ -261,8 +261,12 @@
   font: inherit;
 }
 /* 오류 입력은 글자색이 아니라 굵은 테두리로도 알린다. */
-.visit-edit-page .visit-edit-fields [aria-invalid="true"] {
+.visit-edit-page .visit-edit-fields input[aria-invalid="true"],
+.visit-edit-page .visit-edit-fields select[aria-invalid="true"],
+.visit-edit-page .visit-edit-fields textarea[aria-invalid="true"] {
   border-width: var(--bw-2);
+  /* 테두리가 1px 늘어난 만큼 안쪽 여백을 줄여 바깥 크기를 지킨다. */
+  padding: calc(var(--space-1) - 1px) calc(var(--space-2) - 1px);
 }
 
 /* ── 오류·상태 줄: 비어 있어도 숨기지 않고(읽어 주는 영역) 높이만 0 ── */

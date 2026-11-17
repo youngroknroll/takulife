@@ -22,11 +22,31 @@
     if (el) { el.textContent = message; }
   }
 
+  // 폼 오류 표시 헬퍼(form_feedback.js)가 없는 화면(굿즈 목록)에서는 조용히 건너뛴다.
+  function clearFeedback(form) {
+    if (window.TakuFormFeedback) { window.TakuFormFeedback.clear(form); }
+  }
+
+  function markInvalid(controls, errorEl) {
+    if (window.TakuFormFeedback) { window.TakuFormFeedback.markInvalid(controls, errorEl); }
+  }
+
+  function focusError(errorEl) {
+    if (window.TakuFormFeedback) { window.TakuFormFeedback.focusError(errorEl); }
+  }
+
+  function showServerError(form, result, errorEl) {
+    if (window.TakuFormFeedback) {
+      window.TakuFormFeedback.showServerError(form, result.data, errorEl);
+    }
+  }
+
   function handle403(result, errorEl) {
     if (window.TakuAPI.classify(result) === "auth") {
       window.TakuAPI.redirectToLogin();
     } else {
       setText(errorEl, gettext("보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요."));
+      focusError(errorEl);
     }
   }
 
@@ -194,24 +214,27 @@
 
     form.addEventListener("submit", async function (evt) {
       evt.preventDefault();
+      clearFeedback(form);
       setText(errorEl, "");
       setText(statusEl, "");
 
       if (!form.elements["name"].value.trim()) {
         setText(errorEl, gettext("이름을 입력해 주세요."));
-        form.elements["name"].focus();
+        markInvalid([form.elements["name"]], errorEl);
         return;
       }
 
       var imageInput = form.elements["image"];
       var imageFile = imageInput && imageInput.files && imageInput.files[0];
       if (imageFile && !validateImageFile(imageFile, errorEl)) {
+        markInvalid([imageInput], errorEl);
         return;
       }
 
       var fields = collectSharedFields(form);
       if (fields.tradeable_quantity > fields.quantity) {
         setText(errorEl, gettext("교환 가능 수량은 보유 수량보다 클 수 없습니다."));
+        markInvalid([form.elements["tradeable_quantity"]], errorEl);
         return;
       }
 
@@ -246,10 +269,12 @@
       }
       if (result.status === 0) {
         setText(errorEl, gettext("네트워크 오류가 발생했습니다. 다시 시도해 주세요."));
+        focusError(errorEl);
         return;
       }
       setText(errorEl, window.TakuAPI.formatError(result));
       openDetailIfErrored(result);
+      showServerError(form, result, errorEl);
     });
   }
 
@@ -334,13 +359,16 @@
           }
           if (result.status === 404) {
             setText(globalErrorEl, gettext("이미 삭제된 항목입니다."));
+            focusError(globalErrorEl);
             return;
           }
           if (result.status === 0) {
             setText(globalErrorEl, gettext("네트워크 오류가 발생했습니다. 다시 시도해 주세요."));
+            focusError(globalErrorEl);
             return;
           }
           setText(globalErrorEl, gettext("삭제 중 오류가 발생했습니다."));
+          focusError(globalErrorEl);
         });
       })(deleteBtns[i]);
     }
@@ -357,24 +385,27 @@
 
     form.addEventListener("submit", async function (evt) {
       evt.preventDefault();
+      clearFeedback(form);
       setText(errorEl, "");
       setText(statusEl, "");
 
       if (!form.elements["name"].value.trim()) {
         setText(errorEl, gettext("이름을 입력해 주세요."));
-        form.elements["name"].focus();
+        markInvalid([form.elements["name"]], errorEl);
         return;
       }
 
       var imageInput = form.elements["image"];
       var imageFile = imageInput && imageInput.files && imageInput.files[0];
       if (imageFile && !validateImageFile(imageFile, errorEl)) {
+        markInvalid([imageInput], errorEl);
         return;
       }
 
       var fields = collectSharedFields(form);
       if (fields.tradeable_quantity > fields.quantity) {
         setText(errorEl, gettext("교환 가능 수량은 보유 수량보다 클 수 없습니다."));
+        markInvalid([form.elements["tradeable_quantity"]], errorEl);
         return;
       }
 
@@ -416,10 +447,12 @@
       }
       if (result.status === 0) {
         setText(errorEl, gettext("네트워크 오류가 발생했습니다. 다시 시도해 주세요."));
+        focusError(errorEl);
         return;
       }
       setText(errorEl, window.TakuAPI.formatError(result));
       openDetailIfErrored(result);
+      showServerError(form, result, errorEl);
     });
   }
 

@@ -58,7 +58,6 @@
               name="title"
               maxlength="255"
               required
-              aria-describedby="personal-edit-error"
               value="{{ entry.title }}"
             >
           </div>
@@ -127,5 +126,6 @@
 {% endblock %}
 
 {% block extra_js %}
+  <script defer src="{% static 'js/components/form_feedback.js' %}"></script>
   <script defer src="{% static 'js/pages/personal_edit.js' %}"></script>
 {% endblock %}

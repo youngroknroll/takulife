@@ -58,7 +58,6 @@
               name="title"
               maxlength="255"
               required
-              aria-describedby="personal-create-error"
               placeholder="{{ title_placeholder }}"
             >
           </div>
@@ -128,5 +127,6 @@
 {% endblock %}
 
 {% block extra_js %}
+  <script defer src="{% static 'js/components/form_feedback.js' %}"></script>
   <script defer src="{% static 'js/pages/personal_create.js' %}"></script>
 {% endblock %}

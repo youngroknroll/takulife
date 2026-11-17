@@ -33,7 +33,6 @@
               name="name"
               maxlength="255"
               required
-              aria-describedby="collection-create-error"
               placeholder="{% translate "예: 유메 아크릴 스탠드" %}"
             >
           </div>
@@ -157,5 +156,6 @@
 {% endblock %}
 
 {% block extra_js %}
+  <script defer src="{% static 'js/components/form_feedback.js' %}"></script>
   <script defer src="{% static 'js/pages/collection.js' %}"></script>
 {% endblock %}

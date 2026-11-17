@@ -963,6 +963,10 @@
   background: var(--off);
   cursor: pointer;
 }
+/* 파일 입력은 투명이라 오류 표시가 안 보이므로 드롭존 테두리를 2px로 알린다. */
+.collection-page .collection-form-dropzone:has(input[aria-invalid="true"]) {
+  border-width: var(--bw-2);
+}
 .collection-page .collection-form-dropzone:has(input:focus-visible) {
   outline: var(--bw-2) solid var(--select);
   outline-offset: -2px;
