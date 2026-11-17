@@ -51,6 +51,13 @@
     return qs ? path + "?" + qs : path;
   }
 
+  // 주소 비교용 쿼리. page=1은 page가 없는 것과 같은 1쪽이라 뺀다.
+  function comparableQuery(params) {
+    var copy = new URLSearchParams(params);
+    if (copy.get("page") === "1") { copy.delete("page"); }
+    return copy.toString();
+  }
+
   // "지우기" 링크는 서버가 전체 페이지 로드 시에만 렌더링하므로, 실시간
   // 검색이 결과 조각만 바꾸는 동안에는 여기서 직접 보이기/숨기기를 맞춘다.
   function syncClearLink(term) {
@@ -188,8 +195,8 @@
         syncSearchLinks(term);
         // 서버 주소와 URLSearchParams는 인코딩이 달라, 쿼리를 정규화해 비교한다.
         // 의미가 같은 주소로 Enter를 눌러도 히스토리에 쌓지 않는다.
-        var currentQuery = new URLSearchParams(window.location.search).toString();
-        if (!fromHistory && params.toString() !== currentQuery) {
+        var currentQuery = comparableQuery(new URLSearchParams(window.location.search));
+        if (!fromHistory && comparableQuery(params) !== currentQuery) {
           window.history.pushState({ q: term }, "", userUrl(params));
         }
         // 교체된 컨트롤(상태/찜/삭제/제보/캐러셀 등)을 다시 연결한다.
