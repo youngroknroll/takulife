@@ -19,6 +19,10 @@
     el.textContent = "";
   }
 
+  function focusError(el) {
+    if (window.TakuFormFeedback) { window.TakuFormFeedback.focusError(el); }
+  }
+
   // ── 403 처리 ──────────────────────────────────────────────────────────
 
   function handle403(result, errorEl) {
@@ -27,6 +31,7 @@
       window.TakuAPI.redirectToLogin();
     } else {
       setError(errorEl, gettext("보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요."));
+      focusError(errorEl);
     }
   }
 
@@ -79,15 +84,18 @@
 
           if (result.status === 404) {
             setError(globalErrorEl, gettext("기록을 찾을 수 없습니다."));
+            focusError(globalErrorEl);
             return;
           }
 
           if (result.status === 0) {
             setError(globalErrorEl, gettext("네트워크 오류가 발생했습니다. 다시 시도해 주세요."));
+            focusError(globalErrorEl);
             return;
           }
 
           setError(globalErrorEl, gettext("기록 삭제 중 오류가 발생했습니다."));
+          focusError(globalErrorEl);
         });
       })(deleteBtns[i]);
     }

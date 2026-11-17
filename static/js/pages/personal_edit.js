@@ -164,6 +164,7 @@
           return;
         }
         setText(errorEl, "");
+        clearFeedback(form);
 
         if (currentUrl) { URL.revokeObjectURL(currentUrl); }
         currentUrl = URL.createObjectURL(file);

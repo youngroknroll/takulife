@@ -263,10 +263,13 @@
         handle403(result, errorEl);
       } else if (result.status === 404) {
         setText(errorEl, gettext("사진을 찾을 수 없습니다."));
+        focusError(errorEl);
       } else if (result.status === 0) {
         setText(errorEl, gettext("네트워크 오류가 발생했습니다. 다시 시도해 주세요."));
+        focusError(errorEl);
       } else {
         setText(errorEl, gettext("사진 삭제 중 오류가 발생했습니다."));
+        focusError(errorEl);
       }
     });
   }
@@ -397,6 +400,8 @@
         )
       );
       window.TakuAPI.setLoading(submitBtn, false);
+      // 쪽에 머무르므로 부분 실패 안내 문장으로 포커스를 옮긴다.
+      focusError(statusEl);
     });
 
     if (deleteBtn) {

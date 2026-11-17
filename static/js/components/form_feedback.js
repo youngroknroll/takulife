@@ -61,6 +61,25 @@
     el.addEventListener("change", release);
   }
 
+  // 교차 필드 오류용: 짝 컨트롤을 고쳐도 표시된 컨트롤의 표시를 푼다.
+  // 짝마다 리스너는 한 번만 걸고, 풀 대상 목록만 갱신한다.
+  var partnerTargets = new WeakMap();
+
+  function bindPartnerRelease(partner, targets) {
+    var known = partnerTargets.get(partner);
+    if (known) {
+      targets.forEach(function (el) {
+        if (known.indexOf(el) === -1) { known.push(el); }
+      });
+      return;
+    }
+    var list = targets.slice();
+    partnerTargets.set(partner, list);
+    var release = function () { list.forEach(clearControl); };
+    partner.addEventListener("input", release);
+    partner.addEventListener("change", release);
+  }
+
   function isUsable(el) {
     return !!el && el.nodeType === 1 && !el.disabled && el.type !== "hidden";
   }
@@ -78,7 +97,8 @@
     return a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
   }
 
-  function markInvalid(controls, errorEl) {
+  // releaseWith: 값이 바뀌면 이 표시도 함께 풀 짝 컨트롤 목록(선택).
+  function markInvalid(controls, errorEl, releaseWith) {
     var list = Array.prototype.slice.call(controls || []).filter(isUsable);
     if (!list.length) { return; }
     list.sort(byDocumentOrder);
@@ -94,6 +114,10 @@
         }
       }
       bindRelease(el);
+    });
+
+    Array.prototype.slice.call(releaseWith || []).filter(isUsable).forEach(function (partner) {
+      bindPartnerRelease(partner, list);
     });
 
     openAncestorDetails(list[0]);

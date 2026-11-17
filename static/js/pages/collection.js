@@ -27,8 +27,10 @@
     if (window.TakuFormFeedback) { window.TakuFormFeedback.clear(form); }
   }
 
-  function markInvalid(controls, errorEl) {
-    if (window.TakuFormFeedback) { window.TakuFormFeedback.markInvalid(controls, errorEl); }
+  function markInvalid(controls, errorEl, releaseWith) {
+    if (window.TakuFormFeedback) {
+      window.TakuFormFeedback.markInvalid(controls, errorEl, releaseWith);
+    }
   }
 
   function focusError(errorEl) {
@@ -188,6 +190,7 @@
       );
       if (!validateImageFile(file, errorEl)) { return; }
       setText(errorEl, "");
+      clearFeedback(input.form);
 
       if (currentUrl) { URL.revokeObjectURL(currentUrl); }
       currentUrl = URL.createObjectURL(file);
@@ -234,7 +237,11 @@
       var fields = collectSharedFields(form);
       if (fields.tradeable_quantity > fields.quantity) {
         setText(errorEl, gettext("교환 가능 수량은 보유 수량보다 클 수 없습니다."));
-        markInvalid([form.elements["tradeable_quantity"]], errorEl);
+        markInvalid(
+          [form.elements["tradeable_quantity"]],
+          errorEl,
+          [form.elements["quantity"]]
+        );
         return;
       }
 
@@ -405,7 +412,11 @@
       var fields = collectSharedFields(form);
       if (fields.tradeable_quantity > fields.quantity) {
         setText(errorEl, gettext("교환 가능 수량은 보유 수량보다 클 수 없습니다."));
-        markInvalid([form.elements["tradeable_quantity"]], errorEl);
+        markInvalid(
+          [form.elements["tradeable_quantity"]],
+          errorEl,
+          [form.elements["quantity"]]
+        );
         return;
       }
 

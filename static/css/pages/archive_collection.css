@@ -1013,7 +1013,8 @@
 }
 /* 오류 입력은 2px --ink 테두리로 알린다(글자색은 그대로). 오류 문구는 오류 상자가 맡는다. */
 .collection-page .collection-form input[aria-invalid="true"],
-.collection-page .collection-form select[aria-invalid="true"] {
+.collection-page .collection-form select[aria-invalid="true"],
+.collection-page .collection-form textarea[aria-invalid="true"] {
   border-width: var(--bw-2);
   border-color: var(--ink);
 }

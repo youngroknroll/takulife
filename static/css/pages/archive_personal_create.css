@@ -217,6 +217,10 @@
   border-width: var(--bw-2);
   border-color: var(--ink);
 }
+/* 줄 수로 높이가 정해지는 입력이라 테두리가 1px 늘면 높이도 늘므로 안쪽 여백을 그만큼 줄인다. */
+.personal-create-page .personal-form textarea[aria-invalid="true"] {
+  padding: calc(var(--space-2) - 1px);
+}
 
 /* ── 카테고리 칩 — 선택(눌림)은 반전 ───────────────────────────────── */
 .personal-create-page .personal-form-category-chips {

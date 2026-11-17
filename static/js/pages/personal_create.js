@@ -108,6 +108,7 @@
       var errorEl = document.getElementById("personal-create-error");
       if (!validateImageFile(file, errorEl)) { return; }
       setText(errorEl, "");
+      clearFeedback(input.form);
 
       if (currentUrl) { URL.revokeObjectURL(currentUrl); }
       currentUrl = URL.createObjectURL(file);
