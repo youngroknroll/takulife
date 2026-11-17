@@ -11,10 +11,13 @@ from html import unescape
 import re
 from urllib.parse import parse_qs, quote, urlparse
 
+from django.db import connection
 from django.test import Client
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 import pytest
 
+from core.models import Category
 from core.vocab import EVENT_SORT, EVENT_SORT_LABELS
 
 pytestmark = pytest.mark.web
@@ -173,6 +176,43 @@ class TestEventListActiveFilterChips:
         assert resp.status_code == 200
         assert "전체" in resp.context["active_filter_chips"]
         assert "all" not in resp.context["active_filter_chips"]
+
+
+@pytest.mark.django_db
+class TestEventListNewCategoryLabel:
+    def test_새_카테고리로_목록을_거르면_행과_적용_필터_칩이_슬러그가_아니라_카테고리_라벨을_보여준다(
+        self, make_event
+    ):
+        category = Category.objects.create(slug="night_market", label="나이트 마켓")
+        make_event(title="야시장 행사", category=category.slug)
+
+        resp = Client().get("/events/", {"category": category.slug})
+
+        assert resp.status_code == 200
+        assert resp.context["event_rows"][0]["category_label"] == category.label
+        assert category.label in resp.context["active_filter_chips"]
+        assert category.slug not in resp.context["active_filter_chips"]
+
+    def test_새_카테고리_행사가_여러_개여도_목록_조회_쿼리_수는_행_수에_비례하지_않는다(
+        self, make_event
+    ):
+        first = Category.objects.create(slug="night_market", label="나이트 마켓")
+        for i in range(2):
+            make_event(title=f"첫째 묶음 {i}", category=first.slug)
+        with CaptureQueriesContext(connection) as few:
+            Client().get("/events/")
+
+        for slug, label in (("pop_up_store", "팝업 스토어"), ("fan_cafe", "팬 카페")):
+            extra = Category.objects.create(slug=slug, label=label)
+            for i in range(2):
+                make_event(title=f"{label} {i}", category=extra.slug)
+        with CaptureQueriesContext(connection) as many:
+            resp = Client().get("/events/")
+
+        assert len(resp.context["event_rows"]) == 6
+        assert len(many) == len(few), (
+            f"행 2건일 때 쿼리 {len(few)}건, 행 6건일 때 쿼리 {len(many)}건"
+        )
 
 
 @pytest.mark.django_db

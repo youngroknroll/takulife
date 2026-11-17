@@ -27,6 +27,7 @@ from archive.queries import (
     user_visit_record_counts,
 )
 from core.calendar_grid import month_grid
+from core.categories import category_labels_for
 from core.presenters import build_website_json_ld
 from core.vocab import (
     ARCHIVE_STATUS_LABELS,
@@ -52,6 +53,7 @@ from web.views._helpers import (
     _attach_display,
     _attach_display_many,
     _bounded_month_param,
+    _category_labels,
     _is_public_calendar_month,
     _parse_public_calendar_date,
     _parse_public_calendar_month,
@@ -146,6 +148,11 @@ def _home_calendar_context(year, month, calendar_error, raw_date, *, today):
     month_categories = {event.category for event in events if event.category}
     legend = [
         {"slug": slug, "label": label} for slug, label in CATEGORY if slug in month_categories
+    ]
+    # 고정 카테고리 밖 슬러그는 DB 라벨을 정렬 순서대로 뒤에 붙인다(없으면 쿼리 없음).
+    extra_slugs = month_categories - set(CATEGORY_LABELS)
+    legend += [
+        {"slug": slug, "label": label} for slug, label in category_labels_for(extra_slugs).items()
     ]
     return {
         "year": year,
@@ -259,8 +266,9 @@ def _active_filter_chips(*, q, selected_region, selected_category, selected_stat
         chips.append(gettext("검색: %(q)s") % {"q": q})
     for region in selected_region:
         chips.append(REGION_LABELS.get(region, region))
+    labels = _category_labels(selected_category)
     for category in selected_category:
-        chips.append(CATEGORY_LABELS.get(category, category))
+        chips.append(labels.get(category, category))
     if selected_status:
         chips.append(EVENT_STATUS_LABELS.get(selected_status, selected_status))
     return chips
@@ -633,7 +641,7 @@ def event_detail(request, event_id):
     )
 
     region_label = REGION_LABELS.get(event.region, "") if event.region else ""
-    category_label = CATEGORY_LABELS.get(event.category, event.category)
+    category_label = _category_labels([event.category]).get(event.category, event.category)
     meta_description = _build_event_meta_description(event, category_label)
     json_ld_payload = build_event_json_ld(
         event, region_label=region_label, description=meta_description

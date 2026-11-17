@@ -9,6 +9,7 @@ from django.utils import timezone
 from archive.models import UserEventStatus
 from archive.queries import user_interest_event_ids
 from core.calendar_grid import default_selected_date
+from core.categories import category_labels_for
 from core.vocab import (
     ARCHIVE_STATUS_LABELS,
     CATEGORY_LABELS,
@@ -28,6 +29,14 @@ def _archive_query(request) -> str:
     return (request.GET.get("q") or "").strip()[:100]
 
 
+def _category_labels(slugs):
+    """슬러그 -> 라벨. 고정 7종은 번역되는 상수 라벨을, 그 밖은 카테고리 행의
+    라벨을 한 번의 조회로 푼다. 행이 없으면 슬러그를 그대로 쓴다."""
+    unique = {slug for slug in slugs if slug}
+    db_labels = category_labels_for(slug for slug in unique if slug not in CATEGORY_LABELS)
+    return {slug: CATEGORY_LABELS.get(slug) or db_labels.get(slug, slug) for slug in unique}
+
+
 def _attach_display(events, *, today=None, user=None):
     """각 행사에 파생 표시값(status_slug, status_label, dday)을 붙인다.
 
@@ -39,6 +48,7 @@ def _attach_display(events, *, today=None, user=None):
     """
     events = list(events)
     event_ids = [event.id for event in events]
+    category_labels = _category_labels(event.category for event in events)
 
     user_status_map = {}
     user_interest_map = {}
@@ -65,7 +75,7 @@ def _attach_display(events, *, today=None, user=None):
                 "event": event,
                 "status_slug": status_slug,
                 "status_label": EVENT_STATUS_LABELS.get(status_slug, ""),
-                "category_label": CATEGORY_LABELS.get(event.category, event.category),
+                "category_label": category_labels.get(event.category, event.category),
                 "category_slug": event.category,
                 "region_label": REGION_LABELS.get(event.region, "") if event.region else "",
                 "dday": display["dday"],

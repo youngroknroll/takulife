@@ -35,6 +35,8 @@
 | `active_category_choices()` | 활성만 | 신규 등록 폼 |
 | `category_choices_for_editing(keep_slugs=)` | 활성 + 현재 값 | 기존 값 편집 폼 |
 | `all_category_choices()` | 전체 | 필터 칩 |
+| `palette_slot_by_slug()` | 슬롯이 배정된 전체(비활성 포함) | 공개 화면 점 색 |
+| `category_labels_for(slugs)` | 전체, 행이 없는 슬러그는 결과에 없음 | 공개 화면 목록 행·적용 필터 칩·상세·홈 범례의 새 카테고리 라벨 |
 
 `category_label`의 `.get(slug, slug)` 폴백은 필수다(선례 `archive_status_label`).
 카테고리 행이 사라져도 그 슬러그를 쓰던 이벤트 렌더가 깨지지 않아야 한다.
@@ -87,36 +89,65 @@ atomic의 마지막 문장)는 예외 없이 이벤트만 되돌아가고 EVENT_
 `test_삭제_경로에서_슬롯_재획득이_충돌해도_이벤트_삭제와_감사로그가_함께_커밋된다`
 (세이브포인트를 되돌리면 2 failed `[실측]`).
 
-## 아직 닫히지 않은 간극 — 소비자 화면의 색
+## 공개 화면의 카테고리 색과 라벨
 
-**소비자 화면은 카테고리 색을 점에만 쓰고, 점 색은 슬러그 7개에만 있다**
-(트랙 58, 2026-11-17). 점은 `data-category="<slug>"` 속성과 `--dot-<slug>`
-토큰 7개로 칠한다(`static/css/tokens.css` 20~26줄 `[코드]`, 매핑은
-`static/css/pages/event_list.css`·`event_detail.css` 등 쪽 CSS). 슬러그 기반
-`--cat-<slug>-soft`/`-ink` 토큰은 트랙 58 정리 커밋(`ee25bc03`)에서 삭제됐다.
+사용자 결정(2026-11-17): 새 카테고리에도 색 점을 준다(트랙 59).
 
-슬롯 토큰(`--cat-slot-{n}-soft`/`-ink`)은 12슬롯 × 2 = 24개 선언이 `tokens.css`
-61~84줄에 남아 있다 `[실측 2026-11-17: rg -o -- "--cat-slot-[0-9]+-(soft|ink)\s*:"
-static/css/tokens.css | wc -l]`(이 문서의 이전 서술 "48개"는 24개가 맞다).
-소비처는 공개 CSS에 0곳이다 `[실측 2026-11-17:
-rg -n "var\(--cat-slot" static/css --glob '!static/css/staff/**'
---glob '!static/css/dist/**']`. 계약 테스트가 선언을 요구해서만 남아 있다.
-스태프 화면은 이 토큰을 읽지 않고 뷰가 `palette_hex_for`로 내린 hex를 인라인
-style로 쓴다(`static/css/staff/pages/categories.css` 머리 주석).
+- **고정 7종**은 슬러그 색이다. 점의 `data-category="<slug>"`가 `--dot-<slug>`
+  토큰(`static/css/tokens.css` 20~26줄 `[코드]`)을 고른다.
+- **그 밖의 카테고리**는 점 요소의 `data-palette-slot="N"`이 `--cat-slot-N-ink`를
+  고른다. 12줄 매핑은 `static/css/components/category.css` 21~32줄 `[코드]`에 있다.
+- **슬롯이 없거나 행이 없는 슬러그**는 중립색 점이다.
 
-결과: 스태프가 새로 만든 카테고리는 스태프 화면에서는 제 팔레트 색으로 보이지만
-**소비자 화면에서는 7개 슬러그 밖이면 중립색 점이 된다.** 기능(필터·라벨·목록·
-홈 타일)은 정상이고 강조색만 없다. 소비자 화면에서 스태프 카테고리 색을 살릴지는
-제품 결정이다(`docs/backlog.md` 트랙 58 보류 항목).
+조회 경로: `palette_slot_by_slug()` → 컨텍스트 프로세서 `category_palette_slots`
+(`core/context_processors.py`)의 지연 객체 → 템플릿 태그 `palette_slot_attr`
+(`core/templatetags/category_dots.py`). 고정 7종·빈 카테고리만 있는 화면은 추가
+쿼리가 0건이고, 새 카테고리가 있으면 슬롯 조회가 요청당 1건이다
+`[코드 core/templatetags/category_dots.py, core/context_processors.py]`.
+
+읽기 전용 규칙: 이 경로에서 `reconcile_palette_slot`을 부르지 않고 프로세스 전역
+캐시를 두지 않는다. 슬롯 재배정이 다음 요청에 바로 보여야 하기 때문이다. 이를
+`tests/core/test_category_palette_slot_display.py`의
+`test_비활성이고_게시_행사가_없는_카테고리의_속성을_그려도_슬롯이_반납되지_않고_속성에_실린다`와
+`test_프로세서가_준_슬롯_맵으로_include를_거쳐_여러_점을_그려도_조회는_한_번이다`가 지킨다.
+
+알려진 어긋남: 고정 카테고리가 슬롯을 반납했다가 다른 슬롯으로 재활성화되면,
+스태프 견본은 새 슬롯 색이고 공개 화면은 슬러그 색이다. 고정 7종은 슬롯을
+조회하지 않기 때문이다.
+
+`-soft` 12개 선언(`--cat-slot-N-soft`)은 공개 화면에서 여전히 쓰지 않는다.
+계약 테스트가 선언을 요구해서만 남아 있다.
+
+### 라벨
+
+공개 화면의 목록 행·적용 필터 칩·행사 상세·홈 달력 범례는 새 카테고리의 DB
+라벨을 보여 준다(트랙 59 이전에는 슬러그가 나왔다). 홈 범례는 고정 카테고리
+뒤에 새 카테고리를 `category_labels_for`가 돌려준 정렬 순서(`sort_order, id`)로
+붙인다 `[코드 web/views/events.py]`.
+
+**남은 간극**:
+
+- 내 활동·컬렉션 행(`web/views/_helpers.py`의 `_subject_view`, 호출처 8곳
+  `[실측 rg 2026-11-17 코치]`)과 스태프 화면 4곳(`staff/views/events.py`,
+  `staff/views/drafts.py`)은 아직 `CATEGORY_LABELS.get(slug, slug)`라 새
+  카테고리에서 슬러그가 나온다.
+- 비한국어 화면에서 행·범례의 새 카테고리 한글 라벨에 `lang="ko"`가 붙지
+  않는다(홈 타일·필터 칩은 붙는다).
 
 ## 색 계약 가드
 
-`tests/core/test_category_token_contract.py`가 세 가지를 강제한다.
+`tests/core/test_category_token_contract.py`가 네 가지를 강제한다.
 
 1. `tokens.css`에 12슬롯 × soft/ink 토큰이 **존재**한다
 2. 그 토큰 **값이 `PALETTE`와 일치**한다 — 이름만 검사하면 두 파일이 조용히
    어긋나고, 스태프 화면(Python hex)과 소비자 화면(CSS 토큰)의 색이 달라진다
 3. 활성 카테고리는 모두 유효 슬롯에 배정돼 있다
+4. `tokens.css`의 `--dot-*` 이름 집합이 `core.vocab.CATEGORY_SOURCE_LABELS`의 키
+   집합과 같다
+   (`test_tokens_css의_점_색_토큰_이름은_고정_카테고리_슬러그_집합과_같다`)
+
+그래서 `--dot-slot` 같은 새 이름을 `tokens.css`에 넣으면 4번이 깨진다. 슬롯
+점 변수는 `category.css`에 둔다.
 
 ## 마이그레이션
 

@@ -11,6 +11,8 @@ from unittest.mock import patch
 from django.test import Client
 import pytest
 
+from core.models import Category
+
 pytestmark = pytest.mark.web
 
 
@@ -293,6 +295,43 @@ def test_범례는_표시_달에_실제로_있는_카테고리만_어휘_순서�
     assert calendar["legend"] == [
         {"slug": "popup_store", "label": "팝업스토어"},
         {"slug": "exhibition", "label": "전시"},
+    ]
+
+
+@pytest.mark.django_db
+def test_범례는_표시_달의_새_카테고리를_고정_카테고리_뒤에_카테고리_순서로_카테고리_라벨과_함께_담는다(
+    make_event,
+):
+    today = date(2026, 9, 16)
+    # 카테고리 순서(sort_order, id)는 새1 -> 새2, 행사 날짜는 새1이 더 늦다.
+    first = Category.objects.create(slug="zz_legend_first", label="범례첫째", sort_order=900)
+    second = Category.objects.create(slug="zz_legend_second", label="범례둘째", sort_order=901)
+    make_event(
+        title="전시",
+        category="exhibition",
+        start_date=date(2026, 9, 3),
+        end_date=date(2026, 9, 3),
+    )
+    make_event(
+        title="첫째 행사",
+        category=first.slug,
+        start_date=date(2026, 9, 25),
+        end_date=date(2026, 9, 25),
+    )
+    make_event(
+        title="둘째 행사",
+        category=second.slug,
+        start_date=date(2026, 9, 10),
+        end_date=date(2026, 9, 10),
+    )
+    with patch("web.views.events.timezone.localdate", return_value=today):
+        resp = Client().get("/")
+
+    calendar = resp.context["home_calendar"]
+    assert calendar["legend"] == [
+        {"slug": "exhibition", "label": "전시"},
+        {"slug": first.slug, "label": first.label},
+        {"slug": second.slug, "label": second.label},
     ]
 
 
