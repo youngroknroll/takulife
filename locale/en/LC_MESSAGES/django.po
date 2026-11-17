@@ -2844,14 +2844,6 @@ msgid "최근 등록한 굿즈"
 msgstr "Recently added goods"
 
 #: templates/core/partials/_home_collection_snapshot.html
-msgid "최근 등록한 굿즈, 이전"
-msgstr "Recently added goods, previous"
-
-#: templates/core/partials/_home_collection_snapshot.html
-msgid "최근 등록한 굿즈, 다음"
-msgstr "Recently added goods, next"
-
-#: templates/core/partials/_home_collection_snapshot.html
 msgid "다가오는 일정"
 msgstr "Upcoming schedule"
 

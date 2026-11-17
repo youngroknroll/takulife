@@ -6,7 +6,6 @@
 {% block structured_data %}{% if json_ld_script %}<script type="application/ld+json">{{ json_ld_script|safe }}</script>{% endif %}{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/components/hscroll.css' %}">
 <link rel="stylesheet" href="{% static 'css/pages/archive.css' %}">
 <link rel="stylesheet" href="{% static 'css/pages/home.css' %}">
 <link rel="stylesheet" href="{% static 'css/components/calendar.css' %}">
@@ -193,7 +192,6 @@
 {% endblock %}
 
 {% block extra_js %}
-<script defer src="{% static 'js/components/hscroll.js' %}"></script>
 {% if featured_event_rows|length > 1 %}
 <script defer src="{% static 'js/pages/home_hero_rotator.js' %}"></script>
 {% endif %}

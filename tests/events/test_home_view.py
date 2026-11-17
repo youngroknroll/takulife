@@ -356,7 +356,6 @@ class TestHomeCollectionSnapshotContext:
         resp = Client().get("/")
 
         assert b"snapshot-panel" not in resp.content
-        assert b"hscroll-snap" not in resp.content
 
     def test_로그인_사용자의_홈_컬렉션_스냅샷은_본인_데이터만_담고_다른_사용자_데이터는_섞이지_않는다(
         self, make_user, make_event

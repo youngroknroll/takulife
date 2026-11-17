@@ -2831,14 +2831,6 @@ msgid "최근 등록한 굿즈"
 msgstr "最近登録したグッズ"
 
 #: templates/core/partials/_home_collection_snapshot.html
-msgid "최근 등록한 굿즈, 이전"
-msgstr "最近登録したグッズ、前へ"
-
-#: templates/core/partials/_home_collection_snapshot.html
-msgid "최근 등록한 굿즈, 다음"
-msgstr "最近登録したグッズ、次へ"
-
-#: templates/core/partials/_home_collection_snapshot.html
 msgid "다가오는 일정"
 msgstr "近日の予定"
 

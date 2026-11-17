@@ -211,7 +211,7 @@ def _demo_events():
 
 
 class Command(BaseCommand):
-    help = "Seed 21 published demo events for hscroll threshold verification (idempotent)."
+    help = "Seed 21 published demo events for list and pagination verification (idempotent)."
 
     def handle(self, *args, **options):
         created_count = 0

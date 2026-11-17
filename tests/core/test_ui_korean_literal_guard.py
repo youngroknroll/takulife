@@ -135,7 +135,6 @@ _JS_FIXED_RELPATHS = [
     "shared/toast.js",
     "components/confirm-modal.js",
     "components/form_feedback.js",
-    "components/hscroll.js",
     "pages/home_hero_rotator.js",
     "pages/event_list.js",
     "pages/visit_edit.js",
@@ -153,9 +152,9 @@ _JS_FIXED_RELPATHS = [
     "pages/account_settings.js",
 ]
 
-# shared(9) + components(3) + home_hero_rotator.js(1) + event_list.js(1)
-# + 나머지 pages/*.js 13개 = 27개 — 직접 센 기대 개수 [실측 ls].
-_EXPECTED_JS_FILE_COUNT = 27
+# shared(9) + components(2) + home_hero_rotator.js(1) + event_list.js(1)
+# + 나머지 pages/*.js 13개 = 26개 — 직접 센 기대 개수 [실측 ls].
+_EXPECTED_JS_FILE_COUNT = 26
 
 _BLOCK_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
 _UNESCAPED_QUOTE_RE = re.compile(r"(?<!\\)['\"]")
