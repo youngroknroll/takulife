@@ -4,7 +4,7 @@
 조건으로 컨텍스트를 이미 한 번 막아 이중 방어다).
 
 snapshot_active 분기 두 가지: 활성 상태는 요약 칩 + 최대 3개 서브리스트
-(기록 대기=그리드, 최근 등록한 굿즈=표 모양 격자, 다가오는 일정=세로
+(기록 대기=행 목록, 최근 등록한 굿즈=표 모양 격자, 다가오는 일정=세로
 목록. 각자 목록이 비면 제목까지 통째로 숨김), 초기 상태는 두 버튼 복구
 CTA가 있는 빈 상태다.
 
@@ -50,7 +50,7 @@ unrecorded(최대 5), upcoming_planned(최대 4), snapshot_active.
           <h3>{% translate "기록 대기" %} <span class="snapshot-count">{{ unrecorded|length }}</span></h3>
           <a class="snapshot-more" href="/archive/statuses/?status=visited">{% translate "더보기 ›" %}</a>
         </div>
-        {% comment %} 가로 스크롤 레일 → 3열 그리드(모바일 1열). 시안이 이 목록만 평면
+        {% comment %} 가로 스크롤 레일 → 한 열 행 목록. 시안이 이 목록만 평면
            행으로 바꿨다. 제목 링크의 ::after가 행 전체를 덮어 어디를 눌러도
            상세로 가고, '기록' 링크만 그 위에 따로 눌린다. {% endcomment %}
         <ul class="snapshot-record-rows">

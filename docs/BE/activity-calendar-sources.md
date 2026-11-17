@@ -29,6 +29,13 @@
 무조건 규칙**(대응 상태 행 존재 여부와 무관하게 항상 숨김)이라, 이미 웹 계층에
 있는 `status` 그룹 은폐(`_visible_activity_group`)와 같은 자리다.
 
+## Guardrail — 비공개 행사에는 공개 상세 주소를 싣지 않는다
+
+게시되지 않은 행사의 상세는 404이므로, 일정·찜 대체·행동 로그 항목의 `url`은
+`_published_event_url`(`archive/activity_calendar_queries.py:157` [코드])이 게시된
+행사에만 상세 주소를 준다. 행동 로그는 `_log_entry_url`(`:165` [코드])이 방문
+기록 수정 → 컬렉션 수정 → `None` 순으로 대신 연결한다.
+
 ## Guardrail — 회귀 테스트는 반드시 HTTP API 경유로 데이터를 만들 것
 
 `tests/archive/conftest.py`의 `make_visit`/`make_collection_item`은
