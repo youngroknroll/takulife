@@ -30,14 +30,14 @@
 | 함수 | 포함 범위 | 쓰는 곳 |
 |---|---|---|
 | `category_exists(slug)` | 전체(비활성 포함) | 어휘 검증 |
-| `category_label(slug)` | 전체, 없으면 슬러그 반환 | 라벨 표시 |
+| `category_label(slug)` | 전체, 없으면 슬러그 반환 | 현재 비테스트 호출처 없음. 화면 표시에는 `category_display_labels`(이 함수는 고정 7종도 DB 한국어 원문을 돌려줘 번역이 빠진다) |
 | `category_slugs()` | 활성만 | LLM 추출 enum·러너 어휘 |
 | `active_category_choices()` | 활성만 | 신규 등록 폼 |
 | `category_choices_for_editing(keep_slugs=)` | 활성 + 현재 값 | 기존 값 편집 폼 |
 | `all_category_choices()` | 전체 | 필터 칩 |
 | `palette_slot_by_slug()` | 슬롯이 배정된 전체(비활성 포함) | 공개 화면 점 색 |
-| `category_labels_for(slugs)` | 전체, 행이 없는 슬러그는 결과에 없음 | 공개 화면 목록 행·적용 필터 칩·상세·홈 범례의 새 카테고리 라벨 |
-| `category_display_labels(slugs)` | 고정 7종은 번역되는 상수 라벨, 그 밖은 DB 라벨, 행이 없으면 슬러그. 빈 슬러그는 결과에 없음. 조회는 고정이 아닌 슬러그가 있을 때만 1건 | 공개 화면 목록 행·적용 필터 칩·상세·내 활동 행·방문 목록 칩, 스태프 행사·드래프트 목록과 드래프트 상세 |
+| `category_labels_for(slugs)` | 전체, 행이 없는 슬러그는 결과에 없음 | `category_display_labels` 내부 조회, 홈 범례(`web/views/events.py:155`) |
+| `category_display_labels(slugs)` | 고정 7종은 번역되는 상수 라벨, 그 밖은 DB 라벨, 행이 없으면 슬러그. 빈 슬러그는 결과에 없음. 조회는 고정이 아닌 슬러그가 있을 때만 1건 | 공개 화면 목록 행·적용 필터 칩·필터 체크박스 선택지·상세·내 활동 행·방문 목록 칩, 스태프 행사·드래프트 목록과 드래프트 상세 |
 | `category_label_lang(label)` | 비한국어 화면이고 라벨에 한글 음절이 있으면 `"ko"`, 아니면 빈 문자열 | 템플릿 태그 `category_lang_attr`, 적용 칩·방문 목록 칩·홈 타일의 `lang` 값 |
 
 `category_label`의 `.get(slug, slug)` 폴백은 필수다(선례 `archive_status_label`).
@@ -130,11 +130,12 @@ atomic의 마지막 문장)는 예외 없이 이벤트만 되돌아가고 EVENT_
 | 화면 | 추가 쿼리 상한 |
 |---|---|
 | 행사 목록·행사 달력·행사 상세 | 3건(슬롯 1 + 라벨 2) `[코드 DAR 사후 확인이 호출 횟수를 셈, 2026-11-17]` |
-| 로그인 홈 | 5건(슬롯 1 + 라벨 4, 기록 대기 행 라벨 1건 포함) `[계산 코치 계약 §1-6]` |
-| 내 활동 기록장·나의 일정·방문 목록·찜 목록 | 각 1건 `[계산 코치 계약 §1-6]` |
-| 방문 상세·방문 수정 | 최대 1건 `[계산 코치 계약 §1-6]` |
-| 스태프 행사 목록 | 행 1건 + 새 카테고리 필터를 걸고 결과가 없을 때 요약 1건 `[계산 코치 계약 §1-6]` |
-| 스태프 드래프트 목록·상세 | 각 1건 `[계산 코치 계약 §1-6]` |
+| 로그인 홈 | 5건(슬롯 1 + 라벨 4, 기록 대기 행 라벨 1건 포함) `[계산 호출 횟수, web/views/_helpers.py:232-234·events.py:155·events.py:168·events.py:234]` |
+| 내 활동 기록장·나의 일정·방문 목록·찜 목록 | 각 1건 `[계산 호출 횟수, web/views/archive.py:72·archive.py:250·archive.py:663-666]` |
+| 방문 상세·방문 수정 | 최대 1건 `[계산 호출 횟수, web/views/archive.py:458·archive.py:485]` |
+| 컬렉션 작성 폼(`?visit_record=` 미리 선택) | 최대 1건, 그 라벨은 화면에 쓰이지 않음 `[코드 web/views/collection.py:272, _helpers.py:253]` |
+| 스태프 행사 목록 | 행 1건 + 새 카테고리 필터를 걸고 결과가 없을 때 요약 1건 `[계산 호출 횟수, staff/views/events.py:95·staff/views/events.py:229]` |
+| 스태프 드래프트 목록·상세 | 각 1건 `[계산 호출 횟수, staff/views/drafts.py:77·staff/views/drafts.py:174]` |
 
 알려진 어긋남: 고정 카테고리가 슬롯을 반납했다가 다른 슬롯으로 재활성화되면,
 스태프 견본은 새 슬롯 색이고 공개 화면은 슬러그 색이다. 고정 7종은 슬롯을

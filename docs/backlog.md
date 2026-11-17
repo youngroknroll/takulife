@@ -35,7 +35,7 @@ main `e3d3448` 분기)는 머지됐다.
 | OAuth 활성화 | **활성화 완료**(B2 코드 해소=트랙 11, GCP 클라이언트·env 설정 및 실 OAuth 왕복 검증=사용자, 2026-08-26) |
 | e2e 여정 스위트 | `[코드] [실측 2026-09-09]` 트랙 27로 재도입, `tests/e2e/` 8파일·10건, 명령 `uv run pytest -q -m e2e tests/e2e`. 기본 `uv run pytest -q`는 `addopts`의 `-m "not e2e"`로 e2e 제외. CI `e2e` 잡은 `continue-on-error: true`(관측 기간) |
 | 요청 중 피드백(전역) | `[실측 gh]` PR #366 머지 완료(2026-09-15, merge commit `568a6192`) — POST 폼 34/34 제출 가드, 스피너 공용 규칙(`currentColor`), 페이지별 우회 6곳 제거, 말줄임 제목 `title` 84곳. 가드레일 정본 `docs/FE/loading-feedback.md` |
-| 카테고리 어휘 스태프 CRUD | `[실측 gh]` PR #365 머지 완료(2026-09-15, merge commit `ec8deaca`) — 어휘가 상수에서 `core.models.Category`로 이동, 팔레트 12슬롯 자동 배정·반납, 슈퍼유저 전용 관리 화면 4개, 감사 로그 액션 4종. 가드레일 정본 `docs/BE/category-vocabulary.md`. **남은 간극**: 공개 화면의 점 색과 행사 목록·상세·홈 범례 라벨은 트랙 59에서 닫혔다(브랜치 `fix/dos-ui-residuals`, PR 머지 전). 남은 간극은 내 활동·컬렉션 행과 스태프 화면의 새 카테고리 라벨, 비한국어 화면의 `lang="ko"`다. 현재 사실은 `docs/BE/category-vocabulary.md` |
+| 카테고리 어휘 스태프 CRUD | `[실측 gh]` PR #365 머지 완료(2026-09-15, merge commit `ec8deaca`) — 어휘가 상수에서 `core.models.Category`로 이동, 팔레트 12슬롯 자동 배정·반납, 슈퍼유저 전용 관리 화면 4개, 감사 로그 액션 4종. 가드레일 정본 `docs/BE/category-vocabulary.md`. **남은 간극**: 공개 화면의 점 색과 행사 목록·상세·홈 범례 라벨은 트랙 59에서 닫혔다(브랜치 `fix/dos-ui-residuals`, PR 머지 전). 내 활동·컬렉션 행과 스태프 화면의 새 카테고리 라벨, 비한국어 화면의 `lang="ko"`도 트랙 59에서 닫혔다(브랜치 `fix/dos-ui-residuals`, PR 머지 전). 현재 사실은 `docs/BE/category-vocabulary.md` |
 | 스태프 이벤트 목록 필터(트랙 26) | `[실측 gh]` PR #364 머지 완료(2026-09-15, merge commit `cda6e127`) — 정렬·기간·카테고리 단일 선택 링크 필터 3축, `q` 소실 결함(F-A)·0건 복구 링크(F-B) 동반 수정 |
 | 회원 닉네임(트랙 29) | `[실측 gh]` PR #358 머지 완료(2026-09-10, merge commit `3ca5d184`, 커밋 10개) — 가입 필수 입력·헤더/마이페이지 표시·기존 회원 백필(`회원<pk>`)·변경 화면(`/accounts/settings/nickname/`, 5회/3600초 빈도 제한). 가드레일 정본 `docs/BE/account-identity.md` |
 | DB 락·트랜잭션 검수(트랙 32) | `[실측 gh]` PR #367 머지 완료(2026-09-15 `4c8ab746` → #366 `568a6192`로 main 도달) — 결함 7건(팔레트 슬롯 세이브포인트·삭제 뷰 잠금 순서·상태 PATCH 원자성·탐색 감사로그 원자성·러너 중복 정규화·HomeConfig 잠금·컬렉션 PATCH 스로틀) 수정, 신규 테스트 10건. 이연: 락 안 이미지 저장 근본 해법(트리거 S3 지연 실측)·타임아웃 설정·교착 관측 지표 |
@@ -662,12 +662,12 @@ F10 MFA(2026-07-01 `auth-hardening` 결정).
 
 트랙 58 중 발견했지만 main부터 있던 동작이고 작지 않아 넘긴 항목이다. 사용자에게 보고됐고, 사용자가 머지 승인과 함께 진행을 지시했다(2026-11-17 "머지 승인 후 백로그 진행"). 트랙 59에서 처리했다(브랜치 `fix/dos-ui-residuals`, PR 머지 전).
 
-- **해소(글자 채움색 투명 방식, 버튼 392개 어긋남 0 `[실측 2026-11-17 Playwright]`)** 저장·삭제 요청 중 로딩 표시가 버튼마다 다르다** — 공용 `button.is-loading { font-size: 0 }`(`static/css/objects/interaction.css:56-58` `[코드, 해소 전 줄]`)를 쪽 규칙이 이겨 글자 위에 스피너가 겹치는 버튼과, 글자가 접히며 폭이 줄어드는 버튼이 섞여 있다. 예: `/archive/` 기록 삭제 버튼 42px → 18px `[실측 2026-11-17 Playwright]`. 가드레일 `docs/FE/loading-feedback.md` "스피너는 버튼 폭을 바꾸면 안 된다"와 어긋난다.
+- **해소(글자 채움색 투명 방식, 버튼 392개 어긋남 0 `[실측 2026-11-17 Playwright]`)** 저장·삭제 요청 중 로딩 표시가 버튼마다 다르다 — 공용 `button.is-loading { font-size: 0 }`(`static/css/objects/interaction.css:56-58` `[코드, 해소 전 줄]`)를 쪽 규칙이 이겨 글자 위에 스피너가 겹치는 버튼과, 글자가 접히며 폭이 줄어드는 버튼이 섞여 있다. 예: `/archive/` 기록 삭제 버튼 42px → 18px `[실측 2026-11-17 Playwright]`. 가드레일 `docs/FE/loading-feedback.md` "스피너는 버튼 폭을 바꾸면 안 된다"와 어긋난다.
 - **해소(`static/js/components/form_feedback.js`)** 폼 검증 접근성 — 컬렉션·개인 기록·방문 기록 폼에서 JS가 검증 실패 입력에 `aria-invalid`를 세팅하지 않는다(`rg -n "aria-invalid" static/js` 0건 `[실측 2026-11-17]`). 오류 문장이 화면 밖에 생겨도 스크롤·포커스 이동이 없다.
-- **해소(사이드바 접힘 56.25rem 하나로, 사용자 결정 "활동 쪽만 900px로"; 53.75rem은 활동 쪽 탭 라벨·hero·하단 고정 막대에, 60rem은 행사 상세 하단 고정 막대에 남음)** 2열 → 1열 접힘 폭이 쪽마다 다르다** — 기록 목록 53.75rem(`static/css/pages/archive.css:846`), 폼 45rem(`archive_personal_create.css:356`), 컬렉션 목록 56.25rem(`archive_collection.css:267`), 행사 목록 56.24rem(`event_list.css:252`), 행사 상세 60rem(`event_detail.css:369`) `[실측 rg -n "max-width: (53.75|45|56.25|60)rem" static/css/pages 2026-11-17]`.
+- **해소(사이드바 접힘 56.25rem 하나로, 사용자 결정 "활동 쪽만 900px로"; 53.75rem은 활동 쪽 탭 라벨·hero·하단 고정 막대에, 60rem은 행사 상세 하단 고정 막대에 남음)** 2열 → 1열 접힘 폭이 쪽마다 다르다 — 기록 목록 53.75rem(`static/css/pages/archive.css:846`), 폼 45rem(`archive_personal_create.css:356`), 컬렉션 목록 56.25rem(`archive_collection.css:267`), 행사 목록 56.24rem(`event_list.css:252`), 행사 상세 60rem(`event_detail.css:369`) `[코드, 해소 전 줄]` `[실측 rg -n "max-width: (53.75|45|56.25|60)rem" static/css/pages 2026-11-17]`.
 - **해소(`components/text.css`·`components/cards.css` 한 벌씩)** 복제된 CSS — `.sr-only` 숨김 규칙이 쪽 CSS 8개 파일에 1벌씩 8곳 복제돼 있다(`archive_visit_edit`·`archive_visit_create`·`archive_personal_create`·`archive_collection`·`auth`·`account_settings`·`archive_personal_detail`·`archive_visit_detail`; `rg -n "\.sr-only" static/css/pages` 9줄 중 1줄은 주석 `[실측 2026-11-17]`). 공용 한 벌로 올리면 누락이 막힌다(트랙 58에서 컬렉션 폼 "(필수)" 노출로 한 번 발생). 시리즈 `gi-0`~`gi-12` 색 대응 13행이 `archive_collection.css`·`archive_collection_detail.css`·`archive_visit_detail.css` 3개 파일에 복제돼 있다 `[실측 rg -c "^\S.*\.gi-[0-9]+ \{" static/css/pages 2026-11-17, 파일당 13]`.
 - **해소(세 가지 모두)** 키보드·보조기기 — 활동 달력·행사 달력에서 월 이동 뒤 키보드 포커스가 문서 처음으로 돌아간다(전체 페이지 이동). 기록 목록 결과 창 제목의 건수가 실시간 검색 뒤 갱신되지 않는다. 하위 탭에 `aria-current`가 없다.
-- **해소(사용자 결정 "새 카테고리에도 색 점", `data-palette-slot`)** 스태프가 만든 카테고리 색이 공개 화면에 안 쓰인다** — 7개 슬러그 점만 색이 있다. `--cat-slot-*` 24개 선언(12슬롯 × 2, `static/css/tokens.css:61-84`)은 공개 CSS 소비처 0곳이고 계약 테스트 `tests/core/test_category_token_contract.py` 때문에 남아 있다 `[실측 2026-11-17]`. 공개 화면에서 스태프 카테고리 색을 살릴지는 제품 결정이다.
+- **해소(사용자 결정 "새 카테고리에도 색 점", `data-palette-slot`)** 스태프가 만든 카테고리 색이 공개 화면에 안 쓰인다 — 7개 슬러그 점만 색이 있다. `--cat-slot-*` 24개 선언(12슬롯 × 2, `static/css/tokens.css:61-84`)은 공개 CSS 소비처 0곳이고 계약 테스트 `tests/core/test_category_token_contract.py` 때문에 남아 있다 `[실측 2026-11-17]`. 사용자 결정 "새 카테고리에도 색 점"으로 살렸다.
 
 트랙 59 완료 보고 때 남겼던 10건은 사용자 지시("백로그 남기지 말고 모두 처리하라고", 2026-11-17)로 같은 PR에서 전부 처리했다. 남은 열린 항목은 없다.
 
@@ -676,7 +676,7 @@ F10 MFA(2026-07-01 `auth-hardening` 결정).
 3. **해소** 소비자 JS 2개가 한국어 리터럴 가드 목록 밖이던 것. 목록은 소비자 JS 27개 전부를 덮는다 `[코드 tests/core/test_ui_korean_literal_guard.py]`.
 4. **해소(로딩 중 버튼은 비활성 모양을 입지 않는다)** 로딩 중 버튼 색이 계열마다 다르던 것. 버튼 392개 중 380개가 로딩 전후 같은 색이고, 나머지 12개는 로딩 경로가 없는 홈 대표 행사 교체 단추에 측정이 `disabled`를 강제로 건 값이다. 스피너 대비 최솟값 7.16:1 `[실측 2026-11-17 Playwright]`.
 5. **해소(`form_feedback.js`의 재낭독)** 같은 오류 문장을 연달아 낼 때 보조가 없던 것. 접힌 동안 접근성 트리에서 문장 노드 0개, 복원 뒤 1개 `[실측 CDP]`. 실제 스크린리더 낭독은 사람이 확인해야 한다(사용자 확인 필요).
-6. **해소** `hscroll.js`의 폭 값을 CSS 짝 값 45.01rem으로 맞췄다.
+6. **해소** `hscroll.js`의 폭 조건을 CSS `(max-width: 45rem)`의 정확한 여집합(`not all and (max-width: 45rem)`)으로 맞췄다. 앞서 쓴 `(min-width: 45.01rem)`은 720.00~720.16px에 틈이 있었다.
 7. **해소** 방문 등록 쪽의 쓰이지 않던 `#visit-global-error` 노드를 지웠다(높이 0px, 폼 위치 전후 동일 `[실측]`).
 8. **해소** 로딩 중 `aria-busy="true"`가 `.is-loading`과 같이 붙고 떨어진다. 스태프와 공유하는 `api.js`·`submit_guard.js`에도 적용되며 스태프 화면의 모양 변화는 0px `[실측]`.
 9. **해소(`data-feedback-pair`)** 짝 컨트롤을 고치면 서버 400으로 달린 표시까지 풀리던 것.
@@ -688,6 +688,8 @@ F10 MFA(2026-07-01 `auth-hardening` 결정).
 - 고대비(forced-colors)에서 로딩 글자가 스피너와 겹쳐 보이던 것.
 - 반전된 행 안의 켜지지 않은 찜 버튼이 파랑 위 검정으로 남던 것.
 - 스태프 로딩 스피너의 중심이 2px 어긋나 있던 것.
+- 결과 영역 밖 링크(상태·분류 칩, 컬렉션 탭·보기 전환·유형·작품 필터)가 실시간 검색어를 따라가지 않던 것: 정렬 메뉴와 `data-search-links` 표식이 붙은 묶음의 `q`를 매 교체 뒤 맞춘다(활동 쪽 보기 전환·구역 탭은 서버가 `q`를 빼므로 제외). 이미 보이는 검색어로 Enter를 눌러도 같은 주소가 방문 기록에 쌓이던 것: 같은 주소면 `pushState`를 하지 않는다.
+- 활동 쪽 필터 칩 중 "전체" 칩만 현재 정렬을 잃던 것(`/archive/`·`/archive/statuses/`·`/archive/visits/`, 다른 칩은 정렬을 실었다 `[실측 2026-11-17 Playwright]`): "전체" 칩도 다른 칩과 같은 꼬리(`search_suffix`)를 써서 검색어와 정렬을 유지한다. 테스트 `tests/archive/test_archive_search.py`의 `test_전체_칩은_필터만_풀고_현재_검색어와_정렬을_유지한다`.
 
 ## 착수하지 않는 것
 
