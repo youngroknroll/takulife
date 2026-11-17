@@ -161,27 +161,8 @@
   margin-top: auto;
 }
 
-/* 활동 달력의 종류 점(.day-dot[data-kind]) 색은 아직 이 파일이 맡는다. 옛 토큰
-   이름이라 지금은 무채색 별칭으로 풀린다 — 활동 달력 작업에서 형태 표지로 바꾼다. */
-.day-dot[data-kind] {
-  border: none;
-}
-
-.day-dot[data-kind="schedule"] {
-  background: var(--up-ink);
-}
-
-.day-dot[data-kind="interest"] {
-  background: var(--pink-ink);
-}
-
-.day-dot[data-kind="visit"] {
-  background: var(--mint-ink);
-}
-
-.day-dot[data-kind="goods"] {
-  background: var(--amber-ink);
-}
+/* 활동 달력의 종류 점(.day-dot[data-kind])은 색이 아니라 기호 글자라서
+   pages/archive_calendar.css가 모양을 맡는다. */
 
 .day-mobile-dots,
 .day-mobile-cats {
