@@ -3,6 +3,8 @@
 검증 대상:
 - 기록장 (/archive/)에는 정리 체크리스트가 없고, 기록 추가 링크가 실제로
   동작하며, 방문 완료 행에만 행별 기록 바로가기가 보인다.
+- 방문 완료 행은 방문 기록이 있으면 수정 링크를, 없으면 기록 추가 링크를
+  보인다(기록장·상태 목록).
 - 방문 기록 (/archive/visits/)에는 더 이상 기록 안내 패널이 없다 — 그 안내는
   이제 작성 페이지(/archive/visits/new/)에 있다.
 """
@@ -38,17 +40,6 @@ class TestArchiveRecordPageActions:
         body = resp.content.decode()
         assert "준비 중" not in body
         assert 'href="/archive/visits/new/"' in body
-
-    def test_방문_완료_행은_기록_바로가기_링크를_보여준다(
-        self, user_client, make_event, make_status
-    ):
-        user, client = user_client()
-        event = make_event(title="다녀온 행사")
-        make_status(user, event=event, status=UserEventStatus.Status.VISITED)
-
-        resp = client.get("/archive/")
-
-        assert f"/archive/visits/new/?subject=event:{event.id}".encode() in resp.content
 
     def test_방문_예정_행은_기록_바로가기_링크를_보여주지_않는다(
         self, user_client, make_event, make_status
@@ -168,7 +159,7 @@ def test_방문_완료_행에_방문_기록이_없으면_기록_추가_링크만
     user, client = user_client()
     subject = build_subject(user)
     UserEventStatus.objects.create(user=user, status=UserEventStatus.Status.VISITED, **subject)
-    subject_id = 920_001
+    subject_id = next(iter(subject.values())).pk
 
     hrefs = _hrefs(client.get(path))
 
@@ -181,7 +172,8 @@ class TestVisitRecordCollectionShortcut:
     """다녀온 기록 (/archive/visits/) 카드에 굿즈 등록 바로가기가 붙는다
     (collection domain design plan §4 PR-C5b-2 CP-V1). 기존 수정/기록 삭제
     액션 옆에 ?visit_record=<id>로 컬렉션 등록 폼을 프리셀렉트하는 링크가
-    붙는다 — test_방문_완료_행은_기록_바로가기_링크를_보여준다의 미러."""
+    붙는다 — test_방문_완료_행에_방문_기록이_없으면_기록_추가_링크만_나오고_수정_링크는_나오지_않는다의
+    미러."""
 
     def test_다녀온_기록_카드는_컬렉션_등록_바로가기_링크를_보여준다(
         self, user_client, make_event, make_visit
