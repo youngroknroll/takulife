@@ -33,15 +33,15 @@
   var lastTerm = (new URLSearchParams(window.location.search).get("q") || "").trim();
 
   // 현재 URL에서 쿼리 파라미터를 만들어 활성 필터를 유지한다. 새 검색어는
-  // 페이지를 1로 되돌린다.
-  function buildParams(term) {
+  // 페이지를 1로 되돌리고, 뒤로/앞으로가기(keepPage)만 주소의 페이지를 지킨다.
+  function buildParams(term, keepPage) {
     var params = new URLSearchParams(window.location.search);
     if (term) {
       params.set("q", term);
     } else {
       params.delete("q");
     }
-    params.delete("page");
+    if (!keepPage) { params.delete("page"); }
     params.delete("partial");
     return params;
   }
@@ -144,10 +144,10 @@
     titleTarget.innerHTML = carrier.innerHTML.trim();
   }
 
-  // `term`에 대한 결과 조각을 받아 교체한다. `push`는 새 히스토리 항목을
-  // 만들지 여부(popstate 재실행 시에는 false).
-  function runSearch(term, push) {
-    var params = buildParams(term);
+  // `term`에 대한 결과 조각을 받아 교체한다. `fromHistory`는 뒤로/앞으로가기
+  // 재실행인지 여부로, 참이면 새 히스토리 항목을 만들지 않고 주소의 페이지를 유지한다.
+  function runSearch(term, fromHistory) {
+    var params = buildParams(term, fromHistory);
     lastTerm = term;
 
     if (controller) { controller.abort(); }
@@ -186,8 +186,10 @@
         syncResultsTitle();
         announceResultCount(term);
         syncSearchLinks(term);
-        // 이미 보이는 검색어로 다시 Enter를 눌러도 같은 주소는 쌓지 않는다.
-        if (push && userUrl(params) !== window.location.pathname + window.location.search) {
+        // 서버 주소와 URLSearchParams는 인코딩이 달라, 쿼리를 정규화해 비교한다.
+        // 의미가 같은 주소로 Enter를 눌러도 히스토리에 쌓지 않는다.
+        var currentQuery = new URLSearchParams(window.location.search).toString();
+        if (!fromHistory && params.toString() !== currentQuery) {
           window.history.pushState({ q: term }, "", userUrl(params));
         }
         // 교체된 컨트롤(상태/찜/삭제/제보/캐러셀 등)을 다시 연결한다.
@@ -209,7 +211,7 @@
     syncClearLink(term);
     timer = window.setTimeout(function () {
       if (term === lastTerm) { return; }
-      runSearch(term, true);
+      runSearch(term, false);
     }, DEBOUNCE_MS);
   }
 
@@ -232,7 +234,7 @@
     if (timer) { window.clearTimeout(timer); }
     var term = input.value.trim();
     syncClearLink(term);
-    runSearch(term, true);
+    runSearch(term, false);
   });
 
   // 뒤로/앞으로가기: URL에서 입력값을 다시 맞추고 새 히스토리 없이 검색을 재실행한다.
@@ -242,6 +244,6 @@
     var term = new URLSearchParams(window.location.search).get("q") || "";
     input.value = term;
     syncClearLink(term);
-    runSearch(term, false);
+    runSearch(term, true);
   });
 })();
