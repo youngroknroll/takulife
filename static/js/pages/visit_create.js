@@ -48,6 +48,14 @@
     }
   }
 
+  // 방문 대상이 숨은 입력으로 정해진 폼에서 서버가 그 대상을 거절하면, 사용자는
+  // 대상을 바꿀 수 없으므로 서버 원문 대신 "항목을 찾을 수 없습니다"만 보여 준다.
+  function isLockedSubjectRejected(form, result) {
+    var data = result.data;
+    return form.elements["subject"].type === "hidden" &&
+      !!data && (data.event !== undefined || data.personal_entry !== undefined);
+  }
+
   function handle403(result, errorEl) {
     var kind = window.TakuAPI.classify(result);
     if (kind === "auth") {
@@ -286,6 +294,9 @@
           handle403(result, errorEl);
         } else if (result.status === 0) {
           setText(errorEl, gettext("네트워크 오류가 발생했습니다. 다시 시도해 주세요."));
+          focusError(errorEl);
+        } else if (isLockedSubjectRejected(form, result)) {
+          setText(errorEl, gettext("항목을 찾을 수 없습니다."));
           focusError(errorEl);
         } else {
           setText(errorEl, window.TakuAPI.formatError(result));
