@@ -13,15 +13,42 @@
 - 특수문자(%, &)가 섞인 q는 500을 일으키지 않는다.
 """
 
+from datetime import date
 import html
+from html.parser import HTMLParser
 import re
-from urllib.parse import quote
+from urllib.parse import parse_qs, quote, urljoin, urlsplit
 
 import pytest
 
 from archive.models import PersonalEntry
 
 pytestmark = pytest.mark.web
+
+
+class _ChipCollector(HTMLParser):
+    """`a.chip`마다 (공백 정리한 텍스트, href)를 모은다."""
+
+    def __init__(self):
+        super().__init__()
+        self.chips = []
+        self._href = None
+        self._text = []
+
+    def handle_starttag(self, tag, attrs):
+        attr_map = dict(attrs)
+        if tag == "a" and "chip" in (attr_map.get("class") or "").split():
+            self._href = attr_map.get("href")
+            self._text = []
+
+    def handle_data(self, data):
+        if self._href is not None:
+            self._text.append(data)
+
+    def handle_endtag(self, tag):
+        if tag == "a" and self._href is not None:
+            self.chips.append((" ".join("".join(self._text).split()), self._href))
+            self._href = None
 
 
 # ---------------------------------------------------------------------------
@@ -178,6 +205,32 @@ class TestStatusPagesQFilter:
         # 위 언이스케이프 설명 참고 — 자동 이스케이프가 `&`를 `&amp;`로 바꾼다.
         content = html.unescape(resp.content.decode())
         assert 'href="/archive/statuses/?status=planned&q=test"' in content
+
+    @pytest.mark.parametrize(
+        ("경로", "필터", "정렬"),
+        [
+            pytest.param("/archive/", "status=planned", "created_at", id="기록장"),
+            pytest.param("/archive/statuses/", "status=planned", "created_at", id="나의_일정"),
+            pytest.param("/archive/visits/", "filter=unofficial", "oldest", id="방문_목록"),
+        ],
+    )
+    def test_전체_칩은_필터만_풀고_현재_검색어와_정렬을_유지한다(
+        self, user_client, make_event, make_status, make_entry, make_visit, 경로, 필터, 정렬
+    ):
+        user, client = user_client()
+        make_status(user, event=make_event(title="가나다 행사"), status="planned")
+        entry = make_entry(user, title="가나다 장소")
+        make_visit(user, personal_entry=entry, visited_on=date(2026, 11, 1))
+        요청_주소 = f"{경로}?{필터}&q=가&sort={정렬}"
+
+        resp = client.get(요청_주소)
+
+        parser = _ChipCollector()
+        parser.feed(resp.content.decode())
+        전체_칩들 = [href for text, href in parser.chips if text == "전체"]
+        assert len(전체_칩들) == 1
+        쿼리 = parse_qs(urlsplit(urljoin(요청_주소, html.unescape(전체_칩들[0]))).query)
+        assert 쿼리 == {"q": ["가"], "sort": [정렬]}
 
 
 # ---------------------------------------------------------------------------

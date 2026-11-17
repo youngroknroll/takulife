@@ -48,8 +48,9 @@
       {% translate "카테고리 필터 및 빠른 이동" as aside_label %}
       <aside class="panel window" aria-label="{{ aside_label }}">
         {% if has_visits and category_chips or has_visits and has_unofficial %}
-          <div class="chips">
-            <a class="chip{% if not selected_filter %} active{% endif %}"{% if not selected_filter %} aria-current="page"{% endif %} href="?{% if has_query %}q={{ q|urlencode }}{% endif %}">{% translate "전체" %}</a>
+          <div class="chips" data-search-links>
+            {# search_suffix는 &로 시작하므로 첫 글자를 떼어 ? 뒤에 붙인다 #}
+            <a class="chip{% if not selected_filter %} active{% endif %}"{% if not selected_filter %} aria-current="page"{% endif %} href="?{{ search_suffix|slice:"1:" }}">{% translate "전체" %}</a>
             {% for chip in category_chips %}
               {% with cat_token="cat:"|add:chip.token %}
               <a class="chip{% if selected_filter == cat_token %} active{% endif %}"{% if selected_filter == cat_token %} aria-current="page"{% endif %} href="?filter=cat:{{ chip.token|urlencode }}{{ search_suffix }}"{% if chip.lang %} lang="{{ chip.lang }}"{% endif %}>{{ chip.label }}</a>

@@ -47,8 +47,9 @@
 
     <section class="layout">
       <aside class="panel window" aria-label="{{ archive_aside_label }}">
-        <div class="chips">
-          <a class="chip{% if not selected_status %} active{% endif %}"{% if not selected_status %} aria-current="page"{% endif %} href="/archive/statuses/{% if has_query %}?q={{ q|urlencode }}{% endif %}">{% translate "전체" %}</a>
+        <div class="chips" data-search-links>
+          {# search_suffix는 &로 시작하므로 첫 글자를 떼어 ? 뒤에 붙인다 #}
+          <a class="chip{% if not selected_status %} active{% endif %}"{% if not selected_status %} aria-current="page"{% endif %} href="/archive/statuses/{% if search_suffix %}?{{ search_suffix|slice:"1:" }}{% endif %}">{% translate "전체" %}</a>
           {% for slug, label in ARCHIVE_STATUS %}
             <a class="chip{% if selected_status == slug %} active{% endif %}"{% if selected_status == slug %} aria-current="page"{% endif %} href="/archive/statuses/?status={{ slug }}{{ search_suffix }}">{{ label }}</a>
           {% endfor %}

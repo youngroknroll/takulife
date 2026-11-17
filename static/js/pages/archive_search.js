@@ -10,8 +10,8 @@
  * 갈아끼우는 HTML은 서버가 이스케이프해 렌더링한 것이라 검색어를 직접
  * 마크업에 끼워넣지 않는다. 교체 후에는 `archive:listswapped` 이벤트를
  * 보내 status.js 등이 새로 삽입된 컨트롤을 다시 연결하게 한다.
- * 정렬 메뉴는 #archive-results 밖에 있어 교체되지 않으므로, 매 교체 후
- * 그 링크들의 `q` 파라미터만 직접 갱신해 검색어가 사라지지 않게 한다.
+ * 정렬 메뉴와 `data-search-links` 묶음처럼 #archive-results 밖에서 `q`를 싣는
+ * 링크는 교체되지 않으므로, 매 교체 후 그 링크들의 `q`만 직접 갱신한다.
  */
 (function () {
   "use strict";
@@ -67,24 +67,27 @@
     }
   }
 
-  // 정렬 메뉴는 #archive-results 밖에 있어 처음 로드될 때 한 번만
-  // 렌더링된다. 그대로 두면 검색어를 새로 입력했을 때 링크에 박힌 `q`가
-  // 낡아져, 정렬을 누르면 방금 검색한 내용이 조용히 사라진다. 그래서
-  // `q`만 갱신하고 `sort` 등 나머지 값은 그대로 둔다. 정렬 메뉴가 없는
-  // 페이지에서는 아무 동작도 하지 않는다.
-  var sortMenu = document.querySelector("[data-sort-menu]");
-  var sortLinks = sortMenu ? sortMenu.querySelectorAll("a[href]") : [];
+  // #archive-results 밖 링크는 처음 한 번만 렌더링돼 `q`가 낡아진다. 서버가 `q`를
+  // 싣는 정렬 메뉴와 `data-search-links` 묶음만 골라 `q`만 갱신한다. 지우기 링크,
+  // 활동 쪽 보기 전환·구역 탭은 서버가 검색어를 빼므로 표식이 없다.
+  var syncLinks = [];
+  var markedLinks = document.querySelectorAll(
+    "[data-sort-menu] a[href], [data-search-links] a[href]"
+  );
+  for (var n = 0; n < markedLinks.length; n++) {
+    if (!results.contains(markedLinks[n])) { syncLinks.push(markedLinks[n]); }
+  }
 
-  function syncSortLinks(term) {
-    for (var i = 0; i < sortLinks.length; i++) {
-      var link = sortLinks[i];
+  function syncSearchLinks(term) {
+    for (var i = 0; i < syncLinks.length; i++) {
+      var link = syncLinks[i];
       var url = new URL(link.getAttribute("href"), window.location.href);
       if (term) {
         url.searchParams.set("q", term);
       } else {
         url.searchParams.delete("q");
       }
-      link.setAttribute("href", url.pathname + url.search);
+      link.setAttribute("href", url.pathname + url.search + url.hash);
     }
   }
 
@@ -182,8 +185,9 @@
         results.innerHTML = html;
         syncResultsTitle();
         announceResultCount(term);
-        syncSortLinks(term);
-        if (push) {
+        syncSearchLinks(term);
+        // 이미 보이는 검색어로 다시 Enter를 눌러도 같은 주소는 쌓지 않는다.
+        if (push && userUrl(params) !== window.location.pathname + window.location.search) {
           window.history.pushState({ q: term }, "", userUrl(params));
         }
         // 교체된 컨트롤(상태/찜/삭제/제보/캐러셀 등)을 다시 연결한다.
