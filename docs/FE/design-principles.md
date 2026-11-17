@@ -3,7 +3,7 @@
 기준일: 2026-11-17 · 트랙 58(A4 방향 → DOS 방향 개정) · 이전 개정: 2026-11-15 트랙 57(간격 규칙), 2026-11-03 트랙 50(A4 확정)
 대상: `static/css/tokens.css`, `static/css/base.css`, `static/css/components/`, `static/css/pages/`, `templates/`. 스태프 화면은 제외한다: `templates/staff/`, `templates/core/drafts/`, `templates/core/staff/`, `static/css/staff/`, `static/js/staff/` `[문서 사용자 결정 2026-11-17, ⑫]`.
 시안: DOS 시안 3쪽(홈·행사 목록·행사 달력) `.docs/FE/design-samples/dos.css`, `dos-home.*`, `dos-events.*`, `dos-calendar*.*`. `.docs/`는 git 무시 영역이라 새 clone에는 없다. 그래서 **구현에 필요한 값(색·선·그림자·굵기·포커스 규칙)은 전부 이 문서에 적는다.** 시안 파일은 작업 메모이고 디자인 기준 문서가 아니다 `[문서 AGENTS.md "Frontend Work Policy"]`. 이 문서의 `dos.css:줄`·`dos-events.css:줄` 인용은 2026-11-17에 로컬 시안(`dos.css` 798줄 판 `[실측 wc -l 2026-11-17]`)을 읽은 줄 번호이고, 시안이 바뀌면 어긋난다. A4 시안(`a4-*`)은 비교용으로 로컬에 남아 있을 뿐 기준이 아니다.
-파일:줄 기준: `static/`·`templates/`·`tests/`의 줄 번호 인용은 2026-11-15까지 작업 트리와 대조한 값이다 `[실측 rg -n·Read 2026-11-15]`. 트랙 58이 CSS·템플릿을 다시 쓰는 동안 줄이 달라지므로, 줄 번호가 달라질 인용(`[코드 tokens.css:NN]`, `[코드 home.css:NN]` 등)은 **트랙 58 정리 단계에서 한꺼번에 재대조한다.** 그때까지 이 문서의 `static/`·`templates/` 줄 번호는 옛 코드(트랙 58 착수 전) 위치다.
+파일:줄 기준: `static/`·`templates/`·`tests/`의 줄 번호 인용은 2026-11-17 트랙 58 최종 판정 수정 뒤 작업 트리(`5d887672`)와 다시 대조한 값이다 `[실측 rg -n·Read 2026-11-17]`. 코드가 바뀌면 어긋나므로 줄 번호를 쓰기 전에 다시 연다. "삭제됨(트랙 58)"이라고 적은 인용은 트랙 58 착수 전 코드의 이력이고 지금은 그 줄에 없다. `dos.css`·`dos-*.css`의 줄 번호는 로컬 시안 파일의 줄이라 저장소 파일이 아니고, 이 재대조의 대상이 아니다.
 A4 시안 기준으로 잰 기록(2026-11-03 `[실측 …]`·`[계산 python 2026-11-03]`, `a4.css` 인용)은 이력이다. 구현 기준은 아니고, "이력"이라고 적힌 곳 외에는 DOS 값만 기준이다.
 
 이 문서는 방향과 가드레일만 담는다. 값의 정본은 구현 뒤 `static/css/tokens.css`이고, 구현 전까지 바꿀 값은 ⑤·⑦·⑩에 적는다.
@@ -64,61 +64,61 @@ A4 시안 기준으로 잰 기록(2026-11-03 `[실측 …]`·`[계산 python 202
 
 ## ③ 시그니처 요소 판정표
 
-판정 기준: 원칙 1~3과 ④ 금지 목록에 맞으면 유지, 어긋나면 폐기다. 글자가 있는 요소는 **글자(문구)를 유지하고 모양만 DOS로 바꾼다(굵기 400·무채색·반경 0)**. 글자가 아닌 장식 형태(둥근 홈, 그라디언트 무늬, 그림자)만 폐기한다 `[문서 사용자 결정 2026-11-17: "문구는 전부 유지"]`. 번역 문구(msgid)는 바꾸지 않는다. "현 코드 위치"는 트랙 58 착수 전(2026-11-03 읽음) 위치이고 정리 단계에서 재대조한다.
+판정 기준: 원칙 1~3과 ④ 금지 목록에 맞으면 유지, 어긋나면 폐기다. 글자가 있는 요소는 **글자(문구)를 유지하고 모양만 DOS로 바꾼다(굵기 400·무채색·반경 0)**. 글자가 아닌 장식 형태(둥근 홈, 그라디언트 무늬, 그림자)만 폐기한다 `[문서 사용자 결정 2026-11-17: "문구는 전부 유지"]`. 번역 문구(msgid)는 바꾸지 않는다. "현 코드 위치" 열은 트랙 58 정리 단계 끝(2026-11-17)에 다시 대조한 위치이고, 지금 코드에 없는 것은 "삭제됨(트랙 58)"으로 적는다.
 
 | 요소 | 판정 | 사유 | 현 코드 위치 |
 |---|---|---|---|
-| 티켓 은유의 글자(`ADMIT ONE`·상태 라벨) | **글자 유지, 모양 DOS** | 문구는 지우지도 숨기지도 않는다. 400·무채색·`--ink-2` 또는 `--ink`로 쓰고 자간·대문자 변환은 두지 않는다. 예외: 홈 히어로 eyebrow "서브컬처 이벤트 티켓부스"와 h1 문구 "내가 원하는 이벤트를 찾아봐요!"는 2026-11-17 로컬 검수 1의 사용자 지정으로 삭제했다. h1은 화면에 안 보이는 쪽 제목 `.home-page-title`로 대체했다 | `templates/core/home.html:44,74`, `static/css/pages/home.css:114` `[코드]` |
-| 우측 스텁·절취선(점선 테두리 + notch 원) | 폐기(형태) | 글자가 아닌 장식 형태다. 히어로는 창 안 텍스트로 쓴다 | `static/css/pages/home.css:65,70-84` |
-| 바코드 `repeating-linear-gradient` | 폐기(형태) | 장식 그라디언트이고 ④와 충돌한다 | `static/css/pages/home.css:134-147` |
-| 큰 D-day 숫자 | 글자 유지, 크기는 5단 안 | 숫자를 장식으로 키우지 않는다. 텍스트 "오픈 D-3" 크기로 쓴다 | `static/css/pages/home.css:125-132`(`.hero-ticket-dday`) |
-| eyebrow·kicker 라벨(`section-eyebrow`·`auth-kicker` 등) | **글자 유지, 모양 DOS** | 400·무채색·`--ink-2`, 넓은 자간·대문자 변환 없음 | `static/css/pages/home.css:32-38`, `:387`, `templates/core/home.html`, `core/partials/_home_collection_snapshot.html`, `_home_event_calendar.html`, `account/*` |
-| h1 굵기 300 대 강조 800 | 폐기 | h1은 한 가지 크기·굵기 하나(700)로 통일한다. h1 안 `.emphasis` span은 글자를 유지하되 반전 블록이 아니라 h1 글자 그대로 둔다 | 300은 `static/css/pages/home.css:41-42`, 800은 같은 파일 `.hero .emphasis` 규칙(:47-49), `templates/core/home.html:22` |
-| `.emphasis` 블록 | 유지(이름·토큰 쌍) + **재정의, 경고·제약 문구 전용** | `--select` 배경 + `--on-select` 글자 반전 블록, 반경 0, 굵기 400. 홈 요약·버튼·카드 배경에는 쓰지 않는다. 운영 사용처 후보는 계정 삭제 경고 1곳이고 어느 문구인지는 구현 때 확인한다(미확인) | `static/css/components/text.css:21-31`, `static/css/tokens.css:17-20` |
-| 브랜드 레드 | 폐기 | `#d8432a`. 선택 반전 `--select`(⑩)로 대체한다 | `static/css/tokens.css:12,16` |
-| 캡슐 칩(알약 반경) | 폐기 | 반경은 0이다. 칩은 사각형이다 | `static/css/tokens.css:72`, `static/css/pages/event_list.css:119,464-465` |
-| 텍스트 전용 헤어라인 행 `.event-compact-row` | 유지 | 면 없이 단선과 밀도로 만든 이 사이트 고유의 행이다. DOS 열 정렬 목록(⑧ 관례 3)으로 이어진다 | `templates/core/partials/_event_compact_row.html`, `static/css/components/cards.css:230-353` |
-| 점선 빈 상태·안내 박스 | 박스 폐기, 글자 유지 | 점선 테두리 박스를 없애고 창 안 텍스트 + 액션 링크로 쓴다. `.empty-icon` 이모지 글자는 지우지 않는다 | 공유 클래스 `.empty-icon`(`static/css/components/cards.css:138`)의 소비처는 9개 템플릿이다 `[실측 rg -l 'empty-icon' templates/ 2026-11-12]`: `templates/core/events/list.html:228`, `core/archive/calendar.html`, `core/partials/_archive_results_{record,personal,interests,collection,statuses,visits}.html`, `core/partials/_home_collection_snapshot.html` |
+| 티켓 은유의 글자(`ADMIT ONE`·상태 라벨) | **글자 유지, 모양 DOS** | 문구는 지우지도 숨기지도 않는다. 400·무채색·`--ink-2` 또는 `--ink`로 쓰고 자간·대문자 변환은 두지 않는다. 예외: 홈 히어로 eyebrow "서브컬처 이벤트 티켓부스"와 h1 문구 "내가 원하는 이벤트를 찾아봐요!"는 2026-11-17 로컬 검수 1의 사용자 지정으로 삭제했다. h1은 화면에 안 보이는 쪽 제목 `.home-page-title`로 대체했다 | `templates/core/home.html:44,74`, `static/css/pages/home.css:101` `[코드]` |
+| 우측 스텁·절취선(점선 테두리 + notch 원) | 폐기(형태) | 글자가 아닌 장식 형태다. 히어로는 창 안 텍스트로 쓴다 | 삭제됨(트랙 58): 절취선·점선 테두리 규칙은 없다. 노치 `<span>` 마크업은 `templates/core/home.html:42-43,68-69,101-102`에 남고 `static/css/pages/home.css:97-100`가 `display: none`으로 숨긴다. 대표 행사 영역의 단선 구분은 `home.css:91-96` |
+| 바코드 `repeating-linear-gradient` | 폐기(형태) | 장식 그라디언트이고 ④와 충돌한다 | 삭제됨(트랙 58): 그라디언트 선언 0줄 `[실측 ac1_count 2026-11-17]`. 바코드 `<div>` 마크업은 `templates/core/home.html:62,92`에 남고 `static/css/pages/home.css:97-100`가 `display: none`으로 숨긴다 |
+| 큰 D-day 숫자 | 글자 유지, 크기는 5단 안 | 숫자를 장식으로 키우지 않는다. 텍스트 "오픈 D-3" 크기로 쓴다 | `static/css/pages/home.css:129-134`(`.hero-ticket-dday`) |
+| eyebrow·kicker 라벨(`section-eyebrow`·`auth-kicker` 등) | **글자 유지, 모양 DOS** | 400·무채색·`--ink-2`, 넓은 자간·대문자 변환 없음 | `static/css/pages/home.css:338-343`(`.section-eyebrow`), `static/css/pages/auth.css:61-67`(`.auth-kicker`), `templates/core/home.html`, `core/partials/_home_collection_snapshot.html`, `_home_event_calendar.html`, `account/*` |
+| h1 굵기 300 대 강조 800 | 폐기 | h1은 한 가지 크기·굵기 하나(700)로 통일한다. h1 안 `.emphasis` span은 글자를 유지하되 반전 블록이 아니라 h1 글자 그대로 둔다 | 삭제됨(트랙 58): 굵기 300·800 규칙과 `.emphasis` span이 든 h1 마크업은 없다. 지금 h1은 `templates/core/home.html:21`의 `.home-page-title`(`static/css/pages/home.css:64-74`) |
+| `.emphasis` 블록 | 유지(이름·토큰 쌍) + **재정의, 경고·제약 문구 전용** | `--select` 배경 + `--on-select` 글자 반전 블록, 반경 0, 굵기 400. 홈 요약·버튼·카드 배경에는 쓰지 않는다. 운영 사용처는 계정 삭제 경고 문구 1곳이고, `.emphasis` 클래스 없이 `static/css/pages/account_settings.css:117-121`이 같은 반전 값을 쓴다(템플릿에 `class="emphasis"` 0곳 `[실측 rg 2026-11-17]`) | `static/css/components/text.css:19-30`, `static/css/tokens.css:14-15` |
+| 브랜드 레드 | 폐기 | `#d8432a`. 선택 반전 `--select`(⑩)로 대체한다 | 삭제됨(트랙 58): `--brand` 계열 토큰. 대체 `static/css/tokens.css:14` |
+| 캡슐 칩(알약 반경) | 폐기 | 반경은 0이다. 칩은 사각형이다 | 삭제됨(트랙 58): `--radius-*` 3개 삭제, 0 아닌 `border-radius`(점 50% 제외) 0줄 `[실측 ac1_count 2026-11-17]` |
+| 텍스트 전용 헤어라인 행 `.event-compact-row` | 유지 | 면 없이 단선과 밀도로 만든 이 사이트 고유의 행이다. DOS 열 정렬 목록(⑧ 관례 3)으로 이어진다 | `templates/core/partials/_event_compact_row.html`, `static/css/components/cards.css:459-577` |
+| 점선 빈 상태·안내 박스 | 박스 폐기, 글자 유지 | 점선 테두리 박스를 없애고 창 안 텍스트 + 액션 링크로 쓴다. `.empty-icon` 이모지 글자는 지우지 않는다 | 공유 클래스 `.empty-icon`(`static/css/components/cards.css:342`)의 소비처는 9개 템플릿이다 `[실측 rg -l 'empty-icon' templates 2026-11-17]`: `templates/core/events/list.html:236`, `core/archive/calendar.html`, `core/partials/_archive_results_{record,personal,interests,collection,statuses,visits}.html`, `core/partials/_home_collection_snapshot.html` |
 | 컬러 이모지(🗂 🔍 📸 📷 📍 🗑 🔒) | 글자 유지 | 문구 안 글리프이므로 지우지 않는다 `[문서 사용자 결정 2026-11-17]`. 색 글리프는 CSS로 무채화되지 않을 수 있다(⑬-26) | `templates/core/**` 21곳 `[계산 grep, 문서 WED 사전 검토 2026-11-17]` |
-| 이중선 창 + 테두리 위 창 제목 | **신설, 유지** | DOS의 "창" 관례(⑧). 값은 ⑦ | 시안 `dos.css:413-446` |
+| 이중선 창 + 테두리 위 창 제목 | **신설, 유지** | DOS의 "창" 관례(⑧). 값은 ⑦ | 시안 `dos.css:413-446`, 운영 `static/css/components/cards.css:24-65`(`.window`·`.window-title`) |
 | 반전 막대(현재 쪽·선택·눌림·hover·포커스) | **신설, 유지** | 굵기가 아니라 반전으로 선택을 알린다. 값·규칙은 ⑦ | 시안 `dos.css:249-252,655-679` |
-| 카테고리 컬러 점 | 유지 | 점에만 쓰는 색이다. 시리즈 12색 점도 같다 | `static/css/tokens.css:96-109`, `:149-160` |
+| 카테고리 컬러 점 | 유지 | 점에만 쓰는 색이다. 시리즈 12색 점도 같다 | `static/css/tokens.css:19-26`(점 7색), `:93-104`(시리즈 12색) |
 | `mono-num` | 유지 | 숫자 정렬이 열 읽기의 핵심이다. `tabular-nums`를 전역으로 둔다 | 현 `static/css/components/text.css:15`, 시안 `dos.css:85` |
-| 본문 `radial-gradient` 배경 | 폐기 | 장식 그라디언트이고 바탕은 단색 `--bg`다 | `static/css/base.css:38-39` |
+| 본문 `radial-gradient` 배경 | 폐기 | 장식 그라디언트이고 바탕은 단색 `--bg`다 | 삭제됨(트랙 58): `base.css`에 그라디언트 없음 |
 
 판정 필수 쟁점의 답:
 
 - **티켓 은유**: 글자(문구)는 유지하고 모양(둥근 홈·바코드 무늬·절취선)만 폐기한다. 히어로는 창 안 텍스트로 쓴다.
-- **장식 그라디언트 2곳**(`base.css:38-39`, `home.css:134-147`)은 ④와 충돌하므로 둘 다 폐기한다.
+- **장식 그라디언트 2곳**(트랙 58 착수 전 `base.css:38-39`, `home.css:134-147`)은 ④와 충돌하므로 둘 다 폐기한다. 둘 다 삭제됨(트랙 58)이고 지금 공개 CSS의 `gradient`는 0줄이다 `[실측 ac1_count 2026-11-17]`.
 - 보류 항목은 없다.
 
 ## ④ 쓰지 않는 것
 
-"현 사이트 사례"는 트랙 58 착수 전(2026-11-03 읽음) 코드 위치이고 정리 단계에서 재대조한다. 사례가 있는 항목은 트랙 58에서 마이그레이션한다. 1~12행은 WED 사전 명세 E표에서 가져왔고 13~19행은 사용자 결정·PR #408에서, 20~21행은 트랙 58에서 더했다 `[문서 WED 사전 명세 2026-11-03]`.
+"현 사이트 사례" 열은 트랙 58 정리 단계 끝(2026-11-17)에 다시 대조했다. 트랙 58에서 마이그레이션이 끝난 사례는 "삭제됨(트랙 58)"으로 적고, 지금 남은 위치가 있으면 덧붙인다. 1~12행은 WED 사전 명세 E표에서 가져왔고 13~19행은 사용자 결정·PR #408에서, 20~21행은 트랙 58에서 더했다 `[문서 WED 사전 명세 2026-11-03]`.
 
 | # | 쓰지 않는 것 | 현 사이트 사례 | 대체 |
 |---|---|---|---|
-| 1 | 히어로 카드(반경·그림자) + 얇은 큰 제목 | 유 [코드]: `home.css:16-24`(카드 반경·그림자), `:41-42` | 창 안 텍스트 제목 + 날짜 한 줄. eyebrow 글자(`:32-38`, `:387`)는 유지하되 모양만 DOS(③) |
-| 2 | 창·카드·버튼·행의 그림자 | 유 [코드]: `tokens.css:53,61,64`, `home.css:23,338`, `event_list.css:284` | 창에는 그림자 없음. 떠 있는 패널 3종(계정 메뉴·정렬 메뉴·확인 모달)에만 단단한 오프셋 그림자(⑦) |
-| 3 | 반투명 유리 헤더 | 유 [코드]: `site-chrome.css:37-38`, `tokens.css:58-60` | 불투명 `--surface` + 2px 하단선 |
-| 4 | 알약·원형 컨트롤 | 유: `event_list.css:119,464-465,475-486`, `home.css:225` | 반경 0 사각 칸·칩, 글리프 찜. 원형은 점뿐 |
-| 5 | 카테고리 soft/ink 쌍 배경·글자 | 유 [코드]: `tokens.css:96-109,117-140`, `event_list.css:442-446` | 점만. 행·아젠다·기록의 카테고리 글자는 `--ink-2` |
-| 6 | 상태 칩 무지개(색으로만 구분) | 유 [코드]: `components/controls.css:14-42` | 테두리 모양 + 글자 라벨(원칙 3) |
-| 7 | 빈 상태 아이콘 박스(점선 상자) | 유: `core/events/list.html:228`, `cards.css:138`. 공유 클래스 `.empty-icon`의 소비처는 9개 템플릿이다(목록은 ③) `[실측 rg -l 'empty-icon' templates/ 2026-11-12]` | 박스 없는 창 안 텍스트 + 링크. 아이콘 글자는 유지 |
-| 8 | 3:4 이미지 타일의 임의 반경·그림자 | 유: `archive_collection.css:612,1091`, `home.css:674`, `archive_collection_detail.css:57` | 3:4 비율은 바꾸지 않는다. 테두리는 1px `--rule`, 반경 0. 비율 자체의 금지 여부는 ⑬-15 미결 |
-| 9 | 배경 그라디언트·바코드 무늬 | 유: `base.css:38-39`, `home.css:137` | 단색 `--bg` |
-| 10 | 티켓 형태(노치·바코드 무늬) | 유: `templates/core/home.html:43-44,63,69-70,93,102-103` | 쓰지 않음. `ADMIT ONE` 글자는 유지(③) |
-| 11 | 임의 반경·반경 3종 이상 | 유 [코드]: `archive_collection.css:613`(임의 반경) 외 | 반경 0, 예외는 점 하나 |
-| 12 | 카테고리 슬롯 12색을 글자·막대·타일 배경에 쓰는 것, 시리즈 색을 글자색·막대·타일 배경에 쓰는 것 | 유: `tokens.css:117-140,149-160`, `archive_collection.css:955-970` | 시리즈 12색은 점에만 둔다. 점 7색 외 슬롯 7~11의 점 색은 ⑬-6 |
+| 1 | 히어로 카드(반경·그림자) + 얇은 큰 제목 | 삭제됨(트랙 58): 히어로 카드 반경·그림자·굵기 300. 지금 `home.css:59-62`(`.hero.window`) | 창 안 텍스트 제목 + 날짜 한 줄. eyebrow 글자(`home.css:338-343`)는 유지하되 모양만 DOS(③) |
+| 2 | 창·카드·버튼·행의 그림자 | 삭제됨(트랙 58): `--shadow`·`--shadow-cta`와 창·카드·버튼 그림자. 남은 것은 `--shadow-dropdown`(`tokens.css:53`)을 쓰는 패널 5곳과 정지 버튼 글리프 2곳(`home.css:220,238`) `[실측 ac1_count 2026-11-17]` | 창에는 그림자 없음. 떠 있는 패널 4종(계정 메뉴·정렬 메뉴·확인 모달·로그인 안내 모달, 5곳)에만 단단한 오프셋 그림자(⑦) |
+| 3 | 반투명 유리 헤더 | 삭제됨(트랙 58): `backdrop-filter` 0줄, `--chrome-glass`·`--chrome-glass-cta` 삭제 `[실측 ac1_count 2026-11-17]` | 불투명 `--surface` + 2px 하단선 |
+| 4 | 알약·원형 컨트롤 | 삭제됨(트랙 58): 0 아닌 `border-radius`(50% 점·스피너 제외) 0줄. 50%는 점·스피너 15줄뿐 `[실측 ac1_count 2026-11-17]` | 반경 0 사각 칸·칩, 글리프 찜. 원형은 점뿐 |
+| 5 | 카테고리 soft/ink 쌍 배경·글자 | 삭제됨(트랙 58): `--cat-<slug>-soft/-ink` 14개 삭제, `var(--cat-` 참조 0곳 `[실측 rg 2026-11-17, tokens.css·스태프·dist 제외]` | 점만. 행·아젠다·기록의 카테고리 글자는 `--ink-2` |
+| 6 | 상태 칩 무지개(색으로만 구분) | 삭제됨(트랙 58): 색 칩 규칙. 지금 `components/controls.css:6-40`(`.status` 테두리 모양) | 테두리 모양 + 글자 라벨(원칙 3) |
+| 7 | 빈 상태 아이콘 박스(점선 상자) | 점선 박스는 삭제됨(트랙 58). 아이콘 글자는 남는다: `core/events/list.html:236`, `cards.css:342`. 공유 클래스 `.empty-icon`의 소비처는 9개 템플릿이다(목록은 ③) `[실측 rg -l 'empty-icon' templates 2026-11-17]` | 박스 없는 창 안 텍스트 + 링크. 아이콘 글자는 유지 |
+| 8 | 3:4 이미지 타일의 임의 반경·그림자 | 삭제됨(트랙 58): 임의 반경·그림자. 3:4 비율은 `archive_collection.css:549,977`, `archive_collection_detail.css:63`, `home.css:493`에 남는다 | 3:4 비율은 바꾸지 않는다. 테두리는 1px `--rule`, 반경 0. 비율 자체의 금지 여부는 ⑬-15 미결 |
+| 9 | 배경 그라디언트·바코드 무늬 | 삭제됨(트랙 58): `gradient` 0줄 `[실측 ac1_count 2026-11-17]` | 단색 `--bg` |
+| 10 | 티켓 형태(노치·바코드 무늬) | 마크업만 남고 CSS가 숨긴다: `templates/core/home.html:42-43,62,68-69,92,101-102`(`home.css:97-100` `display: none`) | 쓰지 않음. `ADMIT ONE` 글자는 유지(③) |
+| 11 | 임의 반경·반경 3종 이상 | 삭제됨(트랙 58): 0 아닌 `border-radius` 0줄(점 50% 제외) `[실측 ac1_count 2026-11-17]` | 반경 0, 예외는 점 하나 |
+| 12 | 카테고리 슬롯 12색을 글자·막대·타일 배경에 쓰는 것, 시리즈 색을 글자색·막대·타일 배경에 쓰는 것 | 삭제됨(트랙 58): 글자·막대·타일 배경 바인딩. 슬롯 토큰은 값만 남고(`tokens.css:61-84`) 소비처가 CSS·템플릿에 없다 `[실측 rg 2026-11-17]`. 시리즈 색은 점에만 묶인다(`tokens.css:93-104`, `archive_collection.css:835-849`) | 시리즈 12색은 점에만 둔다. 점 7색 외 슬롯 7~11의 점 색은 ⑬-6 |
 | 13 | 형광·네온 하이라이트 | 제거됨(PR #408 머지, `a8a7fc3f` 2026-11-02): `--hl`·`.hl`은 `static/css` 전체에서 0건이고 `--emphasis-*`·`.emphasis`로 이미 바뀌었다 `[실측 rg -e '--hl\b|\.hl\b' static/css 2026-11-12, 매치 0]` | 반전 블록(경고 전용) |
 | 14 | 강조용 그라디언트 | 유: 위 9번과 같은 위치 | 쓰지 않음 |
 | 15 | 글래스모피즘 | 유: 위 3번과 같은 위치 | 쓰지 않음 |
 | 16 | 새 서체·유료 자산·모노스페이스 | 무: Pretendard 단일 | 서체 유지 `[문서 사용자 결정 2026-11-02·2026-11-15]` |
 | 17 | 아이보리·크림 바탕 | 무 | 무채 회색(R=G=B) 바탕·표면 |
-| 18 | `.emphasis`를 카드·버튼 배경으로 확장 | 무: `text.css:22` 주석이 금지 | 경고·제약 문구 전용 |
+| 18 | `.emphasis`를 카드·버튼 배경으로 확장 | 무: `text.css:19-21` 주석이 금지 | 경고·제약 문구 전용 |
 | 19 | 디자인 토큰의 JSON화(Style Dictionary 등) | 무 | CSS 변수가 정본, 도구 추가 없음 |
-| 20 | 전환·애니메이션(예외 4곳 외) | 유: 공개 CSS `transition` 47줄 17파일, `animation` 5줄 2파일 `[실측 rg -c 2026-11-17, 스태프·dist 제외, 구현 중 변동]` | 즉시 바뀜(⑦ 모션). 예외 4곳만 유지 |
-| 21 | 굵은 글자(700 외 굵기, 쪽 h1·로고 외 700) | 유: 공개 CSS `font-weight` 365줄 34파일 `[실측 rg -c 2026-11-17, 스태프·dist 제외, 구현 중 변동]`, `<b>` 사용(`core/archive/collection.html:20-22` `[문서 WED 사전 검토]`) | 400(`b`·`strong`·`th` 포함, ⑥) |
+| 20 | 전환·애니메이션(예외 4곳 외) | 예외 4곳만 남음: 공개 CSS `transition` 3줄 1파일(`home.css:155,160,165`), `animation` 5줄 2파일(`site-chrome.css:206,233,239`, `interaction.css:39,81`) `[실측 ac1_count --list 2026-11-17, 스태프·dist 제외]`. 착수 전에는 `transition` 47줄 17파일이었다 `[실측 rg -c 2026-11-17 착수 전]`. 스태프와 공유하는 `static/js/shared/status.js:22`의 인라인 `opacity .15s` 전환은 이 트랙 범위 밖이라 남아 있다 | 즉시 바뀜(⑦ 모션). 예외 4곳만 유지 |
+| 21 | 굵은 글자(700 외 굵기, 쪽 h1·로고 외 700) | 700 이상 굵기는 3줄 3파일뿐이다: `base.css:68`(h1), `site-chrome.css:273`(푸터 로고)·`:451`(로고), 모두 `var(--fw-strong)` `[실측 ac1_count 2026-11-17]`. 착수 전 `font-weight` 365줄 34파일이 지금은 78줄 24파일이다 `[실측 python 2026-11-17, 스태프·dist 제외, 주석 줄 포함]`. `<b>` 사용(`core/archive/collection.html:20-22`)은 남고 `base.css:71`의 `b, strong, th` 규칙이 400으로 되돌린다 | 400(`b`·`strong`·`th` 포함, ⑥) |
 
 표의 항목 수: 21행 `[계산 이 표의 행 수]`.
 
@@ -176,38 +176,38 @@ A4 시안 기준으로 잰 기록(2026-11-03 `[실측 …]`·`[계산 python 202
 
 - 표면 위 4.57:1(콘서트)~9.03:1(극장 특전)이라 7색 모두 3:1 이상이다. 바탕 위에서는 콘서트 2.94:1·콜라보 카페 3.02:1이라 3:1에 못 미치거나 여유가 없다 → **점은 창(표면) 안에서만 쓴다.**
 - 선택 반전 위에서는 1.35~2.67:1이라 3:1에 못 미친다 → **반전된 칸·행 안의 점은 흰 1px 테두리를 두른다** `[코드 dos-calendar-grid.css:99-105]`.
-- 시리즈 점 12색(`--series-N-ink`, ⑩(a))은 표면 위 5.14~9.05:1, 선택 반전 위 1.35~2.37:1이다 `[계산 python 2026-11-17, 값은 코드 tokens.css:149-160]`. 반전 위 규칙은 카테고리 점과 같다(⑬-25).
+- 시리즈 점 12색(`--series-N-ink`, ⑩(a))은 표면 위 5.14~9.05:1, 선택 반전 위 1.35~2.37:1이다 `[계산 python 2026-11-17, 값은 코드 tokens.css:93-104]`. 반전 위 규칙은 카테고리 점과 같다(⑬-25).
 
 ### 색 토큰 규칙
 
-1. 색 리터럴은 토큰 블록에만 둔다. 컴포넌트·페이지 CSS에서 `#hex`·`rgb()`를 쓰지 않는다. 현재 우회 사례(예시, 전수 아님): `button.css:29`의 `#fff`, `cards.css:98`의 `#46617f`, `:135`의 `#fafcff`, `:206`의 `#25508a` `[코드 2026-11-02 계획서 기준선]`, 같은 `#fff`가 `archive_collection.css:102,242,455,1206,1275`·`archive_collection_detail.css:155`·`cards.css:180`에도 있다 `[실측 rg 2026-11-03]`. 전수는 정리 단계가 `rg -n '#[0-9a-fA-F]{3,6}\b|rgba?\(' static/css --glob '!tokens.css' --glob '!dist/**' --glob '!staff/**'`로 만든다.
-2. 대비 하한: 글자 AA 4.5:1, 비텍스트(단선·점·포커스 링) 3:1 `[문서 WCAG 2.2 AA SC 1.4.3·1.4.11]`. 터치 타깃은 터치 조건(≤44.99rem 또는 `pointer: coarse`)에서 44px `[문서 AGENTS.md "Frontend Work Policy"(폐지된 규칙이라 정보 항목); 코드 button.css:12-16, dos.css:50-55]`, WCAG 2.2 AA(SC 2.5.8) 하한은 24px이고 데스크톱 행 안 찜 24px·컨트롤 32px는 이 하한 이상이다.
+1. 색 리터럴은 토큰 블록에만 둔다. 컴포넌트·페이지 CSS에서 `#hex`·`rgb()`를 쓰지 않는다. 지금 `tokens.css` 밖의 색 리터럴은 0줄이다 `[실측 ac1_count 2026-11-17, 스태프·dist 제외]`. 재현: `rg -n '#[0-9a-fA-F]{3,6}\b|rgba?\(' static/css | rg -v 'tokens.css|/staff/|/dist/'`. 트랙 58 착수 전의 우회 사례(`button.css:29`의 `#fff`, `cards.css:98`의 `#46617f`, `archive_collection.css`의 `#fff` 5곳 등 `[실측 rg 2026-11-03]`)는 삭제됨(트랙 58)이다.
+2. 대비 하한: 글자 AA 4.5:1, 비텍스트(단선·점·포커스 링) 3:1 `[문서 WCAG 2.2 AA SC 1.4.3·1.4.11]`. 터치 타깃은 터치 조건(≤44.99rem 또는 `pointer: coarse`)에서 44px `[문서 AGENTS.md "Frontend Work Policy"(폐지된 규칙이라 정보 항목); 코드 tokens.css:128-134, dos.css:50-55]`, WCAG 2.2 AA(SC 2.5.8) 하한은 24px이고 데스크톱 행 안 찜 24px·컨트롤 32px는 이 하한 이상이다.
 3. 예외: 비활성 컨트롤은 WCAG 대비 예외다. 그래서 비활성 색은 정보 글자에 쓰지 않는다.
 4. 링크 색과 본문 글자의 대비는 2.85:1로 3:1 아래이므로 색 하나로만 링크를 구분하지 않는다. 링크 밑줄은 항상 켠다(원칙 3). 바탕 위 글자·링크는 `--ink`·`--ink-2`와 `--ink` 밑줄만 쓴다.
 
 ## ⑥ 타이포
 
-- 서체: Pretendard 단일 `[문서 사용자 결정 2026-11-02·2026-11-15: "폰트는 현재 그대로"]`. 폰트 패밀리 이름은 `'Pretendard'`이고 `Pretendard Variable`이 아니다 `[코드 pretendardvariable-dynamic-subset.css:14]`.
+- 서체: Pretendard 단일 `[문서 사용자 결정 2026-11-02·2026-11-15: "폰트는 현재 그대로"]`. 폰트 패밀리 이름은 `'Pretendard'`이고 `Pretendard Variable`이 아니다 `[코드 static/fonts/pretendard/pretendardvariable-dynamic-subset.css:14]`.
 - 크기 5단계(0.75 / 0.875 / 1 / 1.25 / 1.75 rem), 굵기 2단계(400·700), 행간 2단계(1.25 / 1.5)다 `[코드 dos.css:31-39, 로컬 시안]`. 값은 ⑩(a)에 있다.
 - **굵기 700은 쪽 h1과 로고뿐이다.** 그 밖은 전부 400이다: h2~h4, 창 제목, 버튼 글자, `b`·`strong`·`th`(UA 기본 굵기를 400으로 되돌린다), 통계 숫자, 제목 링크. 강조는 굵기가 아니라 반전·테두리·크기로 한다 `[문서 사용자 결정 2026-11-15: "too mouch bold는 금지"]`. 오늘·선택 날짜 숫자도 굵게 하지 않는다.
-- 자간: 기본값만 쓴다. 자간 토큰과 `text-transform`은 없다 `[코드 dos*.css: letter-spacing·text-transform 0건, 실측 grep -c 2026-11-17]`.
+- 자간: 기본값만 쓴다. 자간 토큰과 `text-transform`은 없다 `[코드 dos*.css: letter-spacing·text-transform 0건, 실측 grep -c 2026-11-17]`. 운영 공개 CSS도 두 선언이 0줄이다 `[실측 python 2026-11-17, 스태프·dist 제외]`.
 - 제목 링크는 굵기 400이다 `[문서 사용자 결정 2026-11-03: "제목 굵기 400으로"]`. 링크는 색과 밑줄로 구분하고 굵기로 구분하지 않는다.
 - 숫자는 `tabular-nums`를 body에서 전역으로 켠다 `[코드 dos.css:85]`. Pretendard 서브셋의 `tnum` 제공 여부는 A4 시안에서 폭 동일(`'1111/11/11'`과 `'0000/00/00'`이 78.15px)로 확인했다 `[실측 2026-11-03 Chrome 156 측정 M16, 이력]`.
-- 정리 대상: 현재 글자 크기 체계는 7개 이름이다(`--fs-xs`~`--fs-xl`, `--fs-xl-mobile`) `[코드 tokens.css:77-84, 트랙 58 착수 전]`. 공유 글자 역할(본문·보조·제목·페이지 제목·메타)은 이름 토큰으로 묶는다. 컴포넌트 고유 크기는 리터럴로 써도 된다(리터럴 금지 규칙은 두지 않는다) `[문서 docs/plan-archive/track-57.md D4]`. `font-size`·`font-weight` 리터럴 줄 수는 ⑩(e)에 있다.
+- 글자 크기 이름은 5단 `--fs-1`…`--fs-5`다 `[코드 tokens.css:35-39]`. 착수 전의 7개 이름(`--fs-xs`~`--fs-xl`, `--fs-xl-mobile`)은 삭제됨(트랙 58)이다 `[문서 계획서 트랙 58 Evidence "정리(CSS) 완료" — 머지 뒤 docs/plan-archive/track-58.md]`. 공유 글자 역할(본문·보조·제목·페이지 제목·메타)은 이름 토큰으로 묶는다. 컴포넌트 고유 크기는 리터럴로 써도 된다(리터럴 금지 규칙은 두지 않는다) `[문서 docs/plan-archive/track-57.md D4]`. `font-size`·`font-weight` 리터럴 줄 수는 ⑩(e)에 있다.
 - 쓰지 않는 것: 글자 크기를 위계 표현 외의 이유(장식)로 키우는 것, 넓은 자간 라벨(③ eyebrow는 글자를 유지하되 자간 없음), 굵기 300, 굵기 700의 확대.
 
 ## ⑦ 형태·간격·그림자·모션
 
 값은 이 절과 ⑩에 있다. 시안 값의 출처는 `[코드 dos.css:줄, 로컬 시안]`이다.
 
-- **반경**: 모든 컨트롤·칩·패널·이미지는 직각이다. 둥근 것은 카테고리 점 하나뿐이다(점은 `border-radius: 50%` `[코드 dos.css:576]`). 네이티브 체크박스·라디오는 점·체크박스 예외로 둔다 `[문서 WED 사전 명세 A-6]`. 반경 토큰은 만들지 않고 규칙으로 막는다(토큰이 있으면 쓰이기 때문이다).
+- **반경**: 모든 컨트롤·칩·패널·이미지는 직각이다. 둥근 것은 카테고리 점 하나뿐이다(점은 `border-radius: 50%` `[코드 dos.css:576]`). 운영 코드의 `border-radius: 50%`는 15줄이고 전부 점·스피너다 `[실측 ac1_count 2026-11-17]`. 네이티브 체크박스·라디오는 점·체크박스 예외로 둔다 `[문서 WED 사전 명세 A-6]`. 반경 토큰은 만들지 않고 규칙으로 막는다(토큰이 있으면 쓰이기 때문이다).
 - **선(괘선) 3종**:
   - 단선 `--bw-1` 1px: 행 구분(`--rule`), 입력·버튼·칸 테두리(`--ink`).
   - 굵은 선 `--bw-2` 2px: 메뉴 막대 하단선, 하단 기능 막대 위 경계선, 주(primary) 버튼 테두리, 오늘 칸 안쪽 링, 오류 입력 테두리(`aria-invalid`).
   - 창 `--bw-3` 3px double: 창 테두리 `3px double --ink` `[코드 dos.css:416]`.
-- **창**: 섹션마다 이중선 테두리 상자(표면 배경). 제목은 위 테두리 선 위에 얹는다: 제목은 `position: absolute; top: 0; left: 1rem; transform: translateY(-50%)`, 표면 배경, 굵기 400, 글자 `--fs-4`이고 앞뒤 대괄호는 `<span aria-hidden="true">`로 넣는 것이 원칙이다(CSS 생성 콘텐츠가 아니다. 스크린리더가 읽지 않는다) `[코드 dos.css:413-446]`. 예외는 행사 목록의 결과 제목 하나다: `::before`·`::after`의 `content: "[ " / ""`(대체 글자 빈 값)로 넣는다. `tests/core/test_event_ui_translations.py`가 그 `h2`의 글자 전체를 비교해서 안에 `<span>`을 두면 깨지기 때문이다. 대체 글자를 못 읽는 브라우저는 앞 선언(`content: "[ "`)으로 돌아간다 `[코드 static/css/pages/event_list.css, 테스트 파일 388-389행 부근]`. 창 위쪽 패딩 1.5rem, 좌우·아래 1rem `[코드 dos.css:417, 단위 rem = 시안 값]`. 대괄호는 창 제목에만 쓰고 버튼·칩에는 붙이지 않는다. 제목 문구가 없는 창(필터 등)은 대괄호 없이 이중선만 둔다. **창 컨테이너에 `overflow: hidden`을 쓰지 않는다**(정렬·계정 메뉴 패널과 바깥 포커스 링이 잘린다). 제목은 h1~h4 의미·순서를 그대로 둔다.
-  - **모바일(≤44.99rem)**: 창 제목을 `position: static`으로 풀어 창 안 첫 줄로 내린다(2줄 제목이 위 테두리 위로 올라가 잘리는 것을 막는다) `[문서 WED R4]`. 창 안 가로 패딩을 1rem에서 0.5rem으로 줄인다: 달력 격자가 든 창은 시안이 이미 줄였고 `[코드 dos.css:426-430]`, 폼이 든 창도 같게 줄인다 `[문서 WED R7]`. 가용 폭은 320px 기준 컨테이너 1rem×2·창 테두리 3px×2·창 패딩 1rem×2를 빼면 250px, 패딩 0.5rem이면 266px이다 `[계산 320−32−6−32, 320−32−6−16]`.
-- **그림자**: 창·카드·버튼·행에는 없다. **떠 있는 패널(계정 메뉴 패널, 정렬 메뉴 패널, 확인 모달, 로그인 안내 모달)에만** 단단한 오프셋 그림자 `box-shadow: 0.375rem 0.375rem 0 var(--ink)`(번짐 0)를 쓴다 `[코드 dos.css:319, dos-events.css:134]`. 테두리는 종류별로 다르다: 계정·정렬 메뉴 패널은 1px solid `--ink`, 확인 모달·로그인 안내 모달은 3px double `--ink`(창과 같은 이중선) `[코드 site-chrome.css, event_list.css, confirm-modal.css, modal.css]`. 배경은 모두 `--surface`. 320px 안에서 그림자가 잘리지 않아야 한다 `[문서 시안 설계안 BIR 8]`.
+- **창**: 섹션마다 이중선 테두리 상자(표면 배경). 공용 규칙은 `static/css/components/cards.css:24-65`(`.window`·`.window-title`)이다. 제목은 위 테두리 선 위에 얹는다: `position: absolute; top: 0; left: 1rem; transform: translateY(-50%)`, 표면 배경, 글자 `--fs-4`이고 굵기는 `.window-title`이 정하지 않고 `base.css`의 h1 700·h2 이하 400을 따른다 `[코드 cards.css:38-50, base.css:63-69]`. 앞뒤 대괄호는 두 방식이 함께 있다 `[실측 rg 2026-11-17]`: ① `<span aria-hidden="true">[</span>` 마크업(스크린리더가 읽지 않는다) — 홈 6곳(`templates/core/home.html:120,140,159,178`, `core/partials/_home_collection_snapshot.html:19`, `core/partials/_home_event_calendar.html:19`)과 행사 달력 월 제목 1곳(`core/events/calendar.html:137,139`). ② CSS `::before`·`::after`의 `content: "[ " / ""`(대체 글자 빈 값이라 스크린리더가 읽지 않는다) 7파일 — 쪽 h1 공용 규칙 `h1.window-title`(`cards.css:145-151`)과, 결과·월·창 제목 h2를 가진 쪽의 CSS 6곳: `event_list.css:300-307`(`.events-page .results-title`), `event_detail.css:224-230`, `archive_calendar.css:267-273`(`.calendar-month-label`), `archive_collection.css:458-464`, `archive.css:256-263`, `mypage.css:198-205`. 행사 목록이 ②인 이유는 `tests/core/test_event_ui_translations.py:388`이 그 `h2.results-title`의 글자 전체를 비교해서 안에 `<span>`을 두면 깨지기 때문이다. 대체 글자를 못 읽는 브라우저는 앞 선언(`content: "[ "`)으로 돌아간다. 창 위쪽 패딩 1.5rem, 좌우·아래 1rem `[코드 cards.css:24-30, 단위 rem]`. 대괄호는 창 제목에만 쓰고 버튼·칩에는 붙이지 않는다. 제목 문구가 없는 창(필터 등)은 대괄호 없이 이중선만 둔다. **창 컨테이너에 `overflow: hidden`을 쓰지 않는다**(정렬·계정 메뉴 패널과 바깥 포커스 링이 잘린다). 예외는 인증 안내 창 하나다: `auth.css`의 `.auth-panel-declare`(`auth.css:47-53`)는 장식 글자 `.auth-glyph`(`auth.css:94`)를 자르려고 `overflow: hidden`을 둔다. 기존 가드레일이라 지우지 않는다(`docs/FE/auth-editorial.md` A9). 공개 CSS에서 `overflow: hidden`이 창 자신에게 걸린 곳은 이것뿐이다 `[실측 python 2026-11-17, 선택자 목록 눈으로 대조]`. 제목은 h1~h4 의미·순서를 그대로 둔다.
+  - **모바일(≤45rem)**: 코드의 경계는 `max-width: 45rem`이다 `[코드 cards.css:103,136]`(터치 44px 토큰만 `max-width: 44.99rem`, ⑤ 규칙 2). 창 제목을 `position: static`으로 풀어 창 안 첫 줄로 내린다(2줄 제목이 위 테두리 위로 올라가 잘리는 것을 막는다) `[문서 WED R4]`. 창 안 가로 패딩을 1rem에서 0.5rem으로 줄인다: 달력 격자가 든 창은 시안이 이미 줄였고 `[코드 dos.css:426-430]`, 폼이 든 창도 같게 줄인다 `[문서 WED R7]`. 가용 폭은 320px 기준 컨테이너 1rem×2·창 테두리 3px×2·창 패딩 1rem×2를 빼면 250px, 패딩 0.5rem이면 266px이다 `[계산 320−32−6−32, 320−32−6−16]`.
+- **그림자**: 창·카드·버튼·행에는 없다. **떠 있는 패널(계정 메뉴 패널, 정렬 메뉴 패널, 확인 모달, 로그인 안내 모달)에만** 단단한 오프셋 그림자를 쓴다. 값은 토큰 `--shadow-dropdown: 6px 6px 0 var(--ink)`(번짐 0, 시안의 `0.375rem` 와 같은 크기 `[계산 0.375rem × 16px = 6px]`)이다 `[코드 tokens.css:53, dos.css:319, dos-events.css:134]`. 쓰는 곳은 5곳이다 `[실측 ac1_count 2026-11-17]`: 계정 메뉴 `site-chrome.css:525`, 행사 정렬 메뉴 `event_list.css:380`, 활동 정렬 메뉴 `archive.css:339`, 확인 모달 `confirm-modal.css:34`, 로그인 안내 모달 `modal.css:45`. 테두리는 종류별로 다르다: 계정·정렬 메뉴 패널은 1px solid `--ink`, 확인 모달·로그인 안내 모달은 3px double `--ink`(창과 같은 이중선). 배경은 모두 `--surface`. 320px 안에서 그림자가 잘리지 않아야 한다 `[문서 시안 설계안 BIR 8]`. 예외 하나: 정지 버튼 글리프의 `box-shadow: 6px 0 0`(`home.css:220`은 `--ink`, `:238`은 `--on-select`)은 그림자 효과가 아니라 정지 막대의 둘째 막대를 그리는 모양이다(번짐 0). 막대를 그릴 `::after`를 더하지 않으려고 그림자로 그린다 `[문서 계획서 트랙 58 Evidence "정리(CSS) 완료" — 머지 뒤 docs/plan-archive/track-58.md]`.
 - **반전 규칙**:
   1. 반전은 배경과 글자색을 항상 함께 바꾼다(`--select` + `--on-select`). 글자색만 또는 배경만 바꾸지 않는다.
   2. 반전 대상: 현재 쪽·현재 탭·선택한 날짜·눌린 상태(`aria-pressed`, `:active`)·hover·포커스. hover는 `@media (hover: hover)` 안에서만 적용한다.
@@ -229,8 +229,8 @@ A4 시안 기준으로 잰 기록(2026-11-03 `[실측 …]`·`[계산 python 202
   자동 점검은 역할 토큰의 정의 위치만 본다: 토큰마다 레지스트리가 적은 파일 하나에서만 정의된다. 덮어쓰기와 렌더 여백은 자동으로 재지 않고 리뷰에서 본다 `[문서 사용자 결정 2026-11-15, ⑫]`.
 
   그래서 하지 않는 것: 숫자 단계(6단·4px 배수)를 새 값의 자격 조건으로 쓰지 않는다.
-- **메뉴 막대·하단 기능 막대**: 메뉴 막대는 전폭 띠(표면 배경, 하단 2px `--ink`, 최소 높이 3rem) `[코드 dos.css:187-194]`. ≤45rem에서 주 내비 하나(`#primary-nav`)를 `position: fixed; bottom: 0`으로 옮겨 하단 기능 막대로 쓴다: 위 경계선 2px `--ink`, 칸 높이 3.5rem, 칸 사이 세로 1px `--rule`, 현재 칸 반전 `[코드 dos.css:374-408]`. 두 번째 `<nav>`를 만들지 않는다. `.site-header`에 `backdrop-filter`·`transform`·`filter`를 두지 않는다. 하단 고정 규칙은 `docs/FE/mobile-tab-bar.md`가 정본이다.
-- **모션**: **전환 없음, 즉시 바뀐다.** `transition`·`animation`·`@keyframes`와 hover 이동·확대를 쓰지 않는다. 유지하는 예외는 네 곳이다 `[문서 사용자 결정 2026-11-17: "전부 그대로"]`: ① 공지 배너 흐름(마퀴 애니메이션), ② 홈 대표 행사 자동 교체(교체 효과 포함), ③ 가로 레일의 부드러운 스크롤, ④ 로딩 스피너(`docs/FE/loading-feedback.md`가 로딩 계약). 위치·모양을 맡는 `transform`(가운데 정렬 등)은 모션이 아니라 남긴다. 효과를 지울 때 대체(전역 포커스 링 등)가 먼저 있어야 한다 `[문서 계획서 트랙 58 V4]`.
+- **메뉴 막대·하단 기능 막대**: 메뉴 막대는 전폭 띠(표면 배경, 하단 2px `--ink`, 최소 높이 3rem) `[코드 dos.css:187-194]`. ≤45rem에서 주 내비 하나(`#primary-nav`)를 `position: fixed; bottom: 0`으로 옮겨 하단 기능 막대로 쓴다: 위 경계선 2px `--ink`, 칸 높이 3.5rem, 칸 사이 세로 1px `--rule`, 현재 칸 반전 `[코드 dos.css:374-408]`. 두 번째 `<nav>`를 만들지 않는다. `.site-header`에 `backdrop-filter`·`transform`·`filter`를 두지 않는다(공개 CSS의 `backdrop-filter`·`filter`는 0줄 `[실측 ac1_count 2026-11-17]`). 운영 값: 헤더 `--site-header-h`(`site-chrome.css:29`), 탭 바 `--site-tabbar-h`(`site-chrome.css:138`). 하단 고정 규칙은 `docs/FE/mobile-tab-bar.md`가 정본이다.
+- **모션**: **전환 없음, 즉시 바뀐다.** `transition`·`animation`·`@keyframes`와 hover 이동·확대를 쓰지 않는다. 유지하는 예외는 네 곳이다 `[문서 사용자 결정 2026-11-17: "전부 그대로"]`: ① 공지 배너 흐름(마퀴 애니메이션) `[코드 site-chrome.css:206,225,233,239]`(239는 `prefers-reduced-motion`에서 정지), ② 홈 대표 행사 자동 교체(교체 효과 포함) `[코드 home.css:155,160,165]`(165는 `prefers-reduced-motion`에서 `none`), ③ 가로 레일의 부드러운 스크롤 `[코드 static/js/components/hscroll.js:99,166,168]`(99는 `prefers-reduced-motion`이면 `instant`), ④ 로딩 스피너 `[코드 interaction.css:39,72,81]`(`docs/FE/loading-feedback.md`가 로딩 계약). 스태프와 공유하는 `static/js/shared/status.js:22`의 인라인 `opacity .15s` 전환은 이 트랙 범위 밖이라 남아 있다. 위치·모양을 맡는 `transform`(가운데 정렬 등)은 모션이 아니라 남긴다. 효과를 지울 때 대체(전역 포커스 링 등)가 먼저 있어야 한다 `[문서 계획서 트랙 58 V4]`.
 - **링크**: 목록·아젠다·레일의 제목 링크는 글자색 상속 + 밑줄, 창 안 텍스트 링크(더보기·기록 등)는 `--link` 색 + 밑줄, 바탕 위 링크는 글자색 + 밑줄이다. 현재 항목이 아닌 내비·탭·정렬 메뉴 항목과 페이저 링크는 hover에서 반전에 밑줄을 더해 현재 항목과 구분한다.
 - **내비 크기·선**: 주 내비 글자는 `--fs-2`, 헤더 아래 선 2px, 하단 기능 막대 위 경계 2px이다 `[코드 site-chrome.css]`.
 - **숫자**: 날짜·개수 같은 숫자는 Pretendard의 `font-variant-numeric: tabular-nums`만 쓴다. 모노스페이스 글꼴은 쓰지 않는다(`.mono-num`) `[코드 static/css/components/text.css]`.
@@ -271,7 +271,7 @@ A4 시안 기준으로 잰 기록(2026-11-03 `[실측 …]`·`[계산 python 202
 원칙별 사유:
 
 1. 색은 역할이다 → 무채 + 선택·링크·오류 + 점만이다. 모든 내용은 창(표면) 안에 두어 링크·점·단선의 바탕 대비 부족이 생기지 않게 한다(⑤).
-2. 창·단선·반전 → 그림자는 떠 있는 패널 3종뿐이고 `border-radius`는 점뿐이다. 전환 선언은 예외 4곳 외 없다 `[코드 dos*.css: transition·animation·gradient·backdrop 0건, 실측 grep 2026-11-17]`. `box-shadow`는 `dos.css:319`와 `dos-events.css:134` 2곳이다 `[실측 grep 2026-11-17]`.
+2. 창·단선·반전 → 그림자는 떠 있는 패널 4종(5곳, 운영 코드 기준)뿐이고 `border-radius`는 점뿐이다(시안의 `box-shadow`는 패널 2곳이었다). 전환 선언은 예외 4곳 외 없다 `[코드 dos*.css: transition·animation·gradient·backdrop 0건, 실측 grep 2026-11-17]`. `box-shadow`는 `dos.css:319`와 `dos-events.css:134` 2곳이다 `[실측 grep 2026-11-17]`.
 3. 형태로 말한다 → 방문·컬렉션 상태가 색 없이도 구분되고, 링크는 밑줄 + 반전, 찜은 글리프다(원칙 3).
 
 DOS 시안의 최종 측정: 3쪽 × 320·375·1440px에서 가로 넘침 0px, 굵게 표시되는 것은 로고와 h1뿐, 모든 포커스 가능 요소(페이지·폭별 65~113개)의 링 대비 3:1 미만 0개, 반전 행 안 4.5:1 미만 글자 0개, 터치 컨트롤 높이 44px 미만 0개(폭 44px 미만은 320px 달력 칸 37.1px뿐: 7열 × 44px + 간격 6px = 314px `[계산]`이 컨테이너 288px보다 크다), 하단 바 높이 58px = body 하단 여백 58px `[실측 Chrome DevTools 2026-11-15, 문서 시안 설계안 "최종 재측정"]`.
@@ -286,9 +286,9 @@ A4 시안 기준 판정 이력(2026-11-03, 구현 기준 아님): 토큰 값이 
 
 ## ⑩ 토큰 부채 표 — 트랙 58 입력
 
-**이행 방식**: 구현 중에는 옛 토큰 이름을 남긴 채 값만 DOS 값에 대응시키고, 정리 단계에서 옛 이름을 지운다(중간 커밋에서 쪽이 깨지지 않게). 정리 단계의 증거는 정의 없는 `var(--이름)` 0건(선언 집합과 참조 집합의 차집합)이다 `[문서 계획서 트랙 58 V3]`. `--cat-slot-0..11-soft/-ink` 24개는 `core.categories.PALETTE`와 값이 같아야 하므로 값을 바꾸지 않는다 `[코드 tests/core/test_category_token_contract.py:19-77]`. `--page-pad-x`는 `tokens.css`에서만, `--site-header-h`·`--site-tabbar-h`는 `site-chrome.css`에서만 정의한다 `[코드 tests/core/test_role_token_contract.py]`.
+**이행 방식**: 구현 중에는 옛 토큰 이름을 남긴 채 값만 DOS 값에 대응시키고, 정리 단계에서 옛 이름을 지운다(중간 커밋에서 쪽이 깨지지 않게). 정리 단계의 증거는 정의 없는 `var(--이름)` 0건(선언 집합과 참조 집합의 차집합)이다 `[문서 계획서 트랙 58 V3]`. 정리 결과는 대체값 없는 미정의 0개, 대체값 있는 미정의 1개(`--summary-cols`, `cards.css:218`)다 `[문서 계획서 트랙 58 Evidence "정리(CSS) 완료" — 머지 뒤 docs/plan-archive/track-58.md]`. `--cat-slot-0..11-soft/-ink` 24개는 `core.categories.PALETTE`와 값이 같아야 하므로 값을 바꾸지 않는다 `[코드 tests/core/test_category_token_contract.py:19-77]`. `--page-pad-x`는 `tokens.css`에서만, `--site-header-h`·`--site-tabbar-h`는 `site-chrome.css`에서만 정의한다 `[코드 tests/core/test_role_token_contract.py]`.
 
-현재 토큰 이름은 100개다 `[실측 python re 2026-11-15, static/css/tokens.css에서 주석을 뺀 고유 사용자 정의 속성 이름 수, 트랙 58 착수 전]`. DOS 시안의 토큰 이름은 41개다(색 17 + 간격 6 + 글자·굵기·선·크기 17 + `--tabbar-h` 1) `[실측 python re 2026-11-17, dos.css :root·미디어 블록 고유 이름]`. 차이는 ⑩(b)의 대응표가 메운다.
+`tokens.css`의 토큰 이름은 79개다 `[실측 python re 2026-11-17, static/css/tokens.css에서 주석을 뺀 고유 사용자 정의 속성 이름 수]`. 구성은 색 10 + 카테고리 점 7 + 간격 6 + `--fs` 5 + `--lh` 2 + `--fw` 2 + `--font` 1 + `--bw` 3 + `--container` 1 + `--hit` 3 + `--shadow-dropdown` 1 + `--backdrop` 1 + 슬롯 24 + 시리즈 12 + `--page-pad-x` 1 = 79다 `[계산 python 2026-11-17]`. `--site-header-h`·`--site-tabbar-h`는 `site-chrome.css`에 있어 이 수에 없다. 트랙 58 착수 전에는 100개였고 `[실측 python re 2026-11-15]`, 정리 단계가 옛 이름 59개를 지웠다 `[문서 계획서 트랙 58 Evidence "정리(CSS) 완료" — 머지 뒤 docs/plan-archive/track-58.md]`. DOS 시안의 토큰 이름은 41개다(색 17 + 간격 6 + 글자·굵기·선·크기 17 + `--tabbar-h` 1) `[실측 python re 2026-11-17, dos.css :root·미디어 블록 고유 이름]`. 차이는 ⑩(b)의 대응표가 메운다.
 
 ### (a) 신 토큰 표 (DOS)
 
@@ -313,23 +313,23 @@ A4 시안 기준 판정 이력(2026-11-03, 구현 기준 아님): 토큰 값이 
 | `--dot-exhibition` | `#475569` | 전시 점 |
 | `--dot-fan_meeting` | `#9D174D` | 팬미팅 점 |
 | `--dot-concert` | `#B45309` | 콘서트 점 |
-| `--series-1-ink`…`--series-12-ink` | `#a6373f` `#743200` `#825b00` `#4b4b00` `#2c7619` `#005541` `#007276` `#004f6b` `#2d60b4` `#4a328e` `#864296` `#7c1852` | 시리즈 점 12색. 값은 현행 유지, 점에만 쓴다 `[코드 tokens.css:149-160, 트랙 58 착수 전]` |
+| `--series-1-ink`…`--series-12-ink` | `#a6373f` `#743200` `#825b00` `#4b4b00` `#2c7619` `#005541` `#007276` `#004f6b` `#2d60b4` `#4a328e` `#864296` `#7c1852` | 시리즈 점 12색. 값은 현행 유지, 점에만 쓴다 `[코드 tokens.css:93-104]` |
 | `--fs-1`…`--fs-5` | 0.75 / 0.875 / 1 / 1.25 / 1.75 rem | 글자 크기 5단 — 공유 글자 역할의 이름 묶음, 리터럴 금지 없음(⑥) `[코드 dos.css:31-35]` |
 | `--lh-tight`, `--lh-base` | 1.25 / 1.5 | 행간 `[코드 dos.css:36-37]` |
 | `--fw-regular`, `--fw-strong` | 400 / 700 | 굵기. 700은 쪽 h1·로고 전용 `[코드 dos.css:38-39]` |
-| `--font` | `"Pretendard", system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif` | 서체 `[코드 dos.css:40]` |
+| `--font` | `"Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Hiragino Sans", "Yu Gothic", "Noto Sans JP", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif` | 서체. 시안(`dos.css:40`)에 일본어·중국어 대체 글꼴을 더한 운영 값이다 `[코드 tokens.css:44]` |
 | `--bw-1`, `--bw-2`, `--bw-3` | 1px / 2px / 3px | 선 굵기(단선·굵은 선·창 double) `[코드 dos.css:41-43]` |
 | `--container` | 70rem | 컨테이너 최대 폭 `[코드 dos.css:44]` (1120px와 같은 값 `[계산]`) |
-| `--hit-sm`, `--hit-md`, `--hit-lg` | 1.5 / 2 / 2.75 rem | 클릭 크기 — 컨트롤 높이 역할 토큰 후보. 44.99rem 이하 또는 `pointer: coarse`에서 sm·md가 lg로 올라간다 `[코드 dos.css:45-55]`. 운영에는 이 이름이 없다 `[실측 rg 2026-11-15]` |
-| `--tabbar-h`(운영 이름 `--site-tabbar-h`) | `calc(3.5rem + 2px + env(safe-area-inset-bottom))` (≤45rem) | 하단 기능 막대 높이 `[코드 dos.css:57-65]`. 운영 이름은 `--site-tabbar-h`이고 값은 정리 단계에서 DOS 형태로 다시 계산한다(`docs/FE/mobile-tab-bar.md`) |
+| `--hit-sm`, `--hit-md`, `--hit-lg` | 1.5 / 2 / 2.75 rem | 클릭 크기 — 컨트롤 높이 역할 토큰. 44.99rem 이하 또는 `pointer: coarse`에서 sm·md가 lg로 올라간다 `[코드 tokens.css:49-51,128-134; dos.css:45-55]`. 착수 전 운영에는 이 이름이 없었다 `[실측 rg 2026-11-15, 이력]` |
+| `--tabbar-h`(운영 이름 `--site-tabbar-h`) | `calc(3.5rem + 2px + env(safe-area-inset-bottom))` (≤45rem) | 하단 기능 막대 높이 `[코드 dos.css:57-65]`. 운영 이름은 `--site-tabbar-h`이고 값은 `calc(3.5rem + var(--bw-2) + env(safe-area-inset-bottom))`로 ≤45rem 블록 안에서만 정의한다 `[코드 site-chrome.css:138]`(`docs/FE/mobile-tab-bar.md`) |
 
-간격 `--space-1`…`--space-6`(0.25 / 0.5 / 1 / 1.5 / 2 / 3 rem)은 구속 토큰이 아니다. 시안이 쓴 값의 기록이고 `[코드 dos.css:25-30]`, 운영 CSS에는 이 이름의 정의·참조가 없다 `[실측 rg 2026-11-15, 문서 밖 0건]`. 간격 규칙은 ⑦이다.
+간격 `--space-1`…`--space-6`(0.25 / 0.5 / 1 / 1.5 / 2 / 3 rem)은 시안이 쓴 값의 기록이고 `[코드 dos.css:25-30]`, 운영 `tokens.css:29-34`에 정의돼 있고 공개 CSS가 참조한다: `--space-1`~`--space-5`는 8~34개 파일에서 11~365줄, `--space-6`은 `home.css:539` 1줄이다 `[실측 python 2026-11-17, var(--space-N 매치 줄, 스태프·dist 제외]`. 숫자 단계 규칙은 아니다. 간격 규칙은 ⑦이다.
 
 비색 토큰은 시안에서 6(간격)+5+2+2+1+3+1+3+1 = 24개였다 `[계산: 간격 6, fs 5, lh 2, fw 2, font 1, bw 3, container 1, hit 3, tabbar 1]`. 간격 6개를 구속에서 빼면 18개가 남는 후보다 `[계산 24−6]`. 목표 개수는 구현이 운영 값을 재서 확정한다.
 
 ### (b) 구 토큰 → 신 토큰 대응
 
-주요 역할만 적는다. 정확한 이동처는 구현이 `rg`로 다시 만든다. 구현 중에는 옛 이름을 남기고 값만 대응시킨다(위 이행 방식).
+주요 역할만 적는다. 정확한 이동처는 구현이 `rg`로 다시 만든다. 구현 중에는 옛 이름을 남기고 값만 대응시킨다(위 이행 방식). 정리 단계가 끝나 아래 표의 구 토큰 이름은 `tokens.css`에 하나도 없다 `[실측 python 2026-11-17, 주석 뺀 선언 집합과 표의 이름 대조]`.
 
 | 구 토큰 (현 `tokens.css`) | 신 토큰 | 비고 |
 |---|---|---|
@@ -338,18 +338,19 @@ A4 시안 기준 판정 이력(2026-11-03, 구현 기준 아님): 토큰 값이 
 | `--text` | `--ink` | 이름 변경 |
 | `--muted`, `--muted-soft` | `--ink-2` | |
 | `--line`, `--border-soft` | `--rule` | 둘을 하나로 |
-| `--brand`, `--brand-soft`, `--brand-ink`, `--focus`, `--action` | `--select` | 브랜드 레드(③)·하늘색 액션은 폐기. soft는 삭제. `--brand-ink`는 인라인 `var(--cat-<slug>-ink, var(--brand-ink))` 9줄이 폴백으로 참조하므로 그 9줄을 `data-category` 속성으로 바꾼 뒤에만 지운다 `[문서 WED 사전 검토 2026-11-17]` |
+| `--brand`, `--brand-soft`, `--brand-ink`, `--focus`, `--action` | `--select` | 브랜드 레드(③)·하늘색 액션은 폐기. soft는 삭제. `--brand-ink`는 인라인 `var(--cat-<slug>-ink, var(--brand-ink))` 9줄이 폴백으로 참조하므로 그 9줄을 `data-category` 속성으로 바꾼 뒤에만 지운다 `[문서 WED 사전 검토 2026-11-17]`. 지금은 둘 다 끝났다: 인라인 `style`의 `--cat-` 0줄 `[실측 rg templates 2026-11-17]`, `--brand-ink` 삭제됨(트랙 58) |
 | `--emphasis-bg`, `--emphasis-ink` | `--select`, `--on-select` | 별도 토큰 없이 반전 |
 | `--teal`, `--teal-soft`, `--teal-ink` | `--link` 또는 삭제 | |
 | `--rose-*`, `--rose-border` | `--error` 또는 삭제 | 오류 글자·삭제 버튼 테두리·글자 외 사용처는 무채로 |
 | `--amber-*`, `--pink-*`, `--mint-*`, `--up-*`, `--end-*` | 삭제 | 상태 칩 무지개(④-6)와 함께 |
-| `--shadow`, `--shadow-cta`, `--shadow-dropdown` | 삭제 | 떠 있는 패널 3종의 그림자는 컴포넌트 상수 `0.375rem 0.375rem 0 var(--ink)`로 쓴다(⑦) |
+| `--shadow`, `--shadow-cta` | 삭제 | 삭제됨(트랙 58) |
+| `--shadow-dropdown` | 유지 | 계획은 삭제였으나 떠 있는 패널 5곳이 `var(--shadow-dropdown)`(`6px 6px 0 var(--ink)`, `tokens.css:53`)을 읽어 남겼다(⑦) |
 | `--chrome-glass`, `--chrome-glass-cta` | `--surface` | 유리 0 |
-| `--backdrop` | 보류 | 모달 뒤 반투명 오버레이(`tokens.css:65-66`, rgba 0.45 `[코드 트랙 58 착수 전]`)다. 모달 뒤 내용과의 분리는 기능이라 현행을 유지하고 무채 값으로 바꿀지·④-3의 예외로 둘지는 ⑬-17 |
-| `--page-pad-x` | `--page-pad-x` 유지(역할 토큰) | 현재 3단(2rem >64rem / 1.5rem ≤64rem / 1rem ≤45rem) `[코드 tokens.css:169,174,180, 트랙 58 착수 전]`. 시안 컨테이너는 2단(1rem, ≥45rem에서 1.5rem)이다 `[코드 dos.css:173-183]`. 단 수와 값은 구현이 정하고, 64rem 단을 지우면 `static/css/pages/errors.css:78`·`:133` 주석이 근거를 잃는다 `[문서 docs/plan-archive/track-57.md D5]`. 값으로 쓰는 선언 20개, 15개 파일(정의·주석 제외) `[실측 python 2026-11-15]` |
-| `--site-header-h`, `--site-tabbar-h` | 유지(역할 토큰) | 정의 파일은 `site-chrome.css` 하나. 값은 DOS 형태(낮아진 헤더, 탭 바 경계선 2px)로 다시 계산한다 `[문서 계획서 트랙 58 V3]` |
+| `--backdrop` | 유지 | 모달 뒤 반투명 오버레이(`tokens.css:54-55`, rgba 0.45 `[코드 tokens.css:55]`)다. 모달 뒤 내용과의 분리는 기능이라 현행을 유지한다. 검수 1에서 추가 의견이 없어 확정이다(⑬-17) |
+| `--page-pad-x` | `--page-pad-x` 유지(역할 토큰) | 현재 3단(2rem >64rem / 1.5rem ≤64rem / 1rem ≤45rem) `[코드 tokens.css:113,118,124]`. 시안 컨테이너는 2단(1rem, ≥45rem에서 1.5rem)이다 `[코드 dos.css:173-183]`. 운영은 3단을 그대로 뒀다. 값으로 쓰는 선언 19줄, 15개 파일(정의·주석 제외) `[실측 python 2026-11-17]`(2026-11-15 측정은 20줄 15파일 `[실측 python 2026-11-15]`) `[문서 docs/plan-archive/track-57.md D5]` |
+| `--site-header-h`, `--site-tabbar-h` | 유지(역할 토큰) | 정의 파일은 `site-chrome.css` 하나(`:29`, `:138`). 값은 DOS 형태(낮아진 헤더, 탭 바 경계선 2px)로 다시 계산했다 `[코드 site-chrome.css:29,138]` |
 | `--radius-card`, `--radius-control`, `--radius-chip` | 삭제 | 직각. 규칙으로 막는다 |
-| `--fs-xs`~`--fs-xl`, `--fs-xl-mobile` | 5단 이름 묶음 `--fs-1`…`--fs-5` | 7개 이름 → 5단 `[코드 tokens.css:77-84; dos.css:31-35]`. 리터럴 금지 규칙 없음(⑥) |
+| `--fs-xs`~`--fs-xl`, `--fs-xl-mobile` | 5단 이름 묶음 `--fs-1`…`--fs-5` | 7개 이름 → 5단 `[코드 tokens.css:35-39; dos.css:31-35]`. 7개 이름은 삭제됨(트랙 58). 리터럴 금지 규칙 없음(⑥) |
 | `--cat-<slug>-soft` (7개) | 삭제 | 참조 0, 점 전용으로 단순화 `[문서 계획서 2026-11-02: 참조 0]` |
 | `--cat-<slug>-ink` (슬러그별) | `--dot-<slug>` | 점 전용 |
 | `--cat-slot-N-soft/ink` | 유지(값 불변) | 슬롯 0~6은 슬러그 7색과 같은 값, 7~11은 ⑬-6. `tests/core/test_category_token_contract.py:19,48`과 `core/categories.py` PALETTE가 soft/ink 쌍을 고정하므로 DOS에서 쓰지 않아도 삭제하지 않는다 |
@@ -366,23 +367,23 @@ A4 시안 기준 판정 이력(2026-11-03, 구현 기준 아님): 토큰 값이 
 | 선 굵기 3단 | `dos.css:41-43` | 1px·2px·3px double(⑦) |
 | 컨테이너 | `dos.css:44` | |
 | 히트 3단 | `dos.css:45-55` | 역할 토큰 후보(컨트롤 높이) |
-| 브레이크포인트 경계(CSS 변수가 아니라 미디어 상수) | 44.99rem/45rem(내비 접힘·터치 44px, 하단 기능 막대) `[코드 dos.css:50,57,374,426]`, 56.25rem(필터·결과 2열, 필터 토글) `[코드 dos.css:756]` | 현재 사이트는 너비 조건 11종이다 `[실측 2026-11-02 계획서 기준선]`. 범위 문법(`width < 45rem`)으로 통일할지는 구현 결정 |
-| z-index 층 | 시안 100(스킵 링크) > 50(sticky 헤더·하단 막대) > 40(계정 메뉴 패널) `[코드 dos.css:161,190,314,384]` | 모달·토스트 층은 시안에 없다. 현 사이트 z-index 선언 29줄 18파일 `[실측 rg -c 2026-11-03, 스태프·dist 제외, 트랙 58 착수 전 재측정]`. 현 토큰에는 z-index 토큰이 0개다 `[실측 2026-11-02 계획서 기준선]` |
-| 모션 | 시안 `transition`·`animation` 0건 `[실측 grep 2026-11-17]` | 전환 없음(⑦). 예외 4곳(배너 흐름·홈 대표 행사 교체·가로 레일 스크롤·로딩 스피너)의 파일:줄은 구현이 적는다. 모션 토큰은 만들지 않는다 |
+| 브레이크포인트 경계(CSS 변수가 아니라 미디어 상수) | 44.99rem/45rem(내비 접힘·터치 44px, 하단 기능 막대) `[코드 dos.css:50,57,374,426]`. 운영은 내비·창·하단 막대가 `max-width: 45rem`(`site-chrome.css:132`, `cards.css:103,136`), 터치 44px 토큰만 `max-width: 44.99rem`(`tokens.css:129`)이다. 행사 상세 하단 고정 막대만 `max-width: 60rem`이다(`event_detail.css:369`), 56.25rem(필터·결과 2열, 필터 토글) `[코드 dos.css:756]` | 현재 사이트는 너비 조건 11종이다 `[실측 2026-11-02 계획서 기준선]`. 범위 문법(`width < 45rem`)으로 통일할지는 구현 결정 |
+| z-index 층 | 시안 100(스킵 링크) > 50(sticky 헤더·하단 막대) > 40(계정 메뉴 패널) `[코드 dos.css:161,190,314,384]` | 모달·토스트 층은 시안에 없다. 현 사이트 z-index 선언 21줄 17파일 `[실측 python 2026-11-17, 스태프·dist 제외, 주석 제외]`(착수 전 29줄 18파일 `[실측 rg -c 2026-11-03, 주석 포함]`). 현 토큰에는 z-index 토큰이 0개다 `[실측 tokens.css 2026-11-17]` |
+| 모션 | 시안 `transition`·`animation` 0건 `[실측 grep 2026-11-17]` | 전환 없음(⑦). 예외 4곳(배너 흐름·홈 대표 행사 교체·가로 레일 스크롤·로딩 스피너)의 파일:줄은 ⑦ 모션에 적었다. 모션 토큰은 만들지 않았다 |
 
 ### (d) 시안으로는 결정되지 않아 구현이 채울 범주
 
 1. **구 토큰 → 신 토큰 대응표 완성**: (b)는 역할 단위다. 상태·액센트 soft/ink 참조(수치는 (e) 첫 행)의 이동처를 줄 단위로 정한다.
 2. **컴포넌트 규칙**: (f)에 정리했다.
-3. **시안이 CSS에 직접 쓴 값(컴포넌트 상수)**: 그리드 열 폭, aside 폭, 헤더 `min-height` 3rem, 행 `min-height` 2rem, `z-index` 50·40·100, 밑줄 오프셋 0.2em, 점 0.5rem·50%, `scroll-padding-top` 3.5rem, `outline-offset` 2px(안쪽 -2px), 스킵 링크 `top -4rem`, 읽기 전용 칩 `min-height 1.5rem`(`--hit-sm`과 같은 값이라 치환 가능), 체크박스 1rem `[코드 dos.css:73,128-129,159,193,576-577]`. A4 시안에서 정리한 열 폭 목록(3.5·7·10·6.5·5.5·6·3 rem)은 이력이고 DOS 시안은 열 폭이 다르다(목록 행은 작품 6rem + 제목 2열 grid `[문서 시안 설계안 "목록 메타 위치 변경"]`). 이 값들은 기본적으로 컴포넌트 상수다 `[문서 docs/plan-archive/track-57.md D3]`. 다른 값과 함께 움직여야 하는 것(헤더 높이와 `scroll-padding-top`·스킵 링크 오프셋 — 헤더 높이는 운영에 이미 역할 토큰 `--site-header-h`가 있다 `[코드 static/css/components/site-chrome.css:30, 트랙 58 착수 전]`, 읽기 전용 칩 `min-height 1.5rem`과 `--hit-sm`)은 역할 토큰 후보라 구현이 운영 값을 재서 정한다.
-4. **브레이크포인트 상수**: 경계 2개 — 45rem(터치 44px·내비 접힘은 `max-width: 44.99rem`, 좌우 패딩 확대는 `min-width: 45rem`으로 같은 경계의 보수 쌍)과 56.25rem(필터·결과 2열). 70rem은 한 줄 행의 A4 경계였고 DOS 시안은 56.25rem을 쓴다 `[코드 dos.css:179,756; 문서 시안 설계안 "목록 메타 위치 변경": ≥56.25rem]`.
-5. **스태프 생성 카테고리 슬롯 7~11 점 색**: 시안은 고정 슬러그 7개만 다룬다. 슬롯은 5개다 `[계산 슬롯 7~11]` `[코드 tokens.css:131-140]`. 미지정 슬러그의 점은 `--ink-2`다 `[문서 계획서 트랙 58 V5]`. ⑬ 참조.
+3. **시안이 CSS에 직접 쓴 값(컴포넌트 상수)**: 그리드 열 폭, aside 폭, 헤더 `min-height` 3rem, 행 `min-height` 2rem, `z-index` 50·40·100, 밑줄 오프셋 0.2em, 점 0.5rem·50%, `scroll-padding-top` 3.5rem, `outline-offset` 2px(안쪽 -2px), 스킵 링크 `top -4rem`, 읽기 전용 칩 `min-height 1.5rem`(`--hit-sm`과 같은 값이라 치환 가능), 체크박스 1rem `[코드 dos.css:73,128-129,159,193,576-577]`. A4 시안에서 정리한 열 폭 목록(3.5·7·10·6.5·5.5·6·3 rem)은 이력이고 DOS 시안은 열 폭이 다르다(목록 행은 작품 6rem + 제목 2열 grid `[문서 시안 설계안 "목록 메타 위치 변경"]`). 이 값들은 기본적으로 컴포넌트 상수다 `[문서 docs/plan-archive/track-57.md D3]`. 다른 값과 함께 움직여야 하는 것(헤더 높이와 `scroll-padding-top`·스킵 링크 오프셋 — 헤더 높이는 운영에 이미 역할 토큰 `--site-header-h`가 있다 `[코드 static/css/components/site-chrome.css:29]`, 읽기 전용 칩 `min-height 1.5rem`과 `--hit-sm`)은 역할 토큰 후보라 구현이 운영 값을 재서 정한다.
+4. **브레이크포인트 상수**: 경계 2개 — 45rem(시안은 터치 44px·내비 접힘이 `max-width: 44.99rem`, 좌우 패딩 확대가 `min-width: 45rem`인 같은 경계의 보수 쌍. 운영은 위 (c) 표대로 `max-width: 45rem`이 주이고 `44.99rem`은 터치 44px 토큰 하나뿐이다)과 56.25rem(필터·결과 2열). 70rem은 한 줄 행의 A4 경계였고 DOS 시안은 56.25rem을 쓴다 `[코드 dos.css:179,756; 문서 시안 설계안 "목록 메타 위치 변경": ≥56.25rem]`.
+5. **스태프 생성 카테고리 슬롯 7~11 점 색**: 시안은 고정 슬러그 7개만 다룬다. 슬롯은 5개다 `[계산 슬롯 7~11]` `[코드 tokens.css:75-84]`. 미지정 슬러그의 점은 `--ink-2`다 `[문서 계획서 트랙 58 V5]`. ⑬ 참조.
 6. **시안에 없는 컴포넌트**: 행사 상세·컬렉션·폼·모달·토스트·사진 올리기·계정 쪽. 공통 어휘(⑩(f))를 적용하고 어긋나는 구조는 보고한다.
 7. **반경 토큰 없음**: 규칙으로 대체했다(⑦). 가드는 정리 단계에서 `border-radius` 리터럴(점 외)을 막는 검사로 만든다.
 
 ### (e) 마이그레이션 범위 (착수 전 재측정)
 
-아래 첫 8행은 트랙 50 기준선이다(이력). 트랙 58 착수 전 재측정은 마지막 행과 계획서에 있다.
+아래 첫 8행은 트랙 50 기준선이다(이력). 트랙 58 착수 전 값은 "트랙 58 착수 전" 행에, 정리 뒤 값(2026-11-17)은 그 다음 행에 있다.
 
 | 항목 | 수치 | 출처 |
 |---|---|---|
@@ -395,7 +396,8 @@ A4 시안 기준 판정 이력(2026-11-03, 구현 기준 아님): 토큰 값이 
 | `font-weight` 리터럴 | 364줄 | `[실측 2026-11-02 계획서 기준선]` |
 | 스태프 전용 `--c-` 토큰 고유 이름 | 34개 | `[실측 rg -o 2026-11-03, static/css/staff, 고유 이름 수]` 별도 영역, 제외 |
 | 공개 CSS 현재 선언 줄 수(트랙 58 착수 전, 구현 중 변동) | `border-radius` 262줄 38파일, `box-shadow` 54줄 22파일, `font-weight` 365줄 34파일, `transition` 47줄 17파일, `gradient` 9줄 3파일, `backdrop-filter` 6줄 3파일, `animation` 5줄 2파일 | `[실측 rg -c 2026-11-17, static/css에서 staff·dist 경로 제외]` |
-| 카테고리 색 인라인 `style` | 9줄 | `[계산 grep, 문서 WED 사전 검토 2026-11-17]` → `data-category` 속성으로 바꾼다 |
+| 공개 CSS 선언 줄 수(정리 뒤 2026-11-17) | `border-radius` 22줄 16파일, `box-shadow` 10줄 6파일, `font-weight` 78줄 24파일, `transition` 4줄 1파일(코드 3줄 + 주석 1줄), `gradient` 0줄, `backdrop-filter` 0줄, `animation` 5줄 2파일 | `[실측 python 2026-11-17, static/css에서 staff·dist 제외, 주석 줄 포함(위 행과 같은 방식)]`. 코드 줄만 센 값은 ⑦·④-20 |
+| 카테고리 색 인라인 `style` | 9줄 → 0줄 | `[계산 grep, 문서 WED 사전 검토 2026-11-17]` 착수 전 9줄을 `data-category` 속성으로 바꿨다. 지금 `style="…--cat-…"` 0줄 `[실측 rg templates 2026-11-17, 스태프·drafts 제외]` |
 
 ### (f) 컴포넌트 규칙
 
@@ -404,7 +406,7 @@ A4 시안 기준 판정 이력(2026-11-03, 구현 기준 아님): 토큰 값이 
 | hover·포커스 | 링크는 배경 `--select` + 글자 `--on-select`로 반전, hover는 `(hover: hover)` 안에서만 `[코드 dos.css:105-125]`. 버튼·칩·행·칸도 같은 반전이다(⑦ 반전 규칙). |
 | 눌림(`:active`) | 반전. 터치 눌림 표시를 겸한다 `[문서 계획서 트랙 58 V4]`. |
 | 비활성 | 배경 투명, 글자·테두리 `--off`, 커서 `not-allowed`, hover 변화 없음 `[코드 dos.css:532-537]`. `opacity` 절반 표현은 쓰지 않는다. |
-| 오류 | 오류 글자 `--error`. 해당 입력은 `aria-invalid`일 때 2px `--ink` 테두리(색 외 단서). 폼 전체 오류 상자는 1px `--error` 테두리 + `--error` 글자(비면 표시하지 않음). 성공·안내는 1px `--ink` 테두리 + `--ink` 글자. 경고·제약은 `.emphasis`(반전 블록) `[문서 WED 사전 검토 2026-11-17]` |
+| 오류 | 오류 글자 `--error`. 해당 입력은 `aria-invalid`일 때 2px `--ink` 테두리(색 외 단서). 코드: 인증·계정 설정·컬렉션·개인 기록·방문 폼은 2px `--ink`다 `[코드 auth.css:214, account_settings.css:339, archive_collection.css:1027, archive_personal_create.css:211, archive_visit_create.css:211, archive_visit_edit.css:264]`. 예외: 공용 `.form-group`·`.search` 입력은 2px `--error` 테두리 + `--error` 글자다 `[코드 controls.css:267-271]`. `aria-invalid`를 켜는 템플릿은 5곳이고 모두 인증·계정 쪽이다 `[실측 rg 'aria-invalid' templates 2026-11-17]`. 그 5곳이 `.form-group`·`.search`를 쓰는지는 확인하지 못했다. 폼 전체 오류 상자는 1px `--error` 테두리 + `--error` 글자(비면 표시하지 않음). 성공·안내는 1px `--ink` 테두리 + `--ink` 글자. 경고·제약은 `.emphasis`(반전 블록) `[문서 WED 사전 검토 2026-11-17]` |
 | 링크 밑줄 | `text-decoration` 하나로만 만든다. `border-bottom` 방식은 줄바꿈에서 깨지므로 쓰지 않는다(`box-decoration-break: clone` 병용) `[코드 dos.css:105-111]` |
 | 포커스 링 | ⑦ 포커스 링 규칙. 컴포넌트가 `outline: none`을 쓰지 않는다 |
 | 버튼 위계 | 글자는 전부 400, 앞뒤 대괄호 없음. **primary(주)** = 표면 + **2px `--ink` 테두리**, **secondary** = 표면 + 1px `--ink` 테두리, **danger(삭제)** = 표면 + 1px `--error` 테두리 + `--error` 글자(의미는 라벨 동사가 맡는다), 비활성 = 투명 + `--off`. hover·포커스·눌림은 `--select` 반전. ≤45rem에서 폼 버튼은 줄바꿈을 허용한다(시안의 `white-space: nowrap`은 긴 번역 라벨에서 320px 넘침을 만든다) `[문서 사용자 결정 2026-11-17, WED R3]` |
@@ -412,7 +414,12 @@ A4 시안 기준 판정 이력(2026-11-03, 구현 기준 아님): 토큰 값이 
 | 탭·보기 토글·칩 | 1px 칸 + 표면, 현재 = 반전. 칩은 1px `--rule` 테두리, 활성 = `--select` 반전 `[코드 dos.css:682-698]` |
 | 행 | 하단 1px `--rule`. 행사 레일·목록·아젠다 행은 찜 버튼이 있어도 hover·`:has(:focus-visible)` 행 전체 반전, 수정·삭제 같은 표면 바탕 버튼이 든 행은 제목 링크만 반전(⑦) |
 | 목록 행(행사) | 열 정렬: 열 머리 줄(날짜 / 작품 · 제목 / 상태 / 찜 / 방문, `aria-hidden`) 아래 행. ≥56.25rem에서 카테고리·지역은 제목 아래 줄이다 `[문서 사용자 결정 2026-11-17]` |
-| 구획 | 창 안 구획은 위 1px `--rule` + 소제목(400, `--fs-3`). 창이 여러 개인 쪽은 허브(홈·목록·달력·마이페이지·상세)뿐이다 `[문서 WED 위험 3]` |
+| 구획 | 창 안 구획은 위 1px `--rule` + 소제목(400, `--fs-3`). 창이 여러 개인 쪽은 허브(홈·목록·달력·마이페이지·상세)와 인증 쪽(폼 창 + 안내 창, `auth.css:21-53`)뿐이다 `[문서 WED 위험 3]` |
+| 폼·상세 창 틀 | 폼 쪽은 `main.page.window` + `h1.window-title`이다. 폭·여백·대괄호는 공용 규칙 하나가 정한다 `[코드 cards.css:128-151]`(폭 `min(56.25rem, 100% - 2 * var(--page-pad-x))`, ≤45rem에서 안쪽 패딩 축소). 쪽 CSS가 폭만 좁히는 곳이 있다(계정 설정 단일 열 쪽 `account_settings.css:10-12`). 인증 쪽은 예외다: `main.page.auth-page` 안에 폼 창(`h1.window-title`)과 안내 창이 각각 `.window`다 `[코드 templates/account/login.html:13,15,38]` |
+| 결과 창 제목 | 결과 창 제목은 `--fs-3`이다(굵기 400) `[코드 event_list.css:294-296, archive_collection.css:455-457]` |
+| 누르지 않는 배지 | 누르지 않는 배지에는 `--hit-*`를 걸지 않는다. `min-height: 1.5rem`이다 `[코드 controls.css:9, archive.css:731]`. 누르는 버튼만 `--hit-md` 이상 |
+| 긴 제목 | 긴 제목은 `word-break: keep-all` + `overflow-wrap: anywhere`를 함께 건다(띄어쓰기 없는 일본어 60자도 320px에서 넘치지 않게). 17줄 6파일에 짝으로 있다 `[실측 python 2026-11-17: cards.css, event_calendar.css, event_detail.css, event_list.css, home.css, home_calendar.css]`. `auth.css`의 `keep-all` 3줄은 짝이 없다 |
+| 쪽 바탕 | 내용이 짧은 쪽에서 푸터 아래가 바탕색 띠로 보이지 않게 캔버스를 표면색으로 둔다: `html { background: var(--surface) }` `[코드 base.css:28-32]` |
 | 점 | 카테고리 점 0.5rem 원형, 창 안에서만. 카테고리 색은 필터·홈 둘러보기·달력 칸·범례·행사 상세 카테고리 줄에만 점으로 두고, 목록·아젠다·기록 행의 카테고리는 `--ink-2` 글자만 쓴다 `[문서 계획서 트랙 58 V5; 코드 dos.css:567-586]`. 필터 카테고리 체크박스 앞에도 점을 둔다 `[문서 사용자 결정 2026-11-17]` |
 
 ## ⑪ 화면 적용 우선순위 — 트랙 58 입력
@@ -437,7 +444,7 @@ A4 시안 기준 판정 이력(2026-11-03, 구현 기준 아님): 토큰 값이 
 - 아이보리·Claude 팔레트 폐기, 색 출처는 사용자 지정(Windows 98 팔레트).
 - 액션 색 네이비 → 하늘색 `#0C66A1`(2026-11-15 DOS 방향이 `--select` `#0000A8`로 대체).
 - 링크는 틸, 선택은 반전.
-- (앞선 결정 승계) 티켓 스텁 모양 칩 폐기 → 캡슐 칩으로 통일 `[코드 tokens.css:70-71 주석]`.
+- (앞선 결정 승계) 티켓 스텁 모양 칩 폐기 → 캡슐 칩으로 통일 (해당 주석은 삭제됨(트랙 58)).
 
 ### 2026-11-03
 
@@ -471,6 +478,7 @@ A4 시안 기준 판정 이력(2026-11-03, 구현 기준 아님): 토큰 값이 
   2. (움직임) "전부 그대로" — 전환 없음이 원칙이고, 예외는 공지 배너 흐름·홈 대표 행사 자동 교체·가로 레일 부드러운 스크롤·로딩 스피너 네 곳이다(⑦ 모션).
   3. (색→형태) "시리즈 색 점은 유지" — 카테고리 점 7색 + 시리즈 점 12색은 점에만 남기고, 그 밖의 종류·상태 구분은 형태(기호·테두리 모양)와 글자로 한다. 주 버튼은 2px 테두리, 삭제 버튼은 `--error` 테두리·글자(원칙 3, ⑩(f)).
   4. "승인 — 검수 2회" — PR 1개, 사용자 로컬 검수 2회 `[문서 계획서 트랙 58 V7]`.
+- 로컬 검수 1 뒤 확정 2건 `[문서 사용자 결정 2026-11-17]`: "다른 화살표는 유지." — 내부 링크의 `→`·`›`는 지우지 않고, 지운 것은 외부 링크의 `↗`뿐이다. "숨긴 쪽제목 유지." — 홈의 화면에 안 보이는 h1 `.home-page-title`(`templates/core/home.html:21`)을 그대로 둔다. 검수 1의 나머지 항목(회색 바탕, 필터 카테고리 점, 날짜 숫자 Pretendard, 모달 뒤 반투명 막, 3:4 사진 타일)은 추가 의견이 없어 현재 구현대로 진행한다 `[문서 계획서 트랙 58 Evidence "검수 1 확정" — 머지 뒤 docs/plan-archive/track-58.md]`.
 - 계획서가 확정한 구현 규칙(사용자가 계획서를 승인했다): 이행 방식(옛 토큰 이름을 남기고 값만 대응, 정리 단계에서 삭제 — V3), 효과 제거는 대체가 먼저·터치 눌림 `:active` 반전(V4), 카테고리 점 위치와 미지정 슬러그 점 `--ink-2`(V5), 행 안 버튼이 있는 행의 반전 제외·`b`·`strong` 400·모바일 창 제목 안으로(V6) `[문서 계획서 트랙 58 V3~V6]`.
 
 출처는 전부 `[문서 사용자 결정 2026-11-02]`, `[문서 사용자 결정 2026-11-03]`, `[문서 사용자 결정 2026-11-05]`, `[문서 사용자 결정 2026-11-15]`, `[문서 사용자 결정 2026-11-17]` 또는 `[문서 계획서 트랙 58 V<n>]`이고, 2026-11-02·03 결정의 원문은 ⑨의 인용과 `prompt_plan.md` 트랙 50 Frontend Review Evidence(롤링 파일이라 다음 트랙에서 덮어써질 수 있다)에 있다. 2026-11-17 결정의 원문은 이 절에 인용했다.
@@ -495,7 +503,7 @@ A4 시안 기준 판정 이력(2026-11-03, 구현 기준 아님): 토큰 값이 
 14. ① 성격 단어 4개의 사용자 확인 `[문서 ①]`.
 15. 3:4 이미지 타일(④-8): 금지인지 컬렉션 화면에서 유지인지. 트랙 58은 비율을 바꾸지 않는다.
 16. (해소 2026-11-17) 눌림(`:active`) 규칙: 반전 `[문서 계획서 트랙 58 V4]`.
-17. `--backdrop` 모달 오버레이의 반투명을 ④-3(반투명 금지)의 예외로 둘지, 값을 무채로 바꿀지 `[문서 WED 사전 검토 2026-11-17: 사용자 승인 필요]`. 기능(모달 뒤 내용과의 분리)이라 현행을 유지한다.
+17. (해소 2026-11-17) `--backdrop` 모달 오버레이의 반투명은 현행을 유지한다 — 모달 뒤 내용과의 분리는 기능이고, 검수 1에서 추가 의견이 없어 현재 구현대로 확정했다 `[문서 계획서 트랙 58 Evidence "검수 1 확정" — 머지 뒤 docs/plan-archive/track-58.md]` `[코드 tokens.css:54-55]`. 원래 질문: `--backdrop` 모달 오버레이의 반투명을 ④-3(반투명 금지)의 예외로 둘지, 값을 무채로 바꿀지 `[문서 WED 사전 검토 2026-11-17: 사용자 승인 필요]`. 기능(모달 뒤 내용과의 분리)이라 현행을 유지한다.
 18. 마이그레이션 방식(일부 해소 2026-11-17): 신구 토큰 공존 기간은 구현 중 옛 이름 유지 → 정리 단계 삭제로 정했고 PR은 1개다 `[문서 계획서 트랙 58 V3·D9]`. 남은 것: 클래스 이름 정책(`.event-compact-row` → `.row` 등), `static/css/dist/` 번들 재생성(`docs/FE/css-delivery.md`), 기존 FE 에디토리얼 문서와의 우선순위.
 19. 운영 이식 시 스킵 링크 대상 `main`의 포커스 처리(시안은 `tabindex="-1"`을 빼서 전역 `:focus-visible` 링이 `main` 전체에 그려지는 것을 피했고, Enter 뒤 Tab이 `main` 첫 링크로 가는 것을 Chrome 156에서 확인 `[실측 2026-11-03]`)와 페이저 비활성 "이전"의 표현(시안은 `aria-disabled` 없는 평문 span).
 20. 홈 첫 화면 이벤트 행 수: A4 시안은 컬렉션 우선 순서 때문에 1440×800에서 8행이었다 `[실측 2026-11-03, 이력]`. DOS 시안·운영 홈은 재측정이 필요하다.
@@ -506,5 +514,5 @@ A4 시안 기준 판정 이력(2026-11-03, 구현 기준 아님): 토큰 값이 
 25. (신규 2026-11-17) 시리즈 점 12색의 표면 위 대비는 5.14~9.05:1로 3:1 이상이지만, 점 색이 카테고리 7 + 시리즈 12 = 19색 `[계산 7+12]`이라 "점 7색" 원칙보다 많다. 시리즈는 점 옆 작품명 글자가 구분 단서이고 색 구분에 의존하지 않는다. 선택 반전 위 1.35~2.37:1은 흰 1px 테두리로 보강한다 `[계산 python 2026-11-17]`.
 26. (신규 2026-11-17) 컬러 이모지(🗂 🔍 📸 📷 📍 🗑 🔒) 21곳 `[계산 grep, 문서 WED 사전 검토 2026-11-17]`은 문구 안 글리프라 지우지 않는다. 색 글리프는 CSS로 무채화되지 않을 수 있어 "무채색" 원칙과 부딪힌다. 로컬 검수에서 보고 사용자가 정한다.
 27. (신규 2026-11-17) 입력과 버튼이 둘 다 `1px --ink + 표면`이라 형태로 구분되지 않는 위험 `[코드 dos.css:497,545]`. 대응: 입력은 라벨 위 + 전폭, 버튼은 auto 폭 + 중앙 정렬, primary는 2px 테두리. 이 이상의 구분은 베벨이 필요해 쓰지 않는다. 로컬 검수에서 확인한다 `[문서 WED 사전 검토 위험 1]`.
-28. (신규 2026-11-17) 공지 배너 흐름(마퀴)은 예외로 유지한다 `[문서 사용자 결정 2026-11-17]`. WED 권고(정지)와 다르고, 움직임을 끄는 설정(`prefers-reduced-motion`)에서 정지할지는 구현이 확인한다(미확인).
-29. (신규 2026-11-17) 이 문서의 `[코드 tokens.css:NN]` 등 `static/`·`templates/` 줄 인용은 트랙 58 정리 단계에서 한꺼번에 재대조한다(머리말).
+28. (해소 2026-11-17) 공지 배너 흐름(마퀴)은 예외로 유지한다 `[문서 사용자 결정 2026-11-17]`. 움직임을 끄는 설정(`prefers-reduced-motion: reduce`)에서는 `site-chrome.css:237-240`이 애니메이션을 정지한다 `[코드 site-chrome.css:239]`. 원래 질문: WED 권고(정지)와 다르고, 움직임을 끄는 설정에서 정지할지는 구현이 확인한다(미확인).
+29. (해소 2026-11-17) 이 문서의 `static/`·`templates/` 줄 인용은 트랙 58 정리 단계 끝에 다시 대조했다(머리말). 코드가 바뀌면 다시 어긋난다.
