@@ -273,6 +273,10 @@
   content: " ]" / "";
 }
 
+.calendar-month-label:focus {
+  outline: none; /* 월 이동 뒤 포커스가 오는 지점일 뿐, 직접 탭하는 컨트롤이 아니다. */
+}
+
 .calendar-month-nav {
   gap: var(--space-2);
 }
