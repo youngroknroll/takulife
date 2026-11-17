@@ -269,7 +269,7 @@
   background: var(--error);
   color: var(--surface);
 }
-.personal-detail-page .personal-detail-delete-btn:disabled {
+.personal-detail-page .personal-detail-delete-btn:disabled:not(.is-loading) {
   background: transparent;
   border-color: var(--off);
   color: var(--off);
@@ -416,15 +416,11 @@
   background: var(--select);
   color: var(--on-select);
 }
-.personal-detail-page .form-submit-btn:disabled {
+.personal-detail-page .form-submit-btn:disabled:not(.is-loading) {
   background: transparent;
   border-color: var(--off);
   color: var(--off);
   cursor: not-allowed;
-}
-.personal-detail-page .form-submit-btn.is-loading:disabled {
-  border-color: var(--ink-2);
-  color: var(--ink-2);
 }
 
 /* ── 이 장소의 방문 기록 — 행 전체가 링크라 hover·포커스에서 반전 ───── */

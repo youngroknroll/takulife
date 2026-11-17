@@ -56,17 +56,11 @@
   border-color: var(--select);
 }
 
-.btn:disabled {
+.btn:disabled:not(.is-loading) {
   background: transparent;
   color: var(--off);
   border-color: var(--off);
   cursor: not-allowed;
-}
-
-/* 제출 중에는 비활성이지만, 가운데 스피너(글자색을 따른다)는 보여야 한다. */
-.btn.is-loading:disabled {
-  color: var(--ink-2);
-  border-color: var(--ink-2);
 }
 
 .btn-sm {

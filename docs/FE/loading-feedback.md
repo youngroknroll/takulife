@@ -13,6 +13,8 @@
 
 둘 다 결과는 같다 — 버튼에 `disabled`와 `.is-loading`이 붙는다.
 
+`.is-loading`과 `aria-busy="true"`는 같은 요소에 같은 순간 붙고 떨어진다. 속성은 `setAttribute`/`removeAttribute`로만 다루고 `"false"`는 쓰지 않는다. 붙이는 곳은 세 곳이다: `static/js/shared/api.js`의 `setLoading`, `static/js/shared/submit_guard.js`, `static/js/pages/archive_search.js`의 `setLoading(on)`(`#archive-results`) `[코드]`. 낭독기가 이 상태를 실제로 말하는지는 확인하지 못했다.
+
 ⚠️ **클래스 이름은 `.is-loading`으로 고정이다.** `api.js`의 전역 `pageshow`
 핸들러가 이 이름을 보고 bfcache 복원 시 버튼을 되살린다. 다른 이름을 쓰면
 뒤로가기 후 버튼이 영영 비활성으로 남는다.
@@ -37,8 +39,8 @@
 
 ## 스피너는 버튼 폭을 바꾸면 안 된다
 
-소비자: `static/css/objects/interaction.css`(`border-right-color`는 `:37`, 스피너 블록 `:29-40`, 겹침 규칙 `:69-79`),
-스태프: `static/css/staff/base.css`(`.is-loading`·`::after` 블록 `:173-192`, `border-top-color`는 `:189`).
+소비자: `static/css/objects/interaction.css`(`border-right-color`는 `:38`, 스피너 블록 `:30-41`, 겹침 규칙 `:88-98`),
+스태프: `static/css/staff/base.css`(`.is-loading`·`::after` 블록 `:173-193`, `border-top-color`는 `:190`).
 
 ```css
 button.is-loading, a.is-loading {
@@ -54,12 +56,13 @@ button.is-loading::after {
 }
 ```
 
-이 조각은 요약본이다. `border`·`border-right-color`는 실제로 `.is-loading::after`(`interaction.css:29-40`)에,
-나머지는 `button.is-loading::after`(`:69-79`)에 있고 조각은 둘을 합쳤다. `box-sizing: border-box`가 없으면
+이 조각은 요약본이다. `border`·`border-right-color`는 실제로 `.is-loading::after`(`interaction.css:30-41`)에,
+나머지는 `button.is-loading::after`(`:88-98`)에 있고 조각은 둘을 합쳤다. `box-sizing: border-box`가 없으면
 테두리(2px×2)가 0.85rem 바깥에 더해져 스피너 상자 중심이 버튼 중심에서 2px 오른쪽·아래로 어긋난다
 (스피너 상자 17.6px → 13.6px, 버튼 중심과의 차 2px → 0px `[실측 2026-11-17 Playwright, 1280px·390px, 컬렉션 등록·방문 목록 삭제·방문 수정·개인 기록 등록의 저장·삭제 버튼]`).
 
 스태프 쪽 규칙(`static/css/staff/base.css:175`)은 아직 `font-size: 0`으로 라벨을 접는다.
+스태프 `.is-loading::after`에도 `box-sizing: border-box`를 두어 스피너 상자를 소비자 쪽과 같게 맞췄다(스태프 `*{box-sizing}`은 `::after`에 닿지 않는다).
 아래 설명은 소비자 쪽 규칙을 기준으로 한다.
 
 세 가지가 모두 의도적이다.
@@ -78,7 +81,10 @@ button.is-loading::after {
 **2. 색은 `currentColor`다.** 버튼 8계열의 배경·글자색을 재보니 **정답 색은
 언제나 그 버튼의 글자색**이었다 — 파란 배경엔 흰색, 흰 배경엔 검정, 외곽선
 위험 버튼엔 빨강 `[실측 2026-09-13]`. 열거하지 마라.
-로딩 중 버튼 색은 쪽의 비활성 규칙을 따라 계열마다 `--ink-2`·`--off`·원래 색으로 다르다(트랙 59에서 확인, 통일하지 않음).
+제출 중 버튼은 비활성 모양을 입지 않고 자기 평상시 색·테두리·배경을 유지한다. 스피너는 그 글자색이다.
+새 비활성 모양 규칙(`:disabled`)을 쓰면 선택자에 `:not(.is-loading)`을 단다.
+고대비(`forced-colors: active`)에서는 강제 색이 글자 채움색을 덮어 라벨이 보이므로, 로딩 중인 버튼·링크만
+`forced-color-adjust: none`으로 빼고 시스템 색 키워드를 `!important`로 준다(쪽 규칙의 명시도가 더 높다) `[코드 interaction.css:68-83]`.
 
 **3. `::after`를 절대 위치로 겹친다.** 텍스트 뒤에 이어붙이면 버튼이 커진다.
 실측으로 컬렉션·방문·장소 저장 버튼이 제출 순간 100px → 122px로 커지며
@@ -118,11 +124,11 @@ button.is-loading::after {
 ## 움직임 감소
 
 `prefers-reduced-motion: reduce`에서 회전을 멈추고 정지된 링만 남긴다
-`[코드 interaction.css:87-92]`. 이력: 예전에는 소비자 쪽 블록이 `hover-lift`와 `glint`만 끄고
+`[코드 interaction.css:106-111]`. 이력: 예전에는 소비자 쪽 블록이 `hover-lift`와 `glint`만 끄고
 스피너는 계속 돌게 두고 있었다. `hover-lift` CSS는 트랙 58에서 삭제됐고 `.glint`는
 `interaction.css:17-21`에서 숨겨 둔다. 새로 스피너를 추가할 때 이 처리를 빠뜨리지 마라.
 
-스피너는 `.is-loading::after`를 쓴다 `[코드 interaction.css:29-40]`. 그래서 작은 단추의 누름 영역을
+스피너는 `.is-loading::after`를 쓴다 `[코드 interaction.css:30-41]`. 그래서 작은 단추의 누름 영역을
 넓히는 가상 요소는 `::before`를 쓴다 `[코드 archive_visit_edit.css:171, archive_visit_create.css:155]`.
 `::after`에 누름 영역을 만들면 스피너가 덮어쓴다(트랙 58 BIR 판정).
 
@@ -153,13 +159,14 @@ Playwright로 순회해 "ellipsis가 걸렸고 `scrollWidth > clientWidth`인데
 
 ## 기록 폼의 검증 실패 표시
 
-대상은 JS로 제출하는 기록 폼이다: 컬렉션 등록·수정, 개인 기록 등록·수정, 방문 기록 등록·수정, 개인 기록의 공식 제보 폼 2곳, 그리고 컬렉션·개인 기록·방문 기록의 삭제 실패. 헬퍼는 `window.TakuFormFeedback`(`static/js/components/form_feedback.js`)이고 규칙은 다섯 가지다 `[코드 static/js/components/form_feedback.js]`.
+대상은 JS로 제출하는 기록 폼이다: 컬렉션 등록·수정, 개인 기록 등록·수정, 방문 기록 등록·수정, 개인 기록의 공식 제보 폼 2곳, 그리고 컬렉션·개인 기록·방문 기록의 삭제 실패. 헬퍼는 `window.TakuFormFeedback`(`static/js/components/form_feedback.js`)이고 규칙은 여섯 가지다 `[코드 static/js/components/form_feedback.js]`.
 
 1. 제출을 시작하면 이전 표시를 전부 해제한다(`clear`).
-2. 위반 입력에는 `aria-invalid="true"`를 붙이고, 오류 상자 id를 `aria-describedby`에 추가한다(원래 있던 토큰은 보존). 위반이 여럿이면 문서 순서상 첫 입력으로 포커스를 옮긴다(`markInvalid`). 짝 컨트롤(교차 필드 오류에서 반대편 입력)을 세 번째 인자로 넘기면 그 컨트롤이 바뀔 때도 표시가 풀린다.
+2. 위반 입력에는 `aria-invalid="true"`를 붙이고, 오류 상자 id를 `aria-describedby`에 추가한다(원래 있던 토큰은 보존). 위반이 여럿이면 문서 순서상 첫 입력으로 포커스를 옮긴다(`markInvalid`). 짝 컨트롤(교차 필드 오류에서 반대편 입력)을 세 번째 인자로 넘기면 그 컨트롤이 바뀔 때도 표시가 풀린다. 단 짝 때문에 표시된 입력(`data-feedback-pair`가 있는 입력)만 푼다. 서버 400처럼 다른 이유로 다시 달린 표시는 속성이 지워져 짝을 고쳐도 풀리지 않는다.
 3. 입력의 값이 바뀌면(`input`·`change`) 그 입력의 표시만 해제한다.
 4. 입력에 속하지 않는 오류(권한·서버·네트워크)와 삭제 실패는 오류 상자에 `tabindex="-1"`을 주고 포커스한다(`focusError`).
 5. 서버 400 본문의 키가 입력 `name`과 같으면 그 입력을 표시한다(`showServerError`, 키 이름이 다르면 `aliases`로 잇는다).
+6. 포커스가 이미 그 대상(입력 또는 오류 상자)에 있을 때만 오류 문장을 `aria-hidden` 자식으로 잠깐 접었다 펴서 같은 문장도 다시 읽게 한다(`reannounce`, 비공개). 포커스가 새로 옮겨 가는 경우에는 접지 않는다. 복원은 이중 `requestAnimationFrame`과 `setTimeout` 300ms에서 멱등으로 하고, 그 사이 호출부가 새 문장을 썼으면 덮지 않는다.
 
 지켜야 할 것:
 
@@ -173,8 +180,6 @@ Playwright로 순회해 "ellipsis가 걸렸고 `scrollWidth > clientWidth`인데
 
 알려진 한계:
 
-- 같은 문장을 연달아 낼 때 스크린리더가 다시 읽게 하는 보조는 없다.
 - 실제 스크린리더 낭독은 확인하지 못했다.
-- 짝 컨트롤(`markInvalid` 세 번째 인자)을 고치면, 그 짝과 함께 표시됐던 입력의 표시가 나중에 다른 이유(서버 400)로 다시 달린 것이어도 풀린다. 호출처는 컬렉션 폼의 수량 짝 한 곳이다 `[코드 static/js/pages/collection.js]`.
 - 오류 상자와 상태 상자는 live region이면서 포커스도 받으므로 스크린리더가 같은 문장을 두 번 읽을 수 있다(확인하지 못했다).
 - 모바일에서 위쪽 입력과 아래 오류 문장이 한 화면에 같이 들어오지 않을 수 있다.

@@ -329,7 +329,7 @@
   color: var(--on-select);
   border-color: var(--select);
 }
-.visit-edit-page .visit-edit-submit:disabled {
+.visit-edit-page .visit-edit-submit:disabled:not(.is-loading) {
   background: transparent;
   color: var(--off);
   border-color: var(--off);
@@ -378,7 +378,7 @@
   background: var(--error);
   color: var(--surface);
 }
-.visit-edit-page .visit-edit-delete-btn:disabled {
+.visit-edit-page .visit-edit-delete-btn:disabled:not(.is-loading) {
   background: transparent;
   color: var(--off);
   border-color: var(--off);

@@ -639,7 +639,7 @@
   color: var(--surface);
 }
 
-.record-row-delete-btn:disabled {
+.record-row-delete-btn:disabled:not(.is-loading) {
   background: transparent;
   color: var(--off);
   border-color: var(--off);

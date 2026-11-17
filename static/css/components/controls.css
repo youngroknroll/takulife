@@ -70,17 +70,11 @@
 /* 다른 status-btn 요청이 진행 중이거나(status.js) 서버가 선택 불가로 내려준
    경우의 비활성 모양. .active("이미 추가됨")는 제외 — 확정된 완료 상태를
    "로딩 중"처럼 보이게 하면 안 되기 때문이다. */
-.status-btn:disabled:not(.active) {
+.status-btn:disabled:not(.active, .is-loading) {
   background: transparent;
   border-color: var(--off);
   color: var(--off);
   cursor: not-allowed;
-}
-
-/* 제출 중에는 비활성이어도 스피너(글자색을 따른다)가 보여야 한다. */
-.status-btn.is-loading:disabled:not(.active) {
-  border-color: var(--ink-2);
-  color: var(--ink-2);
 }
 
 /* ── interest button (찜 toggle — independent from .status-btn) ─ */
@@ -117,16 +111,11 @@
   color: var(--on-select);
 }
 
-.interest-btn:disabled {
+.interest-btn:disabled:not(.is-loading) {
   background: transparent;
   border-color: var(--off);
   color: var(--off);
   cursor: not-allowed;
-}
-
-/* 제출 중에는 비활성이어도 스피너(글자색을 따른다)가 보여야 한다. */
-.interest-btn.is-loading:disabled {
-  color: var(--ink-2);
 }
 
 /* ── 반전된 행 안의 배지·버튼 ──────────────────────────────────

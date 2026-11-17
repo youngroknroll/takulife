@@ -161,7 +161,7 @@
   background: var(--error);
   color: var(--surface);
 }
-.visit-detail-page .visit-detail-delete-btn:disabled {
+.visit-detail-page .visit-detail-delete-btn:disabled:not(.is-loading) {
   background: transparent;
   color: var(--off);
   border-color: var(--off);

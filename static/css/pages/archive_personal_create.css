@@ -318,16 +318,12 @@
   background: var(--select);
   color: var(--on-select);
 }
-/* 제출 중에는 비활성이지만 가운데 스피너(글자색을 따른다)는 보여야 한다. */
-.personal-create-page .personal-form-submit:disabled {
+/* 제출 중이 아닌 비활성 모양. 제출 중(.is-loading)은 원래 모양에 스피너만 얹는다. */
+.personal-create-page .personal-form-submit:disabled:not(.is-loading) {
   background: transparent;
   border-color: var(--off);
   color: var(--off);
   cursor: not-allowed;
-}
-.personal-create-page .personal-form-submit.is-loading:disabled {
-  border-color: var(--ink-2);
-  color: var(--ink-2);
 }
 .personal-create-page .personal-form-cancel {
   display: inline-flex;

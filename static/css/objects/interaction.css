@@ -20,6 +20,7 @@
   pointer-events: none;
 }
 
+/* 제출 중 버튼은 비활성 모양을 입지 않는다. 쪽의 :disabled 모양 규칙은 :not(.is-loading)을 단다. */
 .is-loading {
   position: relative;
   pointer-events: none;
@@ -59,6 +60,25 @@ button.is-loading,
 a.is-loading {
   -webkit-text-fill-color: transparent;
   text-decoration-color: transparent;
+}
+
+/* 고대비에서는 강제 색이 글자 채움색을 덮어 라벨이 스피너 밑에 그대로 보인다.
+   로딩 중인 버튼·링크만 강제 색에서 빼고 시스템 색을 직접 준다.
+   쪽 규칙이 명시도로 시스템 색을 덮으므로 버튼의 세 색은 !important로 준다. */
+@media (forced-colors: active) {
+  button.is-loading {
+    forced-color-adjust: none;
+    color: ButtonText !important;
+    background-color: ButtonFace !important;
+    border-color: ButtonBorder !important;
+    -webkit-text-fill-color: transparent;
+  }
+
+  a.is-loading {
+    forced-color-adjust: none;
+    color: LinkText;
+    -webkit-text-fill-color: transparent;
+  }
 }
 
 button.is-loading > *,

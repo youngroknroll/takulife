@@ -324,17 +324,12 @@
   color: var(--on-select);
 }
 
-/* 제출 중(data-submit-guard)에는 비활성 모양이 된다. */
-.auth-submit:disabled {
+/* 제출 중이 아닌 비활성 모양. 제출 중(.is-loading)은 원래 모양에 스피너만 얹는다. */
+.auth-submit:disabled:not(.is-loading) {
   border-color: var(--off);
   background: transparent;
   color: var(--off);
   cursor: not-allowed;
-}
-
-.auth-submit.is-loading:disabled {
-  border-color: var(--ink-2);
-  color: var(--ink-2);
 }
 
 /* ── 또는 구분선 ────────────────────────────────────────────────────── */

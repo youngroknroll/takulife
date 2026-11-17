@@ -547,13 +547,11 @@ h1.window-title::after {
   border: none;
   color: var(--select);
 }
-.event-compact-row:has(:focus-visible) .interest-btn.event-compact-interest.active,
-.event-compact-row:has(:focus-visible) .interest-btn.event-compact-interest[aria-pressed="true"] {
+.event-compact-row:has(:focus-visible) .interest-btn.event-compact-interest {
   color: inherit;
 }
 @media (hover: hover) {
-  .event-compact-row:hover .interest-btn.event-compact-interest.active,
-  .event-compact-row:hover .interest-btn.event-compact-interest[aria-pressed="true"] {
+  .event-compact-row:hover .interest-btn.event-compact-interest {
     color: inherit;
   }
 }

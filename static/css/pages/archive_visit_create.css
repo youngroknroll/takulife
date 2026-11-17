@@ -301,7 +301,7 @@
   color: var(--on-select);
   border-color: var(--select);
 }
-.visit-create-page .visit-create-submit:disabled {
+.visit-create-page .visit-create-submit:disabled:not(.is-loading) {
   background: transparent;
   color: var(--off);
   border-color: var(--off);

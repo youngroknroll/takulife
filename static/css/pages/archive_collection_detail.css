@@ -184,7 +184,7 @@
 }
 /* 이미 삭제된 굿즈: 수정 링크는 눌려도 이동하지 않고 비활성 모양이다. */
 .collection-detail-page .collection-detail-edit-btn.is-item-gone-locked,
-.collection-detail-page .collection-detail-delete-btn:disabled {
+.collection-detail-page .collection-detail-delete-btn:disabled:not(.is-loading) {
   border-color: var(--off);
   background: transparent;
   color: var(--off);

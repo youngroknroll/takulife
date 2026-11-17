@@ -405,7 +405,7 @@ A4 시안 기준 판정 이력(2026-11-03, 구현 기준 아님): 토큰 값이 
 |---|---|
 | hover·포커스 | 링크는 배경 `--select` + 글자 `--on-select`로 반전, hover는 `(hover: hover)` 안에서만 `[코드 dos.css:105-125]`. 버튼·칩·행·칸도 같은 반전이다(⑦ 반전 규칙). |
 | 눌림(`:active`) | 반전. 터치 눌림 표시를 겸한다 `[문서 계획서 트랙 58 V4]`. |
-| 비활성 | 배경 투명, 글자·테두리 `--off`, 커서 `not-allowed`, hover 변화 없음 `[코드 dos.css:532-537]`. `opacity` 절반 표현은 쓰지 않는다. |
+| 비활성 | 배경 투명, 글자·테두리 `--off`, 커서 `not-allowed`, hover 변화 없음 `[코드 dos.css:532-537]`. `opacity` 절반 표현은 쓰지 않는다. 제출 중(`.is-loading`)은 비활성 모양이 아니라 원래 모양에 스피너. |
 | 오류 | 오류 글자 `--error`. 해당 입력은 `aria-invalid`일 때 2px `--ink` 테두리(색 외 단서). 코드: 인증·계정 설정·컬렉션·개인 기록·방문 폼은 2px `--ink`다 `[코드 auth.css:214, account_settings.css:339, archive_collection.css:1015-1020, archive_personal_create.css:215-223, archive_visit_create.css:211, archive_visit_edit.css:264]`. 예외: 공용 `.form-group`·`.search` 입력은 2px `--error` 테두리 + `--error` 글자다 `[코드 controls.css:267-271]`. `aria-invalid`를 켜는 템플릿은 5곳이고 모두 인증·계정 쪽이다 `[실측 rg 'aria-invalid' templates 2026-11-17]`. JS로 제출하는 기록 폼(컬렉션·개인 기록·방문 기록)은 `static/js/components/form_feedback.js`가 켠다(트랙 59). 그 5곳이 `.form-group`·`.search`를 쓰는지는 확인하지 못했다. 폼 전체 오류 상자는 1px `--error` 테두리 + `--error` 글자(비면 표시하지 않음). 성공·안내는 1px `--ink` 테두리 + `--ink` 글자. 경고·제약은 `.emphasis`(반전 블록) `[문서 WED 사전 검토 2026-11-17]` |
 | 링크 밑줄 | `text-decoration` 하나로만 만든다. `border-bottom` 방식은 줄바꿈에서 깨지므로 쓰지 않는다(`box-decoration-break: clone` 병용) `[코드 dos.css:105-111]` |
 | 포커스 링 | ⑦ 포커스 링 규칙. 컴포넌트가 `outline: none`을 쓰지 않는다 |
