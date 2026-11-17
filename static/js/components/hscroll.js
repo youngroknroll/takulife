@@ -16,7 +16,7 @@
   var mqlReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   // 45rem을 모바일 상한으로 쓰는 CSS 기준과 맞춰, 그보다 넓을 때만
   // 데스크톱으로 판단해 모바일에서는 자동재생을 끈다.
-  var mqlDesktop = window.matchMedia("(min-width: 45.0625rem)");
+  var mqlDesktop = window.matchMedia("(min-width: 45.01rem)");
 
   function prefersReducedMotion() {
     return mqlReducedMotion.matches;

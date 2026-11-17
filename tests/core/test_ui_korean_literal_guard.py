@@ -149,11 +149,13 @@ _JS_FIXED_RELPATHS = [
     "pages/collection_detail.js",
     "pages/visit_detail.js",
     "pages/archive_search.js",
+    "pages/account_delete_done.js",
+    "pages/account_settings.js",
 ]
 
 # shared(9) + components(3) + home_hero_rotator.js(1) + event_list.js(1)
-# + pages/*.js 11개(43-3) = 25개 — 직접 센 기대 개수 [실측 ls].
-_EXPECTED_JS_FILE_COUNT = 25
+# + 나머지 pages/*.js 13개 = 27개 — 직접 센 기대 개수 [실측 ls].
+_EXPECTED_JS_FILE_COUNT = 27
 
 _BLOCK_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
 _UNESCAPED_QUOTE_RE = re.compile(r"(?<!\\)['\"]")
