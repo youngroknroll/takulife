@@ -292,7 +292,6 @@
   font-size: var(--fs-2);
   font-weight: var(--fw-regular);
   color: var(--ink-2);
-  text-transform: uppercase;
 }
 
 /* 창 표면 위 링크라 --link 색에 항상 밑줄이다. 한 줄에 하나씩 쌓되

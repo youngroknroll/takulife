@@ -282,14 +282,18 @@
 }
 
 .mypage-account-action.is-rose:focus-visible {
-  color: var(--on-select);
-  border-color: var(--select);
+  background: var(--error);
+  border-color: var(--error);
+  color: var(--surface);
+  outline-color: var(--on-select);
+  outline-offset: -2px;
 }
 
 @media (hover: hover) {
   .mypage-account-action.is-rose:hover {
-    color: var(--on-select);
-    border-color: var(--select);
+    background: var(--error);
+    border-color: var(--error);
+    color: var(--surface);
   }
 }
 

@@ -493,6 +493,7 @@
   font-size: var(--fs-1);
   color: var(--ink-2);
   word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .events-page .event-index-title {
@@ -500,6 +501,7 @@
   font-size: var(--fs-3);
   line-height: var(--lh-base);
   word-break: keep-all;
+  overflow-wrap: anywhere;
   overflow-wrap: anywhere;
 }
 
@@ -545,8 +547,7 @@
 }
 
 /* 찜 버튼: 테두리 없는 글리프 칸. 활성 색은 반전 행 안에서 상속으로 되돌린다. */
-.events-page .event-index-interest,
-.events-page .event-index-interest:hover {
+.events-page .event-index-interest {
   flex: none;
   display: inline-flex;
   align-items: center;

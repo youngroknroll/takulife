@@ -24,7 +24,9 @@
 }
 
 /* 앵커로 이동할 때 고정 헤더와 하단 탭 바 뒤에 목표가 가려지지 않게 한다. */
+/* 내용이 짧은 쪽에서 푸터 아래가 바탕색 띠로 보이지 않게 캔버스를 표면색으로 둔다. */
 html {
+  background: var(--surface);
   scroll-padding-top: calc(var(--site-header-h) + var(--space-2));
 }
 

@@ -109,6 +109,7 @@
     font-size: var(--fs-2);
     color: var(--ink-2);
     word-break: keep-all;
+    overflow-wrap: anywhere;
   }
   .hero-ticket-title {
     margin: var(--space-1) 0 0;
@@ -116,12 +117,14 @@
     font-weight: var(--fw-regular);
     line-height: var(--lh-tight);
     word-break: keep-all;
+    overflow-wrap: anywhere;
   }
   .hero-ticket .hero-ticket-meta {
     margin: var(--space-1) 0 0;
     font-size: var(--fs-2);
     color: var(--ink-2);
     word-break: keep-all;
+    overflow-wrap: anywhere;
   }
   .hero-ticket .hero-ticket-dday {
     margin: var(--space-1) 0 0;

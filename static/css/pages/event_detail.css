@@ -40,11 +40,13 @@
 .event-detail-page .event-detail-cat-label {
   font-size: var(--fs-2);
 }
+/* keep-all은 띄어쓰기 없는 긴 글자를 못 끊으므로 overflow-wrap으로 좁은 폭의 가로 넘침을 막는다. */
 .event-detail-page .event-detail-work {
   margin: 0 0 var(--space-1);
   color: var(--ink-2);
   font-size: var(--fs-3);
   word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 .event-detail-page .event-detail-title {
   margin: 0 0 var(--space-1);
@@ -52,6 +54,7 @@
   line-height: var(--lh-tight);
   color: var(--ink);
   word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 .event-detail-page .event-detail-subtitle {
   margin: 0 0 var(--space-3);
@@ -115,6 +118,7 @@
   color: var(--ink);
   font-size: var(--fs-2);
   word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 /* ── 버튼 줄: 찜(보조) + 공식 페이지(주, 2px 테두리) ──────────────── */
@@ -297,6 +301,7 @@
   color: var(--ink-2);
   font-size: var(--fs-1);
   word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 .event-detail-page .event-detail-related-title {
   color: var(--ink);
@@ -304,11 +309,13 @@
   text-decoration: underline;
   text-underline-offset: 0.2em;
   word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 .event-detail-page .event-detail-related-meta {
   color: var(--ink-2);
   font-size: var(--fs-1);
   word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 .event-detail-page .event-detail-related-meta::before {
   content: "";

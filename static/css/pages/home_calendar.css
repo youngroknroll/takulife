@@ -259,6 +259,7 @@
   color: var(--ink-2);
   font-size: var(--fs-1);
   word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .agenda-title {
@@ -266,6 +267,7 @@
   font-size: var(--fs-3);
   font-weight: var(--fw-regular);
   word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .agenda-date,

@@ -167,12 +167,14 @@
   font-size: var(--fs-1);
   color: var(--ink-2);
   word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .agenda-title {
   margin: var(--space-1) 0 0;
   font-size: var(--fs-3);
   word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .agenda-title a {

@@ -539,11 +539,6 @@
   gap: var(--space-2);
 }
 
-/* 누르지 않는 배지에는 터치 높이(--hit-sm)를 걸지 않는다. */
-.record-row .status {
-  min-height: 1.5rem;
-}
-
 /* 조건부 행 액션: 상태 배지 아래 가로 배치. */
 .record-row-actions {
   display: flex;
@@ -700,6 +695,12 @@
   border: var(--bw-1) solid var(--error);
 }
 
+/* 기록·방문 목록의 오류 줄은 글자가 있을 때만 아래 여백을 둔다. */
+#entry-global-error:not(:empty),
+#visit-global-error.form-error:not(:empty) {
+  margin-bottom: var(--space-2);
+}
+
 .form-submit-btn {
   width: 100%;
   min-height: var(--hit-md);
@@ -727,7 +728,7 @@
 .promote-badge {
   display: inline-flex;
   align-items: center;
-  min-height: var(--hit-sm);
+  min-height: 1.5rem;
   padding: 0 var(--space-2);
   color: var(--ink);
   border: var(--bw-1) solid var(--rule);
@@ -919,7 +920,7 @@
     gap: var(--space-3);
   }
 
-  .activity-page {
+  .activity-page:has(.mobile-cta) {
     padding-bottom: calc(6rem + var(--site-tabbar-h, 0px));
   }
 

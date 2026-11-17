@@ -494,6 +494,7 @@ h1.window-title::after {
   font-size: var(--fs-1);
   color: var(--ink-2);
   word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 .event-compact-title {
   margin: 0 0 0.1875rem;
@@ -501,6 +502,7 @@ h1.window-title::after {
   font-weight: var(--fw-regular);
   line-height: 1.35;
   word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 .event-compact-title a {
   color: inherit;

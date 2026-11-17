@@ -6,7 +6,7 @@
 .status {
   display: inline-flex;
   align-items: center;
-  min-height: var(--hit-sm);
+  min-height: 1.5rem;
   padding: 0 var(--space-2);
   border: var(--bw-1) solid transparent;
   background: transparent;
@@ -122,6 +122,11 @@
   border-color: var(--off);
   color: var(--off);
   cursor: not-allowed;
+}
+
+/* 제출 중에는 비활성이어도 스피너(글자색을 따른다)가 보여야 한다. */
+.interest-btn.is-loading:disabled {
+  color: var(--ink-2);
 }
 
 /* ── 반전된 행 안의 배지·버튼 ──────────────────────────────────
