@@ -662,25 +662,32 @@ F10 MFA(2026-07-01 `auth-hardening` 결정).
 
 트랙 58 중 발견했지만 main부터 있던 동작이고 작지 않아 넘긴 항목이다. 사용자에게 보고됐고, 사용자가 머지 승인과 함께 진행을 지시했다(2026-11-17 "머지 승인 후 백로그 진행"). 트랙 59에서 처리했다(브랜치 `fix/dos-ui-residuals`, PR 머지 전).
 
-- **해소(글자 채움색 투명 방식, 버튼 392개 어긋남 0 `[실측 2026-11-17 Playwright]`)** 저장·삭제 요청 중 로딩 표시가 버튼마다 다르다** — 공용 `button.is-loading { font-size: 0 }`(`static/css/objects/interaction.css:56-58` `[코드]`)를 쪽 규칙이 이겨 글자 위에 스피너가 겹치는 버튼과, 글자가 접히며 폭이 줄어드는 버튼이 섞여 있다. 예: `/archive/` 기록 삭제 버튼 42px → 18px `[실측 2026-11-17 Playwright]`. 가드레일 `docs/FE/loading-feedback.md` "스피너는 버튼 폭을 바꾸면 안 된다"와 어긋난다.
+- **해소(글자 채움색 투명 방식, 버튼 392개 어긋남 0 `[실측 2026-11-17 Playwright]`)** 저장·삭제 요청 중 로딩 표시가 버튼마다 다르다** — 공용 `button.is-loading { font-size: 0 }`(`static/css/objects/interaction.css:56-58` `[코드, 해소 전 줄]`)를 쪽 규칙이 이겨 글자 위에 스피너가 겹치는 버튼과, 글자가 접히며 폭이 줄어드는 버튼이 섞여 있다. 예: `/archive/` 기록 삭제 버튼 42px → 18px `[실측 2026-11-17 Playwright]`. 가드레일 `docs/FE/loading-feedback.md` "스피너는 버튼 폭을 바꾸면 안 된다"와 어긋난다.
 - **해소(`static/js/components/form_feedback.js`)** 폼 검증 접근성 — 컬렉션·개인 기록·방문 기록 폼에서 JS가 검증 실패 입력에 `aria-invalid`를 세팅하지 않는다(`rg -n "aria-invalid" static/js` 0건 `[실측 2026-11-17]`). 오류 문장이 화면 밖에 생겨도 스크롤·포커스 이동이 없다.
 - **해소(사이드바 접힘 56.25rem 하나로, 사용자 결정 "활동 쪽만 900px로"; 53.75rem은 활동 쪽 탭 라벨·hero·하단 고정 막대에, 60rem은 행사 상세 하단 고정 막대에 남음)** 2열 → 1열 접힘 폭이 쪽마다 다르다** — 기록 목록 53.75rem(`static/css/pages/archive.css:846`), 폼 45rem(`archive_personal_create.css:356`), 컬렉션 목록 56.25rem(`archive_collection.css:267`), 행사 목록 56.24rem(`event_list.css:252`), 행사 상세 60rem(`event_detail.css:369`) `[실측 rg -n "max-width: (53.75|45|56.25|60)rem" static/css/pages 2026-11-17]`.
 - **해소(`components/text.css`·`components/cards.css` 한 벌씩)** 복제된 CSS — `.sr-only` 숨김 규칙이 쪽 CSS 8개 파일에 1벌씩 8곳 복제돼 있다(`archive_visit_edit`·`archive_visit_create`·`archive_personal_create`·`archive_collection`·`auth`·`account_settings`·`archive_personal_detail`·`archive_visit_detail`; `rg -n "\.sr-only" static/css/pages` 9줄 중 1줄은 주석 `[실측 2026-11-17]`). 공용 한 벌로 올리면 누락이 막힌다(트랙 58에서 컬렉션 폼 "(필수)" 노출로 한 번 발생). 시리즈 `gi-0`~`gi-12` 색 대응 13행이 `archive_collection.css`·`archive_collection_detail.css`·`archive_visit_detail.css` 3개 파일에 복제돼 있다 `[실측 rg -c "^\S.*\.gi-[0-9]+ \{" static/css/pages 2026-11-17, 파일당 13]`.
 - **해소(세 가지 모두)** 키보드·보조기기 — 활동 달력·행사 달력에서 월 이동 뒤 키보드 포커스가 문서 처음으로 돌아간다(전체 페이지 이동). 기록 목록 결과 창 제목의 건수가 실시간 검색 뒤 갱신되지 않는다. 하위 탭에 `aria-current`가 없다.
 - **해소(사용자 결정 "새 카테고리에도 색 점", `data-palette-slot`)** 스태프가 만든 카테고리 색이 공개 화면에 안 쓰인다** — 7개 슬러그 점만 색이 있다. `--cat-slot-*` 24개 선언(12슬롯 × 2, `static/css/tokens.css:61-84`)은 공개 CSS 소비처 0곳이고 계약 테스트 `tests/core/test_category_token_contract.py` 때문에 남아 있다 `[실측 2026-11-17]`. 공개 화면에서 스태프 카테고리 색을 살릴지는 제품 결정이다.
 
-트랙 59가 남긴 것:
+트랙 59 완료 보고 때 남겼던 10건은 사용자 지시("백로그 남기지 말고 모두 처리하라고", 2026-11-17)로 같은 PR에서 전부 처리했다. 남은 열린 항목은 없다.
 
-1. 내 활동·컬렉션 행(`_subject_view` 호출처 8곳 `[실측 rg 2026-11-17]`)과 스태프 화면 4곳의 새 카테고리 라벨이 슬러그로 나온다.
-2. 비한국어 화면에서 행·범례의 새 카테고리 한글 라벨에 `lang="ko"`가 없다.
-3. 소비자 JS 2개(`static/js/pages/account_delete_done.js`, `account_settings.js`)가 한국어 리터럴 가드 목록 밖이다 `[코드 tests/core/test_ui_korean_literal_guard.py의 _JS_FIXED_RELPATHS 대조 2026-11-17]`.
-4. 로딩 중 버튼 색이 계열마다 다르다(`--ink-2`·`--off`·원래 색). WED 판정은 어긋남 아님, 정보다.
-5. 같은 오류 문장을 연달아 낼 때 스크린리더 재낭독 보조가 없고, 실제 낭독은 확인하지 못했다.
-6. `hscroll.js`의 `matchMedia("(min-width: 45.0625rem)")`가 CSS 짝 값 45.01rem과 다르다.
-7. `templates/core/archive/visit_create.html`의 `#visit-global-error`는 JS가 참조하지 않는 노드다.
-8. 로딩 중 `aria-busy`가 없다(제품 권고).
-9. 폼 오류 표시에서 짝 컨트롤(`markInvalid` 세 번째 인자)을 고치면, 그 짝과 함께 표시됐던 입력의 표시가 나중에 서버 400으로 다시 달린 것이어도 풀린다. 호출처는 컬렉션 폼의 수량 짝 한 곳이다 `[코드 static/js/pages/collection.js]`. BIR 재판정 Low.
-10. 내 활동의 하단 고정 막대(`.mobile-cta`)는 측정한 모든 폭에서 숨김 상태라, 표시 상태에서의 전환 폭(53.75rem)을 브라우저로 재지 못했다. 규칙은 이번 트랙에서 바꾸지 않았다.
+1. **해소(`core.categories.category_display_labels`)** 내 활동·컬렉션 행(`_subject_view`)과 스태프 화면 4곳의 새 카테고리 라벨이 슬러그로 나오던 것. 같이 고친 것: 방문 목록 카테고리 칩이 슬러그를 내고 그 칩을 누르면 0건이 되던 것 `[실측 pytest XS-1~XS-15, .docs/BE 기록]`.
+2. **해소(`category_label_lang` + `{% category_lang_attr %}`)** 비한국어 화면에서 새 카테고리 한글 라벨에 `lang="ko"`가 없던 것. en·ja·zh-hans 8쪽에서 한글 라벨 요소 32개 모두 `ko` 범위, 속성 유무에 따른 모양 차이 0곳 `[실측 2026-11-17 Playwright]`.
+3. **해소** 소비자 JS 2개가 한국어 리터럴 가드 목록 밖이던 것. 목록은 소비자 JS 27개 전부를 덮는다 `[코드 tests/core/test_ui_korean_literal_guard.py]`.
+4. **해소(로딩 중 버튼은 비활성 모양을 입지 않는다)** 로딩 중 버튼 색이 계열마다 다르던 것. 버튼 392개 중 380개가 로딩 전후 같은 색이고, 나머지 12개는 로딩 경로가 없는 홈 대표 행사 교체 단추에 측정이 `disabled`를 강제로 건 값이다. 스피너 대비 최솟값 7.16:1 `[실측 2026-11-17 Playwright]`.
+5. **해소(`form_feedback.js`의 재낭독)** 같은 오류 문장을 연달아 낼 때 보조가 없던 것. 접힌 동안 접근성 트리에서 문장 노드 0개, 복원 뒤 1개 `[실측 CDP]`. 실제 스크린리더 낭독은 사람이 확인해야 한다(사용자 확인 필요).
+6. **해소** `hscroll.js`의 폭 값을 CSS 짝 값 45.01rem으로 맞췄다.
+7. **해소** 방문 등록 쪽의 쓰이지 않던 `#visit-global-error` 노드를 지웠다(높이 0px, 폼 위치 전후 동일 `[실측]`).
+8. **해소** 로딩 중 `aria-busy="true"`가 `.is-loading`과 같이 붙고 떨어진다. 스태프와 공유하는 `api.js`·`submit_guard.js`에도 적용되며 스태프 화면의 모양 변화는 0px `[실측]`.
+9. **해소(`data-feedback-pair`)** 짝 컨트롤을 고치면 서버 400으로 달린 표시까지 풀리던 것.
+10. **해소(측정)** 내 활동 하단 고정 막대의 표시 상태 전환 폭: 859px·860px에서 보이고 861px에서 숨는다 `[실측 2026-11-17 Playwright, 활동 목록 5쪽]`.
+
+확장하면서 새로 찾아 같은 PR에서 고친 것 `[실측 2026-11-17]`:
+
+- 한글 조합 입력이 끝나도 실시간 검색이 나가지 않던 것(Chromium의 이벤트 순서), 뒤로가기 직후 대기 중이던 검색이 실행되던 것, 같은 검색어가 다시 요청되고 방문 기록에 쌓이던 것, 조합 중 지우기 링크가 숨어 있던 것.
+- 고대비(forced-colors)에서 로딩 글자가 스피너와 겹쳐 보이던 것.
+- 반전된 행 안의 켜지지 않은 찜 버튼이 파랑 위 검정으로 남던 것.
+- 스태프 로딩 스피너의 중심이 2px 어긋나 있던 것.
 
 ## 착수하지 않는 것
 
