@@ -445,12 +445,26 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  /* overflow: hidden이 포커스 링(선 2px + 간격 2px)을 자르지 않게 링 자리만큼
+     안쪽 여백을 주고 같은 크기의 음수 바깥 여백으로 글자 위치를 그대로 둔다.
+     `.snapshot-record-body p { margin: 0 }`를 이기도록 선택자를 높였다. */
+  .snapshot-record-body .snapshot-record-title {
+    padding: var(--space-1);
+    margin: calc(-1 * var(--space-1));
+  }
+  /* 긴 제목의 말줄임을 링크가 직접 맡아 링크 상자가 p 안에 머물게 한다(포커스 링이
+     p의 안쪽 여백 안에 그려진다). 링크 없는 행의 평문 제목은 위 p 규칙이 맡는다. */
+  .snapshot-record-title a {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   /* 제목 링크의 눌림 영역을 행 전체로 넓힌다. 기준 상자가 li가 되도록 본문·p에는
-     position을 주지 않는다. */
+     position을 주지 않는다. 아래쪽은 행 아래 1px 구분선까지 덮는다. */
   .snapshot-record-title a::after {
     content: "";
     position: absolute;
-    inset: 0;
+    inset: 0 0 calc(-1 * var(--bw-1)) 0;
   }
   .snapshot-record-when {
     font-size: var(--fs-1);
@@ -588,6 +602,7 @@
     line-height: 1.35;
     text-align: center;
     overflow-wrap: anywhere;
+    word-break: keep-all;
     text-decoration: underline;
     text-underline-offset: 0.2em;
   }
