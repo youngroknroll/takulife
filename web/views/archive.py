@@ -23,6 +23,7 @@ from archive.queries import (
     list_user_planned_events,
     list_user_statuses,
     list_user_visit_records,
+    list_user_visit_target_events,
     list_visit_records_for_personal_entry,
     user_interest_summary_counts,
     user_personal_entry_counts,
@@ -50,7 +51,6 @@ from core.vocab import (
     archive_status_label,
     personal_category_label,
 )
-from events.models import Event
 from web.views._helpers import (
     _archive_query,
     _attach_display,
@@ -382,19 +382,21 @@ def _parse_visit_preselect(request):
     """방문 기록 작성 폼을 위해, 선택적인 ?subject=event:<id> / personal:<id>를
     잠긴 대상으로 해석한다.
 
-    파라미터가 공개된 행사나 요청자 본인의 비공식 등록을 가리키면
-    ``{"value": "event:5", "label": "이벤트명"}``을, 아니면 ``None``을
-    반환한다(그러면 폼이 선택 드롭다운으로 대체된다). 이미 방문한
-    행사(예정 전용 드롭다운엔 없다)의 '기록' 버튼으로도 기록을 남길 수
-    있게 해준다 — 방문 API는 공개된 어떤 행사든 받아준다. id는 여기서
-    검증하므로 템플릿은 이를 신뢰된 잠금 필드로 렌더링할 수 있다.
+    파라미터가 방문 기록을 남길 수 있는 행사나 요청자 본인의 비공식
+    등록을 가리키면 ``{"value": "event:5", "label": "이벤트명"}``을, 아니면
+    ``None``을 반환한다(그러면 폼이 선택 드롭다운으로 대체된다). 남길 수
+    있는 행사는 게시된 행사이거나 요청자가 방문 완료로 표시해 둔 행사이며,
+    규칙은 ``archive.queries.list_user_visit_target_events``가 갖는다.
+    이미 방문한 행사(예정 전용 드롭다운엔 없다)의 '기록' 버튼으로도 기록을
+    남길 수 있게 해준다. id는 여기서 검증하므로 템플릿은 이를 신뢰된 잠금
+    필드로 렌더링할 수 있다.
     """
     kind, _, ident = request.GET.get("subject", "").partition(":")
     if not is_safe_pk_string(ident):
         return None
     pk = int(ident)
     if kind == "event":
-        event = Event.objects.published().filter(pk=pk).first()
+        event = list_user_visit_target_events(request.user).filter(pk=pk).first()
         if event is not None:
             # is_official: 템플릿이 공식 행사 제목만 lang="ko"로 표시하게 하는 값.
             return {

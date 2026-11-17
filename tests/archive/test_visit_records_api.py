@@ -64,11 +64,13 @@ def test_방문_기록을_생성하면_요청한_사용자_소유로만_저장�
 
 
 @pytest.mark.django_db
-def test_미게시_행사를_대상으로_방문_기록을_생성하면_요청이_거부된다(
-    client, make_user, make_draft_event
+def test_본인이_방문_완료로_표시한_비공개_행사에_방문_기록을_생성하면_기록만_추가되고_상태_행은_그대로다(
+    client, make_user, make_draft_event, make_status
 ):
     user = make_user()
     draft_event = make_draft_event()
+    status = make_status(user, event=draft_event, status="visited")
+    updated_at_before = status.updated_at
 
     client.force_login(user)
     response = client.post(
@@ -77,8 +79,58 @@ def test_미게시_행사를_대상으로_방문_기록을_생성하면_요청�
         content_type="application/json",
     )
 
-    assert response.status_code == 400
+    assert response.status_code == 201
+    assert response.json()["event"] == draft_event.id
+    assert VisitRecord.objects.filter(user=user, event=draft_event).count() == 1
+    status_after = UserEventStatus.objects.get(user=user, event=draft_event)
+    assert status_after.pk == status.pk
+    assert status_after.status == UserEventStatus.Status.VISITED
+    assert status_after.updated_at == updated_at_before
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("own_status", "other_status"),
+    [
+        pytest.param(None, None, id="상태_없음"),
+        pytest.param(None, "visited", id="타인_방문_완료만"),
+        pytest.param("planned", "visited", id="본인_예정_타인_방문_완료"),
+    ],
+)
+def test_방문_완료_표시가_없는_비공개_행사의_기록_요청은_존재하지_않는_행사와_같은_거부_응답을_받는다(
+    client, make_user, make_draft_event, make_status, own_status, other_status
+):
+    user = make_user()
+    other = make_user()
+    draft_event = make_draft_event(title="숨겨야 하는 비공개 제목")
+    missing_id = 987654321
+    if own_status is not None:
+        make_status(user, event=draft_event, status=own_status)
+    if other_status is not None:
+        make_status(other, event=draft_event, status=other_status)
+    status_count = UserEventStatus.objects.count()
+
+    def post_and_normalize(event_id):
+        response = client.post(
+            "/api/visit-records/",
+            {"event": event_id, "visited_on": "2026-05-26"},
+            content_type="application/json",
+        )
+        assert response.status_code == 400
+        normalized = {
+            field: [message.replace(f'"{event_id}"', '"<id>"') for message in messages]
+            for field, messages in response.json().items()
+        }
+        return normalized, response.content.decode()
+
+    client.force_login(user)
+    draft_errors, draft_text = post_and_normalize(draft_event.id)
+    missing_errors, _ = post_and_normalize(missing_id)
+
+    assert draft_errors == missing_errors
+    assert "숨겨야 하는 비공개 제목" not in draft_text
     assert VisitRecord.objects.count() == 0
+    assert UserEventStatus.objects.count() == status_count
 
 
 @pytest.mark.django_db
@@ -441,6 +493,25 @@ def test_본인_방문_기록에_사진을_업로드하면_사진이_저장된�
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
+    record = make_visit(user, event=event, visited_on="2026-05-26")
+
+    client.force_login(user)
+    response = client.post(
+        f"/api/visit-records/{record.id}/photos/",
+        {"image": SimpleUploadedFile("photo.png", png_bytes(), content_type="image/png")},
+    )
+
+    assert response.status_code == 201
+    assert VisitRecordPhoto.objects.filter(visit_record=record).count() == 1
+
+
+@pytest.mark.django_db
+def test_본인의_비공개_행사_방문_기록에_사진을_업로드하면_사진이_저장된다(
+    client, make_user, make_draft_event, png_bytes, settings, tmp_path, make_visit
+):
+    settings.MEDIA_ROOT = str(tmp_path)
+    user = make_user()
+    event = make_draft_event()
     record = make_visit(user, event=event, visited_on="2026-05-26")
 
     client.force_login(user)

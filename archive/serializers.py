@@ -9,6 +9,7 @@ from archive.models import (
     UserEventStatus,
     VisitRecord,
 )
+from archive.queries import list_user_visit_target_events
 from core.vocab import normalize_collection_item_type, normalize_personal_category
 from events.image_validation import validate_uploaded_image
 from events.models import Event
@@ -143,7 +144,8 @@ class UserEventStatusQuerySerializer(serializers.Serializer):
 
 
 class VisitRecordSerializer(_SubjectScopedPersonalEntryMixin, serializers.ModelSerializer):
-    # 대상은 게시된 event와 본인 소유 personal_entry 중 정확히 하나여야 한다.
+    # 대상은 게시된 행사이거나 본인이 방문 완료로 표시해 둔 행사, 또는
+    # 본인 소유 직접 등록 항목 중 정확히 하나여야 한다.
     event = serializers.PrimaryKeyRelatedField(
         queryset=Event.objects.published(), required=False, allow_null=True
     )
@@ -153,6 +155,13 @@ class VisitRecordSerializer(_SubjectScopedPersonalEntryMixin, serializers.ModelS
     # 클라이언트가 발급하는 멱등 키. 재생된 생성 요청의 토큰이 응답에
     # 그대로 노출되지 않도록 write_only로 둔다.
     client_token = serializers.UUIDField(write_only=True, required=False, allow_null=True)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # 비공개가 된 행사는 요청 사용자가 방문 완료로 표시했을 때만 고를 수 있다.
+        request = self.context.get("request")
+        if request is not None and request.user.is_authenticated:
+            self.fields["event"].queryset = list_user_visit_target_events(request.user)
 
     class Meta:
         model = VisitRecord
