@@ -1,99 +1,89 @@
-/* 스킵 링크. 포커스 전엔 화면 밖에 숨어 있다가 포커스되면 좌상단에
+/* 건너뛰기 링크. 포커스 전엔 화면 위쪽 밖에 숨어 있다가 포커스되면 좌상단에
    나타난다. z-index 100은 아래 .site-header의 50보다 위다. */
 .skip-link {
   position: absolute;
-  left: -999px;
-  top: 0;
+  left: 0;
+  top: -4rem;
   z-index: 100;
-  padding: 0.5rem 0.875rem;
+  padding: var(--space-2) var(--space-3);
   background: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-control);
-  font-size: var(--fs-sm);
-  font-weight: 600;
+  color: var(--ink);
+  border: var(--bw-1) solid var(--ink);
+  font-size: var(--fs-2);
+  text-decoration: none;
 }
 
 .skip-link:focus {
-  left: 0.75rem;
-  top: 0.75rem;
+  top: 0;
 }
 
-/* ── global site header ─────────────────────────────────────── */
-/* base.html에서 한 번만 렌더되는 상단 고정 바 — 브랜드/메인 내비/로그인
- * 상태를 담는다.
+/* ── global site header (메뉴 막대) ─────────────────────────── */
+/* base.html에서 한 번만 렌더되는 상단 고정 막대 — 브랜드/메인 내비/로그인
+ * 상태를 담는다. 불투명 표면에 아래 2px 검정 선이다.
  */
 :root {
-  /* .site-header의 데스크톱 실제 높이값. 다른 곳(사이드바 등)에서
-     헤더 아래에 딱 붙게 고정 배치할 때 쓴다 — 이 값을 바꾼다고 헤더
-     자체 높이가 바뀌지는 않는다. */
-  --site-header-h: 4.3125rem;
+  /* .site-header의 데스크톱 실제 높이값. 막대 최소 높이 3rem(터치에서는
+     누름 크기 + 위아래 여백이 더 크면 그 값) + 아래 테두리 2px이다.
+     다른 곳(사이드바 등)에서 헤더 아래에 딱 붙게 고정 배치할 때 쓴다 —
+     이 값을 바꾼다고 헤더 자체 높이가 바뀌지는 않는다. */
+  --site-header-h: calc(max(3rem, var(--hit-md) + var(--space-2)) + var(--bw-2));
 }
 
 .site-header {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: var(--chrome-glass);
-  backdrop-filter: saturate(180%) blur(8px);
-  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  border-bottom: var(--bw-2) solid var(--ink);
 }
 
 .site-header-inner {
   max-width: 1120px;
+  min-height: 3rem;
   margin: 0 auto;
-  padding: 0.75rem var(--page-pad-x);
+  padding: var(--space-1) var(--page-pad-x);
   display: flex;
   align-items: center;
-  gap: 1.125rem;
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }
 
 .site-nav {
   display: flex;
-  gap: 0.25rem;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .site-nav a {
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
-  padding: 0.375rem 0.75rem;
-  border-radius: 8px;
+  min-height: var(--hit-md);
+  padding: 0 var(--space-2);
   text-decoration: none;
-  font-size: 0.92rem;
-  font-weight: 600;
-  color: var(--muted);
-  position: relative;
+  font-size: var(--fs-2);
+  color: var(--ink);
+  outline-offset: -2px;
 }
 
-.site-nav a:hover {
-  background: var(--brand-soft);
-  color: var(--brand-ink);
+/* 현재 쪽은 반전 막대로 표시한다. 포커스·hover도 같은 반전이다. */
+.site-nav a.active,
+.site-nav a[aria-current="page"],
+.site-nav a:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
 }
 
-/* 현재 페이지는 채워진 필이 아니라 빨간 밑줄로 표시한다 — 그래야 페이지
-   안 다른 칩·배지와 시각적으로 겹치지 않는다. */
-.site-nav a.active {
-  background: transparent;
-  color: var(--text);
-  font-weight: 700;
-}
-
-.site-nav a.active::after {
-  content: "";
-  position: absolute;
-  left: 0.75rem;
-  right: 0.75rem;
-  bottom: 0.25rem;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--brand);
-}
-
-.site-nav a.active:hover {
-  background: var(--brand-soft);
-  color: var(--brand-ink);
+@media (hover: hover) {
+  .site-nav a:hover {
+    background: var(--select);
+    color: var(--on-select);
+    text-decoration: none;
+  }
+  /* 현재 쪽과 구분되도록 hover에만 밑줄을 더한다. */
+  .site-nav a:not([aria-current]):hover {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
 }
 
 .site-header .topbar-auth {
@@ -101,24 +91,51 @@
   /* 계정 메뉴 드롭다운 패널이 같은 헤더 안의 다른 위치 지정 요소(모바일
      하단 탭 바 등)에 덮이지 않도록 그리기 순서를 올린다. */
   z-index: 1;
+  flex-wrap: wrap;
+}
+
+/* 비로그인 링크 2개. modal.css가 같은 이름을 나중에 불러오므로 .site-header
+   범위로 특이도를 올려 이긴다. */
+.site-header .topbar-link {
+  min-height: var(--hit-md);
+  padding: 0 var(--space-3);
+  background: var(--surface);
+  color: var(--ink);
+  border: var(--bw-1) solid var(--ink);
+  border-radius: 0;
+  font-size: var(--fs-2);
+  font-weight: var(--fw-regular);
+  text-decoration: none;
+}
+
+@media (hover: hover) {
+  .site-header .topbar-link:hover {
+    background: var(--select);
+    color: var(--on-select);
+    border-color: var(--select);
+  }
+}
+
+.site-header .topbar-link:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+  border-color: var(--select);
+}
+
+.site-header .topbar-username {
+  max-width: 10rem;
+  font-size: var(--fs-2);
+  font-weight: var(--fw-regular);
+  color: var(--ink-2);
 }
 
 @media (max-width: 45rem) {
   /* 탭 바 높이 변수 — 이 미디어 쿼리 안에서만 정의해 45rem 초과에서는
      var(--site-tabbar-h, 0px)가 0이 되게 한다.
-     칸 높이 + 위 경계선 1px + 안전 영역. */
+     칸 높이 + 위 경계선 2px(.site-nav의 border-top과 같은 폭) + 안전 영역.
+     경계선이 1px이면 body 바닥 여백이 1px 모자란다. */
   :root {
-    --site-tabbar-h: calc(3.5rem + 1px + env(safe-area-inset-bottom));
-  }
-  .site-header-inner {
-    flex-wrap: wrap;
-    gap: 0.625rem;
-    padding: 0.625rem var(--page-pad-x);
-  }
-  .site-header {
-    /* 고정 위치 자손(.site-nav)의 기준 상자가 뷰포트가 아니라 헤더가
-       되는 것을 막는다. */
-    backdrop-filter: none;
+    --site-tabbar-h: calc(3.5rem + var(--bw-2) + env(safe-area-inset-bottom));
   }
   .site-nav {
     position: fixed;
@@ -132,7 +149,7 @@
     padding-bottom: env(safe-area-inset-bottom);
     /* 반투명이면 뒤로 지나가는 큰 제목이 라벨 뒤에 비친다 — 불투명 표면색. */
     background: var(--surface);
-    border-top: 1px solid var(--line);
+    border-top: var(--bw-2) solid var(--ink);
   }
   .site-nav a {
     flex: 1 1 0;
@@ -140,24 +157,20 @@
     justify-content: center;
     text-align: center;
     min-height: 3.5rem;
-    padding: 0.25rem;
-    border-radius: 0;
-    font-size: 0.75rem;
-    line-height: 1.25;
+    padding: var(--space-1);
+    font-size: var(--fs-1);
+    line-height: var(--lh-tight);
+    white-space: normal;
+    border-left: var(--bw-1) solid var(--rule);
   }
-  /* 칸이 좁아 밑줄은 아래 대신 칸 위쪽 가장자리에 그린다. */
-  .site-nav a.active::after {
-    top: 0;
-    bottom: auto;
+  .site-nav a:first-child {
+    border-left: none;
   }
   body {
     padding-bottom: var(--site-tabbar-h);
   }
   html {
     scroll-padding-bottom: var(--site-tabbar-h);
-  }
-  .site-header .topbar-auth {
-    flex-wrap: wrap;
   }
   /* 모바일(45rem 이하)에서는 아이디 표시 자체를 숨긴다(사용자 결정) —
      전체 주소는 계정 메뉴 패널을 열면 확인할 수 있다.
@@ -173,9 +186,11 @@
 
 /* ── notice banner (marquee) ───────────────────────────────────
    보이는 정지 버튼 없이 순수 CSS 무한 루프로만 구현했다(사용자 승인
-   예외) — 대신 prefers-reduced-motion에서는 애니메이션을 완전히 끈다. */
+   예외, 트랙 58에서도 움직임은 그대로 둔다) — 대신
+   prefers-reduced-motion에서는 애니메이션을 완전히 끈다. */
 .site-banner {
-  background: var(--brand-soft);
+  background: var(--surface);
+  border-bottom: var(--bw-1) solid var(--rule);
   overflow: hidden;
 }
 
@@ -200,11 +215,11 @@
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  padding: 0.5rem 1.5rem;
+  padding: var(--space-2) var(--space-4);
   white-space: nowrap;
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  color: var(--brand-ink);
+  font-size: var(--fs-2);
+  font-weight: var(--fw-regular);
+  color: var(--ink-2);
 }
 
 @keyframes marquee {
@@ -226,24 +241,21 @@
 }
 
 /* ── secondary in-page nav (archive / drafts sub-sections) ──── */
+/* 카드 껍데기 없이 탭 줄만 남긴다. */
 .sub-nav {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  box-shadow: var(--shadow);
-  padding: 0.625rem 0.875rem;
-  margin-bottom: 0.875rem;
+  margin-bottom: var(--space-3);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.625rem;
+  gap: var(--space-2);
   flex-wrap: wrap;
 }
 
 /* ── global site footer ─────────────────────────────────────── */
+/* 제목 없는 창과 같은 모양: 위쪽 3px 이중선 + 표면. */
 .site-footer {
   margin-top: 2.5rem;
-  border-top: 1px solid var(--line);
+  border-top: var(--bw-3) double var(--ink);
   background: var(--surface);
 }
 
@@ -257,17 +269,16 @@
 }
 
 .footer-logo {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: var(--text);
+  font-size: var(--fs-4);
+  font-weight: var(--fw-strong);
+  color: var(--ink);
   display: block;
 }
 
 .footer-tagline {
-  margin: 0.5rem 0 0;
-  font-size: 0.8rem;
-  color: var(--muted);
-  line-height: 1.6;
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-2);
+  color: var(--ink-2);
 }
 
 .footer-cols {
@@ -278,24 +289,27 @@
 
 .footer-col h2 {
   margin: 0 0 0.625rem;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--text);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: var(--fs-2);
+  font-weight: var(--fw-regular);
+  color: var(--ink-2);
 }
 
+/* 창 표면 위 링크라 --link 색에 항상 밑줄이다. 한 줄에 하나씩 쌓되
+   hover 반전이 열 전체 폭이 되지 않게 글자 폭만 차지한다. */
 .footer-col a,
 .footer-col p {
   display: block;
-  margin: 0 0 0.375rem;
-  font-size: 0.86rem;
-  color: var(--muted);
-  text-decoration: none;
+  width: fit-content;
+  margin: 0 0 var(--space-1);
+  font-size: var(--fs-2);
+  color: var(--link);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 
-.footer-col a:hover {
-  color: var(--brand-ink);
+.footer-col p {
+  color: var(--ink-2);
+  text-decoration: none;
 }
 
 /* 안내 문구는 4개 메뉴 컬럼(이벤트/컬렉션/내 활동/계정)에 속하지 않는
@@ -307,9 +321,9 @@
 }
 
 .site-footer-notice p {
-  margin: 0 0 0.375rem;
-  font-size: 0.86rem;
-  color: var(--muted);
+  margin: 0 0 var(--space-1);
+  font-size: var(--fs-2);
+  color: var(--ink-2);
 }
 
 .site-footer-notice p:last-child {
@@ -317,41 +331,91 @@
 }
 
 .site-footer-base {
-  border-top: 1px solid var(--line);
+  border-top: var(--bw-1) solid var(--rule);
 }
 
 .site-footer-base-inner {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 1rem var(--page-pad-x);
+  padding: var(--space-3) var(--page-pad-x);
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 0.5rem 1.5rem;
+  gap: var(--space-2) var(--space-4);
 }
 
 .site-footer-base p {
   margin: 0;
-  font-size: 0.8rem;
-  color: var(--muted);
+  font-size: var(--fs-1);
+  color: var(--ink-2);
 }
 
 .footer-legal {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem 1rem;
+  gap: var(--space-1) var(--space-3);
 }
 
 .footer-legal a {
-  font-size: 0.8rem;
-  color: var(--muted);
-  text-decoration: none;
+  font-size: var(--fs-1);
+  color: var(--link);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
   padding: 0.375rem 0; /* WCAG 2.5.8: 인라인 링크 세로 히트영역 확보 */
 }
 
-.footer-legal a:hover {
-  color: var(--brand-ink); /* --brand는 흰 배경 AA 미달 — brand-ink 사용 */
+@media (hover: hover) {
+  .footer-col a:hover,
+  .footer-legal a:hover {
+    background: var(--select);
+    color: var(--on-select);
+    text-decoration: none;
+  }
+}
+
+.footer-col a:focus-visible,
+.footer-legal a:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+  text-decoration: none;
+}
+
+/* 언어 선택: 네이티브 select + 보조 버튼(1px 테두리, hover 반전). */
+.site-footer #language-switcher {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.site-footer #language-switcher select,
+.site-footer #language-switcher button {
+  min-height: var(--hit-md);
+  background: var(--surface);
+  color: var(--ink);
+  border: var(--bw-1) solid var(--ink);
+  font-family: inherit;
+  font-size: var(--fs-2);
+  font-weight: var(--fw-regular);
+}
+
+.site-footer #language-switcher button {
+  padding: 0 var(--space-3);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .site-footer #language-switcher button:hover {
+    background: var(--select);
+    color: var(--on-select);
+    border-color: var(--select);
+  }
+}
+
+.site-footer #language-switcher button:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+  border-color: var(--select);
 }
 
 /* 좁은 화면에서도 푸터는 2x2로 접지 않고 4컬럼 한 줄을 유지한다(사용자
@@ -363,16 +427,16 @@
     gap: 1.25rem;
   }
   .footer-cols {
-    gap: 0.5rem;
+    gap: var(--space-2);
   }
   .footer-col h2 {
-    font-size: 0.7rem;
-    margin-bottom: 0.375rem;
+    font-size: var(--fs-1);
+    margin-bottom: var(--space-1);
   }
   .footer-col a,
   .footer-col p {
-    font-size: 0.72rem;
-    margin-bottom: 0.25rem;
+    font-size: var(--fs-1);
+    margin-bottom: var(--space-1);
   }
   .site-footer-base-inner {
     flex-direction: column;
@@ -380,12 +444,25 @@
   }
 }
 
-/* ── brand ──────────────────────────────────────────────────── */
+/* ── brand (로고) ───────────────────────────────────────────── */
 .brand {
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: var(--text);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--fs-3);
+  font-weight: var(--fw-strong);
+  color: var(--ink);
   text-decoration: none;
+}
+
+@media (hover: hover) {
+  .brand:hover {
+    background: var(--select);
+    color: var(--on-select);
+  }
+}
+
+.brand:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
 }
 
 /* ── account menu (header disclosure dropdown) ────────────────
@@ -396,56 +473,47 @@
   position: relative;
 }
 
-/* 눈에 보이는 30px 원 바깥에 44px 탭 타깃을 둔다. .hscroll-btn의
-   ::before 기법과 같은 비율이지만, 원 안에 이니셜 글자를 넣어야 해서
-   가상 요소 대신 실제 자식 요소를 쓴다. */
+/* 1px 테두리 정사각 버튼. 안의 .account-mark는 이니셜 글자만 담는다. */
 .account-menu-toggle {
-  width: 44px;
-  height: 44px;
+  min-width: var(--hit-md);
+  min-height: var(--hit-md);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
+  background: var(--surface);
+  color: var(--ink);
+  border: var(--bw-1) solid var(--ink);
+  font-family: inherit;
   cursor: pointer;
 }
 
-.account-menu-toggle:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
-}
-
 .account-mark {
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--border-soft);
-  border-radius: 50%;
-  background: var(--bg-soft);
-  color: var(--text);
-  font-size: 0.85rem;
-  font-weight: 700;
-  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+  color: inherit;
+  font-size: var(--fs-2);
+  font-weight: var(--fw-regular);
+  line-height: 1;
 }
 
-.account-menu-toggle:hover .account-mark,
-.account-menu-toggle:focus-visible .account-mark,
-.account-menu-toggle[data-expanded="true"] .account-mark {
-  border-color: var(--brand);
-  background: var(--brand-soft);
-  color: var(--brand-ink); /* --brand는 흰 배경 글자로 쓰기엔 대비가 부족하다 */
+.account-menu-toggle[data-expanded="true"] {
+  background: var(--select);
+  color: var(--on-select);
 }
 
+@media (hover: hover) {
+  .account-menu-toggle:hover {
+    background: var(--select);
+    color: var(--on-select);
+  }
+}
+
+/* 떠 있는 패널 — 이중선 테두리 + 단단한 오프셋 그림자(창에는 쓰지 않는다). */
 .account-menu-panel {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + var(--space-1));
   right: 0;
   z-index: 30;
-  min-width: 11rem;
+  min-width: 14rem;
   /* 최대 너비를 안 두면 안 끊기는 이메일 주소 때문에 패널이 한없이
      넓어진다 — right:0 기준이라 왼쪽으로 커지면서 좁은 화면에서 뷰포트
      밖으로 나갈 수 있다. */
@@ -453,56 +521,69 @@
   display: flex;
   flex-direction: column;
   background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 10px;
+  border: var(--bw-1) solid var(--ink);
   box-shadow: var(--shadow-dropdown);
-  padding: 0.5rem;
+  padding: var(--space-2) 0;
 }
 
 .account-menu-panel[hidden] {
   display: none;
 }
 
+.account-menu-panel .topbar-logout-form {
+  display: block;
+  width: 100%;
+}
+
 .account-menu-nickname {
-  margin: 0.25rem 0.75rem 0;
-  color: var(--text);
-  font-size: 0.82rem;
-  font-weight: 700;
+  margin: 0;
+  padding: 0 var(--space-3);
+  color: var(--ink);
+  font-size: var(--fs-2);
+  font-weight: var(--fw-regular);
   overflow-wrap: break-word;
 }
 
 .account-menu-email {
-  margin: 0.25rem 0.75rem 0.5rem;
-  color: var(--muted);
-  font-size: 0.82rem;
+  margin: 0;
+  padding: 0 var(--space-3);
+  color: var(--ink-2);
+  font-size: var(--fs-1);
   overflow-wrap: break-word;
 }
 
 .account-menu-divider {
-  margin: 0.375rem 0;
+  margin: var(--space-2) 0;
   border: none;
-  border-top: 1px solid var(--line);
+  border-top: var(--bw-1) solid var(--rule);
 }
 
 .account-menu-item {
   display: flex;
   align-items: center;
   width: 100%;
-  min-height: 44px;
-  padding: 0.5rem 0.75rem;
+  min-height: var(--hit-md);
+  padding: 0 var(--space-3);
   border: none;
-  border-radius: 6px;
   background: transparent;
-  color: var(--text);
+  color: var(--ink);
   font-family: inherit;
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: var(--fs-2);
+  font-weight: var(--fw-regular);
   text-align: left;
   text-decoration: none;
   cursor: pointer;
+  outline-offset: -2px;
 }
 
-.account-menu-item:hover {
-  background: var(--brand-soft);
-  color: var(--brand-ink);
+@media (hover: hover) {
+  .account-menu-item:hover {
+    background: var(--select);
+    color: var(--on-select);
+  }
+}
+
+.account-menu-item:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
 }

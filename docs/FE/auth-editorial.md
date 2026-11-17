@@ -107,8 +107,11 @@ help_text 행을 렌더하지 않는다 → 또 하나의 끊긴 참조.
 정의했을 뿐이다. 직전 트랙 기록(`account-settings-editorial.md` G4)은 `--border-strong`과
 bare `--mint` 2종만 잡아뒀다.
 
-이 저장소의 3색 팔레트는 **brand / rose / mint**뿐이다. 시안의 `--accent`(「내 활동」
-tick)는 `--mint-ink`로 간다.
+이력: 이 문서를 쓴 2026-07-31에는 저장소의 3색 팔레트가 brand / rose / mint뿐이었고
+시안의 `--accent`(「내 활동」 tick)는 `--mint-ink`로 갔다. 트랙 58에서 세 팔레트가 삭제돼
+(`docs/FE/design-principles.md` ⑩(b)) 지금 인증 화면의 색 역할은 `--ink`·`--ink-2`·`--rule`·
+`--select`·`--link`·`--error`뿐이다. `--accent`가 저장소에 없다는 사실은 그대로다
+`[실측 rg "var\(--accent" static templates 2026-11-17, 0건]` — 새 토큰을 만들지 마라.
 
 ## A4 G1(제출 가드가 버튼 `name`을 먹는 결함)은 이 12화면에서 성립하지 않는다
 
@@ -141,12 +144,13 @@ password_reset_from_key 2 · password_set 2 · socialaccount/signup 2 =
 수이며 **단위가 뒤바뀐 것**이다. 이번 트랙에서 두 곳을 정정했다
 (`docs/FE/account-settings-editorial.md`, `_account_settings_field.html` 주석).
 
-## A6 오류는 rose, 정체성은 brand — 시안의 blanket 브랜드-레드를 쓰지 않는다
+## A6 오류는 오류 색 하나로 — 시안의 blanket 브랜드-레드를 쓰지 않는다
 
 직전 트랙(PR #264)에서 사용자가 확정한 G4를 승계한다. `.auth-error-banner`는
-`account_settings.css`의 `.account-settings-error-banner`와 같은 레시피
-(`--rose-border` 테두리 + `--rose-soft` 배경 + `--rose-ink` 글자)다. 시안의 위아래
-테두리만 있는 밴드와 `✦` 마커는 채택하지 않았다 — 계정 영역 오류 문법을 하나로 유지한다.
+`account_settings.css`의 `.account-settings-error-banner`와 같은 레시피다. 이력: 2026-07-31에는
+`--rose-border` 테두리 + `--rose-soft` 배경 + `--rose-ink` 글자였다. 트랙 58 이후는 1px `--error`
+테두리 + 표면 배경 + `--error` 글자다 `[코드 auth.css:167-174, account_settings.css:124-131]`.
+시안의 위아래 테두리만 있는 밴드와 `✦` 마커는 채택하지 않았다 — 계정 영역 오류 문법을 하나로 유지한다.
 
 ⚠️ **`login.html`의 고정 오류 문구를 보존하라.** allauth 원문 대신 「이메일 또는
 비밀번호가 올바르지 않습니다.」를 쓰는 것은 **어느 쪽이 틀렸는지 알려주지 않기 위한
@@ -173,7 +177,9 @@ password_reset_from_key 2 · password_set 2 · socialaccount/signup 2 =
 
 좌패널 우하단 `✦`는 `position:absolute`에 11.875rem(190px)이라 **패널 경계를 넘는다**.
 `[실측]` 753px에서 글리프 우변 302px vs 패널 우변 285px — 17px 초과.
-`.auth-panel-declare { overflow: hidden }`가 잘라내므로 페이지 가로 스크롤은 0px다.
+`.auth-panel-declare { overflow: hidden }`(`auth.css:47-53`)가 잘라내므로 페이지 가로 스크롤은 0px다.
+이력: 위 17px 초과 실측은 글리프 11.875rem 시절 값이다. 트랙 58 이후 글리프는 6rem(96px)이고 창 안쪽
+`right: 1rem; bottom: 0.5rem`에 놓인다 `[코드 auth.css:94-104]`. 경계를 넘는지는 이번에 다시 재지 않았다.
 
 **그 `overflow:hidden`을 제거하지 마라.** 제거하면 태블릿 구간에서 가로 스크롤이 생긴다.
 
@@ -189,7 +195,7 @@ password_reset_from_key 2 · password_set 2 · socialaccount/signup 2 =
 ## A11 검증 한계 (다음 작업자가 알아야 할 것)
 
 `[실측 2026-07-31]` 브라우저로 확인한 것: 로그인·회원가입·재설정·재설정 발송 화면,
-오류 상태 2종, 320/768/1040/1280 뷰포트, 라이트·다크.
+오류 상태 2종, 320/768/1040/1280 뷰포트, 라이트·다크(이력: 다크 모드는 트랙 56에서 삭제돼 지금은 라이트뿐이다).
 
 **확인하지 못한 것**:
 - `password_set`, `password_reset` 인증 분기 — standalone 카드 2화면. 브라우저 도달에
@@ -267,13 +273,16 @@ axes가 가로채고, 이후에는 인증 백엔드가 거부한 것을 allauth�
 
 ### 카드의 `overflow:hidden`은 모바일 폼 패딩과 한 쌍이다
 
-둥근 모서리를 위해 `.auth-shell{overflow:hidden}`을 쓴다(패널마다 `border-radius`를
-주는 대신 부모가 잘라낸다). 그래서 **모바일 `.auth-panel-form`의 가로 패딩을 0으로
-만들면 안 된다** — 입력창이 카드 경계에 붙어 포커스 링이 잘린다.
+이력: 이 서술은 2026-08-17 구조다. 지금은 `.auth-shell`에 `overflow: hidden`도 `border-radius`도 없고
+(`auth.css:21-26`), 폼 창과 안내 창이 각각 `.window`(3px 이중선)다. 그때는 둥근 모서리를 위해
+`.auth-shell{overflow:hidden}`을 썼다(패널마다 `border-radius`를 주는 대신 부모가 잘라냈다). 그래서 그때는 **모바일 `.auth-panel-form`의 가로 패딩을 0으로
+만들면 안 됐다** — 입력창이 카드 경계에 붙어 포커스 링이 잘렸다.
 `[코드]` 이 파일의 최대 링 확장은 4px(`outline 2px` + `outline-offset 2px`)이고
-현재 여유는 `[실측]` 17px(패딩 1rem + 테두리 1px)이다.
+당시 여유는 `[실측]` 17px(패딩 1rem + 테두리 1px)였다.
 `var(--page-pad-x)` 대신 리터럴 `1rem`을 쓴 것은 이 값이 바깥 여백이 아니라
-**링 여유**라는 뜻을 남기기 위해서다.
+**링 여유**라는 뜻을 남기기 위해서였다. 지금은 부모의 `overflow:hidden`이 없어 이 가드레일의
+전제가 사라졌고, 폼 창의 모바일 패딩은 공용 `.window`가 정한다 `[코드 cards.css:103-105]`.
+링이 창 테두리 밖으로 나가는지는 이번에 다시 재지 않았다.
 
 ### 고정폭 열은 좁은 컨테이너에서 제로섬이 된다 (A1의 재발)
 
@@ -310,12 +319,16 @@ h2가 `그대들의 / 덕질 / 라이프를 / 위하여` 4줄로 깨지고(A1이
 (`padding-bottom: 5rem` 80 + `.site-footer{margin-top: 2.5rem}` 40)로 비대칭이라
 카드가 넓은 빈 들판에 떠 있는 섬처럼 보였다(사용자 지적, 2026-08-17).
 
-12화면은 `<main class="page auth-page" id="content">`이고 `auth.css`가 덮는다:
+12화면은 `<main class="page auth-page" id="content">`이고 `auth.css`가 덮는다
+`[코드 auth.css:10-17]`:
 
 ```css
-.auth-page { padding-bottom: 1.625rem; }
+.auth-page { padding-top: var(--space-5); padding-bottom: 1.625rem; }
 .auth-page + .site-footer { margin-top: 0; }
 ```
+
+트랙 58에서 위 패딩이 더해졌다(창 제목이 테두리 위로 반 줄 올라와서다). ≤45rem에서는
+`padding-top: var(--space-3)`다 `[코드 auth.css:425-428]`.
 
 ⚠️ **`page` 클래스를 지우고 `auth-page`만 남기지 마라.** `page`가
 `max-width: 1120px`와 가로 `--page-pad-x`를 담당한다 — 빼면 풀블리드 결함이 되살아난다.

@@ -79,6 +79,12 @@ else 분기와 테스트 상수 `_SHELL_CSS_RELATIVE_PATHS`를 **함께** 갱신
 --output <tmp> 후 wc -c·gzip -9 -c <tmp> | wc -c]`(작성 당시 67,401B·18,908B,
 2026-10-27 측정 70,786B·19,833B에서 디자인 토큰 변경으로 줄었다).
 
+트랙 58(DOS 시안 적용) 뒤 재측정: 번들 원본 75,579B·`gzip -9` 18,794B·brotli 16,079B
+`[실측 2026-11-17 uv run python manage.py bundle_shell_css --output <tmp> 후 파이썬 len·gzip.compress(…, 9)·brotli.compress(…) 기본 품질]`.
+원본은 트랙 43 값 70,608B보다 4,971B 크다 `[계산 75,579 − 70,608]`. 원인은 분해하지 않았다.
+오케스트레이터가 잰 brotli 값은 16,110B였고 원본·gzip은 같았다 `[문서 오케스트레이터 보고 2026-11-17]`.
+brotli 31B 차이는 압축 파라미터 차이로 보이나 확인하지 못했다.
+
 ## 검증 근거
 
 전체 회귀 2323 passed(작성 당시 `[실측 2026-08-29]`). 계약 테스트(`tests/core/test_shell_css_bundle.py`)로

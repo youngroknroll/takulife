@@ -1,27 +1,20 @@
-/* /collection/ 페이지 전용 CSS. 디자인 출처: claude.ai design "컬렉션 페이지 (에디토리얼).dc.html".
+/* /collection/ 쪽 전용 CSS (DOS 형태). 이 파일은 /collection/new/·수정 쪽도 읽는다.
 
    archive_visits.css를 쓰지 않고 .collection-page로 전부 스코프한다 — 그 파일은
-   템플릿 8곳이 공유해 로드 순서에 따라 스타일이 새어나온 전례가 있고,
-   `.panel h2`가 특이도 (0,1,1)라 모든 제목을 16px로 고정해버리는 함정도 있다.
+   템플릿 여러 곳이 공유해 로드 순서에 따라 스타일이 새어나온 전례가 있다.
 
-   디자인 문서의 --accent/--accent-ink는 tokens.css에 없는 이름이라 같은 값인
-   --brand/--brand-ink로 옮겨 썼다.
+   바탕 위에는 h1·통계·탭·검색·추가 버튼만 두고(각자 자기 표면 + 1px 테두리),
+   필터 두 개와 결과는 창(.window)이다. 시리즈(작품) 색은 작품별 점에만 쓴다.
+   수정·삭제 버튼이 든 행·카드는 행 반전을 쓰지 않고 제목 링크만 반전한다. */
 
-   터치 타겟은 기본 44px이고, 검색창(34/40px)과 작품별 목록(36px)만 저장소
-   공통 관례를 따라 예외로 뒀다. 전부 WCAG 2.5.8 24px 기준은 넘는다. */
-
-/* ── page head: title + stats left, view toggle centered, add button right
-   ──────────────────────────────────────────────────────────────────────── */
-/* `1fr auto 1fr`로 짜서 토글은 시각적으로 중앙에 있으면서도 제목 칸이 최소
-   너비를 확보해 320px에서 겹치지 않는다. */
+/* ── 쪽 머리: 제목+통계 왼쪽, 보기 토글 가운데, 추가 버튼 오른쪽 ───── */
+/* `1fr auto 1fr`라 토글이 가운데에 있으면서 제목 칸이 최소 너비를 지킨다. */
 .collection-page .collection-head {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: end;
-  gap: 1rem;
-  padding-bottom: 1.125rem;
+  gap: var(--space-3);
   margin-bottom: 0;
-  border-bottom: 2px solid var(--text);
 }
 
 /* 열 번호를 직접 지정한다 — 컬렉션이 비어 토글이 사라지면 자동 배치가
@@ -38,165 +31,106 @@
 }
 
 .collection-page .collection-head-title h1 {
-  margin: 0 0 0.375rem;
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: var(--text);
+  margin: 0 0 var(--space-1);
+  font-size: var(--fs-5);
 }
 
-/* 숫자마다 색을 다르게 입히고, 구분선은 마크업 없이 ::before로만 그린다. */
+/* 통계는 색·굵기 없는 글자다. 구분선은 마크업 없이 ::before로만 그린다. */
 .collection-page .collection-stats {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.5rem 1.375rem;
+  gap: var(--space-2) var(--space-4);
   margin: 0;
 }
 .collection-page .collection-stat {
   display: inline-flex;
   align-items: baseline;
-  gap: 0.4375rem;
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 700;
+  gap: var(--space-1);
+  color: var(--ink-2);
+  font-size: var(--fs-2);
+  font-weight: var(--fw-regular);
 }
 .collection-page .collection-stat + .collection-stat::before {
   content: "";
   align-self: center;
-  width: 1px;
+  width: var(--bw-1);
   height: 1.125rem;
-  margin-right: 0.9375rem;
-  background: var(--line);
+  margin-right: var(--space-3);
+  background: var(--rule);
 }
 .collection-page .collection-stat b {
-  font-size: 1.625rem;
-  font-weight: 800;
+  color: var(--ink);
+  font-size: var(--fs-4);
+  font-weight: var(--fw-regular);
   font-variant-numeric: tabular-nums;
-  line-height: 1.1;
-}
-.collection-page .collection-stat--owned b {
-  color: var(--mint-ink);
-}
-.collection-page .collection-stat--wanted b {
-  color: var(--amber-ink);
-}
-.collection-page .collection-stat--trade b {
-  color: var(--up-ink);
+  line-height: var(--lh-tight);
 }
 
 .collection-page .collection-head-actions {
   justify-self: end;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
+/* 주 버튼: 표면 + 2px 테두리. 바탕 위라 자기 표면을 가진다. */
 .collection-page .collection-add-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
-  padding: 0 1.25rem;
-  border-radius: 10px;
-  background: var(--brand);
-  color: #fff;
-  font-weight: 700;
-  font-size: 0.875rem;
+  min-height: var(--hit-md);
+  padding: 0 var(--space-3);
+  background: var(--surface);
+  color: var(--ink);
+  border: var(--bw-2) solid var(--ink);
+  font-size: var(--fs-2);
   text-decoration: none;
   white-space: nowrap;
 }
-.collection-page .collection-add-btn:hover {
-  background: var(--brand-ink);
-}
 
-/* ── view toggle: 갤러리/목록 — underlined text, not a segmented box ─── */
-/* ＋굿즈 추가와 무게가 겹치지 않도록 서브탭과 같은 밑줄 방식을 쓴다.
-   세로 정렬도 masthead 행의 다른 요소와 같은 기준선을 공유한다. */
+/* ── 보기 토글(목록|갤러리)·하위 탭: 1px 테두리 칸, 현재 = 반전 ───── */
 .collection-page .collection-view-toggle {
   align-self: end;
   display: flex;
-  gap: 1rem;
+  gap: var(--space-1);
 }
-.collection-page .collection-view-btn {
+.collection-page .collection-view-btn,
+.collection-page .collection-tab {
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
-  padding-bottom: 0.1875rem;
-  border-bottom: 2px solid transparent;
-  color: var(--muted);
-  font-size: 0.9375rem;
-  font-weight: 600;
+  min-height: var(--hit-md);
+  padding: 0 var(--space-3);
+  background: var(--surface);
+  color: var(--ink);
+  border: var(--bw-1) solid var(--ink);
+  font-size: var(--fs-2);
   text-decoration: none;
   white-space: nowrap;
 }
-.collection-page .collection-view-btn {
-  transition: color 0.15s ease;
-}
-/* 활성 항목도 이미 brand-ink라 hover와 색이 같아 보이지만, 상태를 나타내는
-   건 색이 아니라 밑줄과 굵기라서 문제되지 않는다. */
-.collection-page .collection-view-btn:hover {
-  color: var(--brand-ink);
-}
-@media (prefers-reduced-motion: reduce) {
-  .collection-page .collection-view-btn {
-    transition: none;
-  }
-}
-.collection-page .collection-view-btn.is-active {
-  color: var(--brand-ink);
-  font-weight: 700;
-  border-bottom-color: var(--brand);
+.collection-page .collection-view-btn.is-active,
+.collection-page .collection-tab.is-active {
+  background: var(--select);
+  color: var(--on-select);
+  border-color: var(--select);
 }
 
-/* ── toolbar: sub-tabs left, search right, one hairline rail ─────────── */
-/* .visit-filter-chip(템플릿 8곳이 공유하는 36px 클래스)를 쓰지 않고 이
-   페이지 전용 클래스를 새로 둔다. */
+/* ── 툴바: 하위 탭 왼쪽, 검색 오른쪽 ────────────────────────────── */
 .collection-page .collection-toolbar {
   display: flex;
   align-items: center;
-  gap: 0.125rem;
-  margin-top: 1.125rem;
-  margin-bottom: 1.25rem;
-  border-bottom: 1px solid var(--line);
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 .collection-page .collection-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.125rem;
+  gap: var(--space-1);
   min-width: 0;
 }
-.collection-page .collection-tab {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  padding: 0.5rem 0.8125rem;
-  color: var(--muted);
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-decoration: none;
-  white-space: nowrap;
-}
-.collection-page .collection-tab {
-  transition: color 0.15s ease;
-}
-/* --text는 활성 탭의 색이라 hover에 쓰면 활성 탭과 구별이 안 된다.
-   그래서 hover는 --brand-ink로 따로 둔다. */
-.collection-page .collection-tab:hover {
-  color: var(--brand-ink);
-}
-@media (prefers-reduced-motion: reduce) {
-  .collection-page .collection-tab {
-    transition: none;
-  }
-}
-.collection-page .collection-tab.is-active {
-  color: var(--text);
-  font-weight: 700;
-  box-shadow: inset 0 -2px 0 var(--brand);
-}
 
-/* 탭(44px)보다 검색창을 일부러 낮게(34px) 둬서 위계를 구분한다. 지우기
-   링크는 흐름 밖에 둬 나타나도 레일 높이가 바뀌지 않게 한다. */
+/* 지우기 링크는 흐름 밖에 둬 나타나도 툴바 높이가 바뀌지 않게 한다. */
 .collection-page .archive-search {
   position: relative;
   margin: 0 0 0 auto;
@@ -206,73 +140,99 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: 0.375rem;
+  gap: var(--space-2);
 }
 .collection-page .collection-search-icon {
   position: absolute;
-  left: 0.875rem;
+  left: var(--space-2);
   top: 50%;
   transform: translateY(-50%);
-  color: var(--muted);
-  font-size: 0.875rem;
+  color: var(--ink-2);
+  font-size: var(--fs-2);
   line-height: 1;
   pointer-events: none;
 }
 .collection-page .archive-search input[type="search"] {
-  width: 13.75rem;
-  height: 34px;
-  padding: 0 0.875rem 0 2.125rem;
-  border: 1px solid var(--border-soft);
-  border-radius: 8px;
+  width: 14rem;
+  min-height: var(--hit-md);
+  padding: 0 var(--space-2) 0 var(--space-5);
+  border: var(--bw-1) solid var(--ink);
   background: var(--surface);
-  color: var(--text);
-  font-size: 0.8125rem;
+  color: var(--ink);
+  font-size: var(--fs-2);
 }
 .collection-page .archive-search input[type="search"]::placeholder {
-  color: var(--muted);
+  color: var(--ink-2);
 }
 /* JS 없이도 동작하는 GET 폼이라 제출 버튼이 실제로 필요해 눈에 보이게 뒀다. */
 .collection-page .archive-search button[type="submit"] {
   flex: none;
-  height: 34px;
-  padding: 0 0.875rem;
-  border: 1px solid var(--brand);
-  border-radius: 8px;
-  background: var(--brand);
-  color: #fff;
-  font-size: 0.8125rem;
-  font-weight: 600;
+  min-height: var(--hit-md);
+  padding: 0 var(--space-3);
+  border: var(--bw-1) solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-2);
   white-space: nowrap;
   cursor: pointer;
 }
-.collection-page .archive-search button[type="submit"]:hover {
-  background: var(--brand-ink);
-  border-color: var(--brand-ink);
-}
 .collection-page .archive-search-clear {
   position: absolute;
-  top: calc(100% + 0.25rem);
+  top: calc(100% + var(--space-1));
   right: 0;
-  font-size: var(--fs-xs);
-  color: var(--muted);
+  font-size: var(--fs-1);
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 
-/* ── layout: facet sidebar + results ────────────────────────────────── */
-/* 데스크톱 왼쪽 열은 grid 배치로만 조립한다 — DOM 순서(유형→작품별→결과)가
-   좁은 화면 순서와 같아서 순서를 바꿀 필요가 없고 탭 순서도 항상 화면과
-   맞는다. `order`는 탭 순서를 안 옮기고(WCAG 2.4.3 위반), `display:contents`는
-   접근성 트리에서 랜드마크가 사라져 둘 다 쓰지 않는다.
+/* hover 반전은 hover 가능한 기기에서만 켠다. 포커스는 전역 링 + 같은 반전. */
+@media (hover: hover) {
+  .collection-page .collection-add-btn:hover,
+  .collection-page .archive-search button[type="submit"]:hover {
+    background: var(--select);
+    color: var(--on-select);
+    border-color: var(--select);
+  }
+  .collection-page .collection-view-btn:not(.is-active):hover,
+  .collection-page .collection-tab:not(.is-active):hover {
+    background: var(--select);
+    color: var(--on-select);
+    border-color: var(--select);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+  .collection-page .archive-search-clear:hover {
+    background: var(--select);
+    color: var(--on-select);
+    text-decoration: none;
+  }
+}
+.collection-page .collection-add-btn:focus-visible,
+.collection-page .archive-search button[type="submit"]:focus-visible,
+.collection-page .collection-view-btn:focus-visible,
+.collection-page .collection-tab:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+  border-color: var(--select);
+}
+.collection-page .archive-search-clear:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+  text-decoration: none;
+}
 
-   행을 `auto 1fr`로 둔 이유: #archive-results가 두 행에 걸치는데 auto를
-   두 번 쓰면 그 높이가 반씩 나뉘어 작품별이 유형에서 멀리 밀려난다.
-   1행을 content 높이로 고정해야 여유 공간이 전부 2행으로 간다.
-
-   이 56.25rem 접힘은 아래 갤러리 열 브레이크포인트와 별개다. */
+/* ── 레이아웃: 왼쪽 필터 창 둘 + 결과 창 ─────────────────────────── */
+/* 왼쪽 열은 grid 배치로만 조립한다 — DOM 순서(유형→작품별→결과)가 좁은 화면
+   순서와 같아서 순서를 바꿀 필요가 없고 탭 순서도 항상 화면과 맞는다.
+   `order`는 탭 순서를 안 옮기고 `display:contents`는 랜드마크를 없애 쓰지 않는다.
+   행을 `auto 1fr`로 둔 이유: 결과가 두 행에 걸쳐도 1행을 내용 높이로
+   고정해야 여유 공간이 전부 2행으로 가 작품별이 유형에서 멀리 밀리지 않는다. */
 .collection-page .layout {
   display: grid;
-  grid-template-columns: minmax(180px, 232px) minmax(0, 1fr);
+  grid-template-columns: 13rem minmax(0, 1fr);
   grid-template-rows: auto 1fr;
-  gap: 1.75rem;
+  gap: var(--space-4);
   align-items: start;
 }
 .collection-page .collection-facet-group--type {
@@ -282,56 +242,58 @@
 .collection-page #archive-results {
   grid-column: 2;
   grid-row: 1 / span 2;
+  min-width: 0;
 }
 .collection-page .collection-facet-group--work {
   grid-column: 1;
   grid-row: 2;
-  padding-top: 0.9375rem;
-  border-top: 1px solid var(--line);
+}
+
+/* 창 안 소제목(창 제목이 아니라 무제목 창 안의 구획 제목) */
+.collection-page .collection-facet-group h2 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--fs-3);
+  font-weight: var(--fw-regular);
+  color: var(--ink);
+}
+
+/* 작품별 접기 토글은 좁은 화면 전용이다. 서버가 기본으로 내려주는
+   data-expanded="false"가 데스크톱 목록을 숨기지 않게 접힘 규칙도 아래
+   미디어쿼리 안에만 둔다. */
+.collection-page .series-toggle {
+  display: none;
 }
 
 @media (max-width: 56.25rem) {
   .collection-page .layout {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto;
+    gap: var(--space-3);
   }
-  /* 자식들을 전부 자동 배치로 되돌려 한 열이 DOM 순서(유형→작품별→결과)를
-     따르게 한다. 그대로 두면 위 데스크톱 배치가 사라진 열 2를 계속 요구한다. */
+  /* 자식들을 자동 배치로 되돌려 한 열이 DOM 순서를 따르게 한다. */
   .collection-page .collection-facet-group--type,
   .collection-page #archive-results,
   .collection-page .collection-facet-group--work {
     grid-column: 1;
     grid-row: auto;
   }
-  /* 작품별은 접힌 텍스트 토글이 돼 기본 상태에서 목록 전체 대신 한 줄만 차지한다. */
-  .collection-page .collection-facet-group--work {
-    padding-top: 0;
-    margin-top: 0.125rem;
-    border-top: 0;
-  }
   .collection-page .collection-facet-group--work h2 {
     display: none;
   }
-  /* `.collection-facet-group--work` 한정자를 빼면 안 된다 — 뒤에 나오는
-     기본 `.series-toggle { display: none }`이 특이도가 같아 미디어쿼리
-     안에서도 나중 규칙이 이겨 토글이 모든 너비에서 숨는다. */
+  /* 토글은 창 안 한 줄이다. 열림 상태는 오른쪽 ▾/▴ 글자가 나타낸다. */
   .collection-page .collection-facet-group--work .series-toggle {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 0.25rem;
-    padding: 2px 0;
+    justify-content: space-between;
+    width: 100%;
+    min-height: var(--hit-md);
+    padding: 0;
     border: 0;
     background: none;
-    color: var(--muted);
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.02em;
+    color: var(--ink);
+    font-size: var(--fs-3);
     cursor: pointer;
   }
-  .collection-page .series-toggle-arrow {
-    font-weight: 600;
-  }
-  /* 화살표는 data-expanded 값으로 CSS가 바꾼다 — JS로 텍스트를 다시 쓰지 않는다. */
   .collection-page [data-expanded="false"] .series-toggle-arrow[data-state="open"],
   .collection-page [data-expanded="true"] .series-toggle-arrow[data-state="closed"] {
     display: none;
@@ -339,47 +301,25 @@
   .collection-page [data-expanded="false"] .collection-work-list {
     display: none;
   }
+  /* 접힌 창은 토글 한 줄뿐이라 위아래 패딩을 0으로 둔다. */
+  .collection-page .collection-facet-group--work[data-expanded="false"] {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
   .collection-page [data-expanded="true"] .collection-work-list {
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
-    gap: 0.375rem;
-    margin-top: 0.5625rem;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
   }
-  /* 칩 형태라 개수를 이름 바로 뒤에 붙인다. 여기 셀렉터마다
-     `.collection-facet-group--work` 조상을 붙인 이유는 위와 같다 — 없으면
-     뒤에 나오는 데스크톱 기본 규칙이 특이도 동률로 이겨버린다. */
+  /* 칩 형태라 개수를 이름 바로 뒤에 붙인다. */
   .collection-page .collection-facet-group--work .collection-work-link {
-    min-height: 0;
-    gap: 0.375rem;
-    padding: 0.3125rem 0.6875rem;
-    border: 1px solid var(--border-soft);
-    border-radius: 999px;
-    background: var(--bg-soft);
-    color: var(--text);
-    font-size: 0.72rem;
-    font-weight: 600;
-  }
-  /* 칩의 기본 배경이 이미 --bg-soft라 데스크톱 hover와 같은 색을 쓰면
-     변화가 안 보인다. 그래서 --surface로 올리고 테두리를 brand로 바꾼다. */
-  .collection-page .collection-facet-group--work .collection-work-link {
-    transition: background-color 0.15s ease, border-color 0.15s ease;
-  }
-  .collection-page .collection-facet-group--work .collection-work-link:hover {
-    background: var(--surface);
-    border-color: var(--brand);
-  }
-  .collection-page .collection-facet-group--work .collection-work-link.is-active {
-    border-color: var(--brand);
-    box-shadow: none;
-  }
-  .collection-page .collection-facet-group--work .collection-work-link.is-active:hover {
-    background: var(--brand-soft);
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .collection-page .collection-facet-group--work .collection-work-link {
-      transition: none;
-    }
+    min-height: var(--hit-md);
+    gap: var(--space-2);
+    padding: 0 var(--space-3);
+    border: var(--bw-1) solid var(--ink);
+    font-size: var(--fs-2);
   }
   .collection-page .collection-facet-group--work .collection-work-title {
     flex: 0 1 auto;
@@ -389,113 +329,111 @@
   .collection-page .collection-facet-group--work .collection-work-count {
     margin-left: 0;
   }
-  .collection-page .collection-facet-group--work .series-dot {
-    width: 7px;
-    height: 7px;
+}
+
+@media (hover: hover) {
+  .collection-page .series-toggle:hover {
+    background: var(--select);
+    color: var(--on-select);
   }
 }
-
-/* ── 작품별 disclosure toggle — narrow widths only ──────────────────── */
-/* 데스크톱은 목록을 항상 펼쳐두므로 토글/접힘 규칙은 좁은 화면 미디어쿼리
-   안에만 둔다. 그래야 서버가 기본으로 내려주는 data-expanded="false"가
-   되돌릴 수단이 없는 데스크톱을 숨기는 일이 없다. */
-.collection-page .series-toggle {
-  display: none;
+.collection-page .series-toggle:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
 }
 
-.collection-page .collection-facet-group h2 {
-  margin: 0 0 0.5625rem;
-  font-size: 0.6875rem;
-  font-weight: 800;
-  letter-spacing: 0.07em;
-  color: var(--muted);
-}
-
-/* ── type chips: pills, filled-brand when active ────────────────────── */
-/* 활성 상태는 색뿐 아니라 채움·굵기도 함께 바뀌어 색에만 의존하지 않는다. */
+/* ── 유형 칩: 1px 테두리 칸, 현재 = 반전 ──────────────────────────── */
 .collection-page .collection-type-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.375rem;
+  gap: var(--space-2);
 }
 .collection-page .collection-type-chip {
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
-  padding: 0 1rem;
-  border-radius: 999px;
-  border: 1px solid var(--border-soft);
+  min-height: var(--hit-md);
+  padding: 0 var(--space-3);
+  border: var(--bw-1) solid var(--ink);
   background: var(--surface);
-  color: var(--text);
-  font-size: 0.8125rem;
-  font-weight: 600;
+  color: var(--ink);
+  font-size: var(--fs-2);
   text-decoration: none;
 }
-/* 작품별 칩과 같은 hover 방식이지만 기본 배경이 서로 반대(--surface ↔
-   --bg-soft)라 변화가 보이도록 서로의 톤으로 바뀐다. */
-.collection-page .collection-type-chip {
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+.collection-page .collection-type-chip.is-active {
+  border-color: var(--select);
+  background: var(--select);
+  color: var(--on-select);
 }
-.collection-page .collection-type-chip:hover {
-  background: var(--bg-soft);
-  border-color: var(--brand);
-}
-.collection-page .collection-type-chip.is-active:hover {
-  background: var(--brand-ink);
-  border-color: var(--brand-ink);
-}
-@media (prefers-reduced-motion: reduce) {
-  .collection-page .collection-type-chip {
-    transition: none;
+@media (hover: hover) {
+  .collection-page .collection-type-chip:not(.is-active):hover {
+    border-color: var(--select);
+    background: var(--select);
+    color: var(--on-select);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
   }
 }
-.collection-page .collection-type-chip.is-active {
-  border-color: var(--brand);
-  background: var(--brand);
-  color: #fff;
-  font-weight: 700;
+.collection-page .collection-type-chip:focus-visible {
+  border-color: var(--select);
+  background: var(--select);
+  color: var(--on-select);
 }
 
-/* ── work-title facet list ──────────────────────────────────────────── */
-/* 촘촘한 색인이라 이 페이지 다른 곳의 44px 대신 36px 행을 쓴다.
-   WCAG 2.5.8 24px 기준은 넘는다. */
+/* ── 작품별 목록: 단선 행, 현재·hover·포커스 = 반전 행 ────────────── */
 .collection-page .collection-work-list {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.125rem;
+}
+.collection-page .collection-work-list li + li {
+  border-top: var(--bw-1) solid var(--rule);
 }
 .collection-page .collection-work-link {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  min-height: 36px;
-  padding: 0 0.375rem;
-  border-radius: 6px;
-  color: var(--text);
+  gap: var(--space-2);
+  min-height: var(--hit-md);
+  padding: 0 var(--space-1);
+  color: var(--ink);
   text-decoration: none;
-  font-size: 0.8125rem;
+  font-size: var(--fs-2);
 }
-.collection-page .collection-work-link:hover {
-  background: var(--bg-soft);
+.collection-page .collection-work-link.is-active,
+.collection-page .collection-work-link:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
 }
-.collection-page .collection-work-link.is-active {
-  background: var(--bg-soft);
-  box-shadow: inset 2px 0 0 var(--brand);
+.collection-page .collection-work-link:focus-visible {
+  outline-offset: -2px;
+  outline-color: var(--on-select);
 }
-.collection-page .collection-work-link.is-active .collection-work-title {
-  font-weight: 700;
+@media (hover: hover) {
+  .collection-page .collection-work-link:hover {
+    background: var(--select);
+    color: var(--on-select);
+  }
 }
-/* 원이 아닌 각진 점으로 둥근 상태 배지와 구분한다. 색은 카드와 같은
-   .gi-N 버킷을 써서 이 점과 실제 카드가 항상 같은 색을 갖는다. */
+/* 시리즈 색은 이 점에만 쓴다. 반전된 행 안에서는 흰 테두리로 윤곽을 낸다.
+   테두리는 배경 밖으로 빠져 점 크기를 바꾸지 않는다. */
 .collection-page .series-dot {
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 2px;
-  background: var(--series-ink, var(--muted));
   flex: 0 0 auto;
+  width: 0.625rem;
+  height: 0.625rem;
+  border: var(--bw-1) solid transparent;
+  border-radius: 50%;
+  background: var(--series-ink, var(--ink-2));
+  background-clip: padding-box;
+}
+.collection-page .collection-work-link.is-active .series-dot,
+.collection-page .collection-work-link:focus-visible .series-dot {
+  border-color: var(--on-select);
+}
+@media (hover: hover) {
+  .collection-page .collection-work-link:hover .series-dot {
+    border-color: var(--on-select);
+  }
 }
 .collection-page .collection-work-title {
   flex: 1 1 auto;
@@ -503,91 +441,89 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-weight: 600;
 }
 .collection-page .collection-work-count {
   flex: 0 0 auto;
   margin-left: auto;
-  color: var(--muted);
+  color: inherit;
   font-variant-numeric: tabular-nums;
 }
 
-/* ── results header: 전체 N점 ─────────────────────────────────────────── */
-.collection-page .collection-resulthead {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 0.875rem;
-}
-.collection-page .collection-resulthead--list {
-  margin-bottom: 0.375rem;
-}
+/* ── 결과 창: 제목 [ 전체 N점 ] ───────────────────────────────────── */
+/* 결과 제목은 숫자를 span으로 감싸 글자 전체를 테스트가 비교하므로, 대괄호는
+   마크업 대신 CSS로 둔다. 대체 글자를 비워 스크린 리더는 읽지 않는다. */
 .collection-page .collection-resulthead h2 {
-  margin: 0;
-  font-size: 0.9375rem;
-  font-weight: 700;
-  color: var(--text);
+  font-size: var(--fs-3);
 }
-.collection-page .collection-resulthead h2 span {
-  color: var(--brand-ink);
+.collection-page .collection-resulthead h2::before {
+  content: "[ ";
+  content: "[ " / "";
+}
+.collection-page .collection-resulthead h2::after {
+  content: " ]";
+  content: " ]" / "";
 }
 
-/* ── status badges (보유/구함/교환/미보유) — shared shape for card + row ── */
-/* .collection-pill은 배지 자체가 아니라 .collection-pill-tag 1~3개를
-   감싸는 래퍼다(다중 배지 지원). */
+/* ── 상태 배지(보유/구함/교환/미보유): 색이 아니라 테두리 모양으로 구분 ── */
+/* .collection-pill은 배지 낱개(.collection-pill-tag) 1~3개를 감싸는 래퍼다.
+   보유 = 선택색 채움, 구함 = 1px 실선, 교환 = 3px 이중선, 미보유 = 1px 점선.
+   테두리 굵기 차이는 안쪽 여백으로 메워 배지 높이를 28px로 같게 둔다. */
 .collection-page .collection-pill {
   display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.25rem;
+  gap: var(--space-1);
 }
 .collection-page .collection-pill-tag {
   display: inline-flex;
   align-items: center;
-  padding: 0.25rem 0.6875rem;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 700;
+  padding: calc(var(--space-1) / 2) var(--space-2);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-1);
   white-space: nowrap;
 }
 .collection-page .collection-pill-tag.is-owned {
-  background: var(--mint-soft);
-  color: var(--mint-ink);
+  padding: calc(var(--space-1) / 2 + var(--bw-3)) calc(var(--space-2) + var(--bw-3));
+  background: var(--select);
+  color: var(--on-select);
 }
 .collection-page .collection-pill-tag.is-wanted {
-  background: var(--amber-soft);
-  color: var(--amber-ink);
+  padding: calc(var(--space-1) / 2 + var(--bw-3) - var(--bw-1)) calc(var(--space-2) + var(--bw-3) - var(--bw-1));
+  border: var(--bw-1) solid var(--ink);
 }
 .collection-page .collection-pill-tag.is-tradeable {
-  background: var(--up-soft);
-  color: var(--up-ink);
+  border: var(--bw-3) double var(--ink);
 }
 .collection-page .collection-pill-tag.is-none {
-  background: var(--end-soft);
-  color: var(--end-ink);
+  padding: calc(var(--space-1) / 2 + var(--bw-3) - var(--bw-1)) calc(var(--space-2) + var(--bw-3) - var(--bw-1));
+  border: var(--bw-1) dashed var(--rule);
+  color: var(--ink-2);
 }
-/* 커버 위 배지는 배지 자체 배경이 판 역할을 해 따로 판을 두지 않는다.
-   세로로 쌓아 오른쪽 정렬해 3개가 붙어도 타일 밖으로 안 나간다. */
+/* 커버 위 배지는 배지 자체 표면이 판 역할을 한다. 세로로 쌓아 오른쪽 정렬해
+   3개가 붙어도 타일 밖으로 안 나간다. */
+/* 카드·행 링크를 누르는 동안 cards.css가 자식 글자를 흰색으로 만든다.
+   표면 바탕 배지는 글자색을 되돌려 읽히게 한다. */
+.collection-page a:active .collection-pill-tag:not(.is-owned) {
+  color: var(--ink);
+}
+.collection-page a:active .collection-pill-tag.is-none {
+  color: var(--ink-2);
+}
 .collection-page .collection-pill--cover {
   position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
+  top: var(--space-2);
+  right: var(--space-2);
   flex-direction: column;
   align-items: flex-end;
 }
-.collection-page .collection-pill--cover .collection-pill-tag {
-  padding: 0.1875rem 0.5625rem;
-  font-size: 0.66rem;
-}
 
-/* ── gallery grid ───────────────────────────────────────────────────── */
-/* 카드 전체가 아니라 커버 타일에만 테두리를 준다. 카드 전체를 박스로
-   두르면 이전 카드 벽 형태로 되돌아간다. 이 열 개수 브레이크포인트는
-   위 .layout의 56.25rem 접힘과 별개다. */
+/* ── 갤러리 ────────────────────────────────────────────────────── */
+/* 열 개수 브레이크포인트는 위 .layout의 56.25rem 접힘과 별개다. */
 .collection-page .collection-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1.375rem 1.125rem;
+  gap: var(--space-4) var(--space-3);
 }
 @media (max-width: 64rem) {
   .collection-page .collection-grid {
@@ -597,22 +533,22 @@
 @media (max-width: 45rem) {
   .collection-page .collection-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.875rem 0.625rem;
+    gap: var(--space-3) var(--space-2);
   }
 }
 
 .collection-page .collection-card {
   display: flex;
   flex-direction: column;
-  gap: 0.5625rem;
+  gap: var(--space-2);
 }
 
+/* 3:4 사진 타일 비율은 유지한다. */
 .collection-page .gcard-cover {
   position: relative;
   aspect-ratio: 3 / 4;
-  border-radius: 11px;
-  border: 1px solid var(--line);
-  background: var(--bg-soft);
+  border: var(--bw-1) solid var(--rule);
+  background: var(--off);
   overflow: hidden;
 }
 .collection-page .gcard-cover img {
@@ -629,20 +565,15 @@
   align-items: center;
   justify-content: center;
 }
+/* 시리즈 색 막대는 장식이라 보이지 않게 한다(빈 aria-hidden 글자 없는 span). */
 .collection-page .gcard-bar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 4px;
-  height: 100%;
-  background: var(--series-ink, var(--muted));
+  display: none;
 }
 .collection-page .gcard-noimg-label {
-  padding: 0 0.625rem;
-  color: var(--muted);
-  font-size: 0.75rem;
-  font-weight: 700;
-  line-height: 1.3;
+  padding: 0 var(--space-2);
+  color: var(--ink);
+  font-size: var(--fs-1);
+  line-height: var(--lh-tight);
   text-align: center;
 }
 
@@ -651,74 +582,58 @@
   flex-direction: column;
 }
 .collection-page .gcard-work {
-  margin: 0 0 0.125rem;
-  font-size: 0.66rem;
-  font-weight: 700;
-  color: var(--series-ink, var(--muted));
+  margin: 0 0 var(--space-1);
+  font-size: var(--fs-1);
+  color: var(--ink-2);
 }
 .collection-page .gcard-name {
-  margin: 0 0 0.1875rem;
-  font-size: 0.845rem;
-  font-weight: 700;
-  color: var(--text);
-  line-height: 1.35;
+  margin: 0 0 var(--space-1);
+  font-size: var(--fs-2);
+  color: var(--ink);
+  line-height: var(--lh-base);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.collection-page .gcard-meta {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.6875rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+.collection-page .gcard-meta,
 .collection-page .gcard-date {
-  margin: 0.125rem 0 0;
-  color: var(--muted);
-  font-size: 0.6875rem;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: var(--fs-1);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .collection-page .gcard-actions {
   display: flex;
-  gap: 0.75rem;
-  margin-top: 0.375rem;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
 }
 
-/* ── list rows: hairline-separated, not boxed ─────────────────────────── */
+/* ── 목록 행: 단선으로 나눈다. 행 반전은 없고 제목 링크만 반전한다 ──── */
 .collection-page .collection-rows {
   display: flex;
   flex-direction: column;
 }
 .collection-page .collection-row {
   display: grid;
-  grid-template-columns: 58px minmax(0, 1fr) auto;
-  gap: 1rem;
+  grid-template-columns: 3.625rem minmax(0, 1fr) auto;
+  gap: var(--space-3);
   align-items: center;
-  padding: 0.875rem 0.125rem;
-  border-bottom: 1px solid var(--line);
+  padding: var(--space-3) 0;
+}
+.collection-page .collection-row + .collection-row {
+  border-top: var(--bw-1) solid var(--rule);
 }
 .collection-page .collection-row-thumb {
   position: relative;
-  width: 58px;
-  height: 58px;
-  border-radius: 9px;
-  border: 1px solid var(--line);
-  background: var(--bg-soft);
+  width: 3.625rem;
+  height: 3.625rem;
+  border: var(--bw-1) solid var(--rule);
+  background: var(--off);
   overflow: hidden;
-}
-.collection-page .collection-row-thumb::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 3px;
-  height: 100%;
-  background: var(--series-ink, var(--muted));
 }
 .collection-page .collection-row-thumb img {
   width: 100%;
@@ -732,12 +647,11 @@
   justify-content: center;
   width: 100%;
   height: 100%;
-  padding: 0 0.25rem;
-  background: var(--bg-soft);
-  color: var(--muted);
-  font-size: 0.625rem;
-  font-weight: 700;
-  line-height: 1.25;
+  padding: 0 var(--space-1);
+  background: var(--off);
+  color: var(--ink);
+  font-size: var(--fs-1);
+  line-height: var(--lh-tight);
   text-align: center;
   overflow: hidden;
 }
@@ -745,38 +659,22 @@
   min-width: 0;
 }
 .collection-page .collection-row-work {
-  margin: 0 0 0.25rem;
-  font-size: 0.6875rem;
-  font-weight: 700;
-  color: var(--series-ink, var(--muted));
+  margin: 0 0 var(--space-1);
+  font-size: var(--fs-1);
+  color: var(--ink-2);
 }
 .collection-page .collection-row-name {
-  margin: 0 0 0.1875rem;
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--text);
-  line-height: 1.35;
+  margin: 0 0 var(--space-1);
+  font-size: var(--fs-3);
+  color: var(--ink);
+  line-height: var(--lh-base);
 }
-.collection-page .collection-row-meta {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.72rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.collection-page .collection-row-date {
-  margin: 0.125rem 0 0;
-  color: var(--muted);
-  font-size: 0.72rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+.collection-page .collection-row-meta,
+.collection-page .collection-row-date,
 .collection-page .collection-row-note {
-  margin: 0.125rem 0 0;
-  color: var(--muted);
-  font-size: 0.78rem;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: var(--fs-1);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -785,162 +683,144 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 .collection-page .collection-row-actions {
   display: flex;
-  gap: 0.75rem;
+  align-items: center;
+  gap: var(--space-3);
 }
 
-/* ── edit/delete: plain text links, not bordered buttons ────────────── */
-/* 실제로는 여전히 <a>/<button> 요소다(collection.js가 [data-delete-item-id]로
-   버튼을 찾는다) — 겉모습만 텍스트로 바꿨다. */
+/* ── 수정 = 링크, 삭제 = 오류색 테두리 버튼 ───────────────────────── */
+/* 삭제는 여전히 <button>이다(collection.js가 [data-delete-item-id]로 찾는다).
+   라벨 동사가 의미를 주고, 색 말고도 테두리로 다른 단추와 구분된다. */
 .collection-page .collection-edit-link,
 .collection-page .collection-delete-btn {
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
-  padding: 0;
-  border: 0;
-  background: none;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-decoration: none;
+  min-height: var(--hit-md);
+  font-size: var(--fs-2);
   cursor: pointer;
 }
 .collection-page .collection-edit-link {
-  color: var(--brand-ink);
-}
-.collection-page .collection-delete-btn {
-  color: var(--muted);
-  font-weight: 500;
-}
-.collection-page .collection-edit-link:hover,
-.collection-page .collection-delete-btn:hover {
+  padding: 0;
+  color: var(--link);
   text-decoration: underline;
   text-underline-offset: 0.2em;
 }
-.collection-page .collection-delete-btn:hover {
-  color: var(--rose-ink);
+.collection-page .collection-delete-btn {
+  padding: 0 var(--space-3);
+  border: var(--bw-1) solid var(--error);
+  background: var(--surface);
+  color: var(--error);
+}
+@media (hover: hover) {
+  .collection-page .collection-edit-link:hover {
+    background: var(--select);
+    color: var(--on-select);
+    text-decoration: none;
+  }
+  .collection-page .collection-delete-btn:hover {
+    background: var(--error);
+    color: var(--surface);
+  }
+}
+.collection-page .collection-edit-link:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+  text-decoration: none;
+}
+.collection-page .collection-delete-btn:focus-visible {
+  background: var(--error);
+  color: var(--surface);
 }
 
 .collection-page #collection-global-error.form-error {
-  font-size: var(--fs-sm);
-  color: var(--rose-ink);
-  min-height: 1.2em;
+  font-size: var(--fs-2);
+  color: var(--error);
+}
+.collection-page #collection-global-error.form-error:not(:empty) {
+  margin-bottom: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: var(--bw-1) solid var(--error);
+  background: var(--surface);
 }
 
-/* ── narrow: stack the masthead, let the rail wrap, full-width search ── */
+/* ── 좁은 화면: 머리를 쌓고 툴바를 줄바꿈, 검색은 전폭 ────────────── */
 @media (max-width: 45rem) {
-  /* 열을 2개로 둔다 — 제목이 둘을 가로지르고 토글/버튼이 아래 행을 나눠 쓴다.
-     데스크톱의 `grid-column: 2/3`를 그대로 두면 1열 grid에 없는 열을 참조해
-     통계가 세 줄로 밀린다. */
+  /* 제목이 첫 줄을 다 쓰고, 토글과 추가 버튼은 한 줄에 들어가면 나란히,
+     좁은 언어(일본어 320px)에서는 버튼이 다음 줄로 내려가 겹치지 않는다. */
   .collection-page .collection-head {
-    grid-template-columns: minmax(0, 1fr) auto;
+    display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 0.75rem;
-    padding-bottom: 0.875rem;
+    gap: var(--space-2);
   }
   .collection-page .collection-head-title {
-    grid-column: 1 / -1;
-  }
-  .collection-page .collection-view-toggle {
-    grid-column: 1;
-    justify-self: start;
-  }
-  .collection-page .collection-head-actions {
-    grid-column: 2;
-  }
-  .collection-page .collection-head-title h1 {
-    font-size: 1.1875rem;
-  }
-  .collection-page .collection-stat b {
-    font-size: 1.125rem;
-  }
-  .collection-page .collection-stat + .collection-stat::before {
-    margin-right: 0.5rem;
+    flex: 1 0 100%;
   }
   .collection-page .collection-view-toggle {
     align-self: auto;
   }
+  .collection-page .collection-head-actions {
+    margin-left: auto;
+  }
+  .collection-page .collection-head-title h1 {
+    font-size: var(--fs-4);
+  }
+  .collection-page .collection-stat b {
+    font-size: var(--fs-3);
+  }
+  .collection-page .collection-stat + .collection-stat::before {
+    margin-right: var(--space-2);
+  }
   .collection-page .collection-toolbar {
     flex-wrap: wrap;
-    border-bottom: 0;
-    margin-bottom: 0.75rem;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
   }
   .collection-page .collection-tabs {
     width: 100%;
-    border-bottom: 1px solid var(--line);
   }
   .collection-page .collection-tab {
-    padding: 0.5rem 0.5625rem;
-    font-size: 0.8125rem;
+    padding: 0 var(--space-2);
   }
   .collection-page .archive-search {
     width: 100%;
-    margin: 0.625rem 0 0;
+    margin: 0;
   }
-  /* width:100% 대신 flex로 크기를 잡는다 — 고정 폭이면 제출 버튼이
-     행 밖으로 밀려난다. */
+  /* 고정 폭이면 제출 버튼이 행 밖으로 밀려나므로 flex로 크기를 잡는다. */
   .collection-page .archive-search input[type="search"] {
     flex: 1 1 auto;
     width: auto;
     min-width: 0;
-    height: 40px;
-    padding: 0 0.8125rem 0 2.125rem;
-    border-radius: 10px;
-    font-size: 0.78rem;
   }
-  .collection-page .archive-search button[type="submit"] {
-    height: 40px;
-    padding: 0 0.75rem;
-    border-radius: 10px;
-  }
-  /* `:not([hidden])`가 없으면 `display: inline-block`이 브라우저 기본
-     `[hidden]{display:none}`을 이겨 검색어가 없어도 지우기가 보인다.
-     archive_search.js가 hidden 속성으로 이 링크를 여닫는다. */
+  /* `:not([hidden])`가 없으면 `display`가 [hidden]을 이겨 검색어가 없어도
+     지우기가 보인다. archive_search.js가 hidden 속성으로 여닫는다. */
   .collection-page .archive-search-clear:not([hidden]) {
     position: static;
     display: inline-block;
-    margin-top: 0.375rem;
-  }
-  .collection-page .gcard-cover {
-    border-radius: 9px;
-  }
-  .collection-page .gcard-bar {
-    width: 3px;
-  }
-  .collection-page .gcard-noimg-label {
-    font-size: 0.625rem;
-    padding: 0 0.375rem;
+    margin-top: var(--space-1);
   }
   .collection-page .collection-pill--cover {
-    top: 0.375rem;
-    right: 0.375rem;
-  }
-  .collection-page .collection-pill--cover .collection-pill-tag {
-    padding: 0.125rem 0.4375rem;
-    font-size: 0.5625rem;
-  }
-  .collection-page .gcard-work {
-    font-size: 0.59rem;
+    top: var(--space-1);
+    right: var(--space-1);
   }
   .collection-page .gcard-name {
-    font-size: 0.75rem;
+    font-size: var(--fs-1);
   }
   .collection-page .collection-row {
-    grid-template-columns: 46px minmax(0, 1fr);
-    gap: 0.625rem;
+    grid-template-columns: 2.875rem minmax(0, 1fr);
+    gap: var(--space-2);
     align-items: start;
-    padding: 0.6875rem 0;
+    padding: var(--space-2) 0;
   }
   .collection-page .collection-row-thumb {
-    width: 46px;
-    height: 46px;
-    border-radius: 8px;
+    width: 2.875rem;
+    height: 2.875rem;
   }
   .collection-page .collection-row-name {
-    font-size: 0.8125rem;
+    font-size: var(--fs-2);
   }
   /* 375px에 세 번째 열을 억지로 넣는 대신 옆 열을 텍스트 열 아래로 내린다. */
   .collection-page .collection-row-side {
@@ -952,10 +832,9 @@
   }
 }
 
-/* ── series ink rebinding: .gi-0..gi-12 bind --series-ink to the
-   dedicated series tokens (tokens.css --series-1-ink..--series-12-ink) ── */
-/* 이벤트 카테고리용 6색과는 다른, 작품 구분 전용 12색 팔레트다. */
-.collection-page .gi-0 { --series-ink: var(--muted); }
+/* ── 시리즈 색 연결: .gi-0..gi-12가 --series-ink를 시리즈 토큰에 묶는다 ── */
+/* 작품 구분 전용 12색이고, 쓰는 곳은 작품별 목록의 점 하나뿐이다. */
+.collection-page .gi-0 { --series-ink: var(--ink-2); }
 .collection-page .gi-1 { --series-ink: var(--series-1-ink); }
 .collection-page .gi-2 { --series-ink: var(--series-2-ink); }
 .collection-page .gi-3 { --series-ink: var(--series-3-ink); }
@@ -969,60 +848,68 @@
 .collection-page .gi-11 { --series-ink: var(--series-11-ink); }
 .collection-page .gi-12 { --series-ink: var(--series-12-ink); }
 
-/* ── /collection/new/ form — 굿즈 직접 등록 에디토리얼 ─────────────────── */
-/* 디자인 출처: "굿즈 직접 등록 페이지 (에디토리얼).dc.html". 이 폼은 예전엔
-   archive_visits.css의 공유 클래스를 썼지만 이 파일로 완전히 옮겼다 —
-   절반만 옮기면 폼 스타일이 조용히 빠지므로 전부 `.collection-page` 스코프로
-   교체했다. archive_visits.css 자체는 그대로고 collection_edit.html은
-   여전히 그걸 쓴다.
-
-   드롭존 테두리에 계획된 `--border-strong` 토큰은 tokens.css에 없어
-   `--muted`로 대신했다(두 테마 모두에서 --bg-soft 위에 점선이 잘 보인다). */
+/* ── /collection/new/·수정 폼 ──────────────────────────────────── */
+/* 이 폼은 archive_visits.css의 공유 클래스를 이 파일로 완전히 옮겼다 —
+   절반만 옮기면 폼 스타일이 조용히 빠지므로 전부 `.collection-page` 스코프다.
+   <main>이 창(.page.window, 폭·여백은 cards.css) 하나이고 h1이 창 제목이다.
+   뒤로 가기·부제·필수 안내는 창 안 머리다. */
 
 .collection-page .collection-form-head {
-  padding-bottom: 1.125rem;
-  margin-bottom: 1.75rem;
-  border-bottom: 2px solid var(--text);
+  margin-bottom: var(--space-4);
 }
-.collection-page .collection-form-head h1 {
-  margin: 0.5rem 0 0.5rem;
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: var(--text);
+.collection-page .collection-form-head .back-link {
+  display: inline-block;
+  margin-bottom: var(--space-2);
+  color: var(--ink);
+  font-size: var(--fs-2);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+@media (hover: hover) {
+  .collection-page .collection-form-head .back-link:hover {
+    background: var(--select);
+    color: var(--on-select);
+    text-decoration: none;
+  }
+}
+.collection-page .collection-form-head .back-link:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+  text-decoration: none;
 }
 .collection-page .collection-form-subtitle {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 1rem;
+  gap: var(--space-3);
   margin: 0;
-  color: var(--muted);
-  font-size: 0.875rem;
+  color: var(--ink-2);
+  font-size: var(--fs-2);
 }
 .collection-page .collection-form-legend {
   flex: none;
-  color: var(--muted);
-  font-size: 0.78rem;
-}
-
-.collection-page .collection-form {
-  max-width: 56.25rem;
+  color: var(--ink-2);
+  font-size: var(--fs-1);
 }
 
 /* DOM 순서는 필드-다음-이미지(이름이 탭 순서상 먼저 오도록)라 이미지는
-   grid 배치만으로 왼쪽 열로 옮긴다. */
+   grid 배치만으로 왼쪽 열로 옮긴다. 두 열 사이는 필드 열 왼쪽의 1px 세로
+   단선이다. */
 .collection-page .collection-form-grid {
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
-  gap: 2.375rem;
-  align-items: start;
+  grid-template-columns: 18.75rem minmax(0, 1fr);
+  column-gap: var(--space-4);
+  align-items: stretch;
 }
 .collection-page .collection-form-fields {
   grid-column: 2;
   grid-row: 1;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: var(--space-3);
+  min-width: 0;
+  padding-left: var(--space-4);
+  border-left: var(--bw-1) solid var(--rule);
 }
 .collection-page .collection-form-image {
   grid-column: 1;
@@ -1032,79 +919,74 @@
 .collection-page .collection-form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.4375rem;
+  gap: var(--space-1);
 }
 .collection-page .collection-form-group label {
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: var(--text);
+  font-size: var(--fs-2);
+  font-weight: var(--fw-regular);
+  color: var(--ink);
 }
 
 .collection-page .collection-form-row {
   display: grid;
-  gap: 1rem;
+  gap: var(--space-3);
 }
 .collection-page .collection-form-row--split {
-  grid-template-columns: 180px minmax(0, 1fr);
+  grid-template-columns: 11.25rem minmax(0, 1fr);
   align-items: end;
 }
 .collection-page .collection-form-row--even {
   grid-template-columns: 1fr 1fr;
 }
 .collection-page .collection-form-row--visit {
-  grid-template-columns: minmax(0, 1fr) 180px;
+  grid-template-columns: minmax(0, 1fr) 11.25rem;
   align-items: end;
 }
 
 .collection-page .collection-form-checkbox {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--space-1);
   justify-content: center;
-  min-height: 2.625rem;
-  padding: 0 0.8125rem;
-  border: 1px solid var(--border-soft);
-  border-radius: 0.5625rem;
-  background: var(--bg-soft);
+  min-height: var(--hit-lg);
+  padding: 0 var(--space-3);
+  border: var(--bw-1) solid var(--rule);
+  background: var(--surface);
 }
 .collection-page .collection-form-checkbox label {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--text);
+  gap: var(--space-2);
+  font-size: var(--fs-2);
+  color: var(--ink);
 }
 .collection-page .collection-form-checkbox-hint {
   margin: 0 0 0 1.625rem;
-  color: var(--muted);
-  font-size: 0.72rem;
+  color: var(--ink-2);
+  font-size: var(--fs-1);
 }
 
 /* 파일 입력은 opacity:0으로 숨기되 display:none은 쓰지 않는다 —
-   display:none이면 탭 순서에서 완전히 빠져 키보드로 접근할 수 없다. */
+   display:none이면 탭 순서에서 완전히 빠져 키보드로 접근할 수 없다.
+   포커스는 입력이 받지만 링은 드롭존 상자에 그린다. */
 .collection-page .collection-form-dropzone {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   aspect-ratio: 3 / 4;
-  border: 1px dashed var(--muted);
-  border-radius: 0.8125rem;
-  background: var(--bg-soft);
+  border: var(--bw-1) solid var(--ink);
+  background: var(--off);
   cursor: pointer;
-  overflow: hidden;
 }
-.collection-page .collection-form-dropzone:focus-within {
-  border-color: var(--brand);
-  border-style: solid;
-  box-shadow: 0 0 0 3px var(--brand-soft);
+.collection-page .collection-form-dropzone:has(input:focus-visible) {
+  outline: var(--bw-2) solid var(--select);
+  outline-offset: -2px;
 }
 .collection-page .collection-form-dropzone-placeholder {
-  padding: 0 1rem;
-  color: var(--muted);
-  font-size: 0.8125rem;
-  font-weight: 600;
+  padding: 0 var(--space-3);
+  color: var(--ink);
+  font-size: var(--fs-2);
   text-align: center;
 }
 .collection-page .collection-form-dropzone img {
@@ -1123,197 +1005,215 @@
   cursor: pointer;
 }
 .collection-page .collection-form-hint {
-  margin: 0.5625rem 0 0;
-  color: var(--muted);
-  font-size: 0.72rem;
+  margin: var(--space-2) 0 0;
+  color: var(--ink-2);
+  font-size: var(--fs-1);
 }
 
-/* ── shared input skin ─────────────────────────────────────────────────── */
+/* ── 입력 공통 모양 ───────────────────────────────────────────── */
 .collection-page .collection-form input[type="text"],
 .collection-page .collection-form input[type="number"],
 .collection-page .collection-form input[type="date"],
 .collection-page .collection-form select {
-  height: 2.625rem;
-  padding: 0 0.8125rem;
-  border: 1px solid var(--border-soft);
-  border-radius: 0.5625rem;
+  min-height: var(--hit-lg);
+  padding: 0 var(--space-3);
+  border: var(--bw-1) solid var(--ink);
   background: var(--surface);
-  color: var(--text);
+  color: var(--ink);
   font: inherit;
   width: 100%;
 }
-.collection-page .collection-form input[type="text"]:focus-visible,
-.collection-page .collection-form input[type="number"]:focus-visible,
-.collection-page .collection-form input[type="date"]:focus-visible,
-.collection-page .collection-form select:focus-visible {
-  outline: none;
-  border-color: var(--brand);
-  box-shadow: 0 0 0 3px var(--brand-soft);
+/* 오류 입력은 2px --ink 테두리로 알린다(글자색은 그대로). 오류 문구는 오류 상자가 맡는다. */
+.collection-page .collection-form input[aria-invalid="true"],
+.collection-page .collection-form select[aria-invalid="true"] {
+  border-width: var(--bw-2);
+  border-color: var(--ink);
+}
+.collection-page .collection-form-checkbox input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  min-height: 0;
+  margin: 0;
+  accent-color: var(--select);
 }
 
-/* ── divider + details body ────────────────────────────────────────────── */
+/* 스크린리더 전용 보조 텍스트(이 페이지 복제본 — 전역 유틸리티가 없다). */
+.collection-page .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── 구분선 + 상세 본문 ────────────────────────────────────────── */
 .collection-page .collection-detail {
-  margin-top: 2rem;
+  margin-top: var(--space-5);
 }
 .collection-page .collection-form-detail-toggle {
-  padding: 0.75rem 0;
-  border-top: 1px solid var(--line);
-  color: var(--text);
-  font-size: 0.9375rem;
-  font-weight: 700;
+  padding: var(--space-3) 0;
+  border-top: var(--bw-1) solid var(--rule);
+  color: var(--ink);
+  font-size: var(--fs-3);
   cursor: pointer;
 }
 .collection-page .collection-detail-body {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  padding-top: 1.25rem;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
 }
 
-/* ── type chips (item_type quick-picks) ────────────────────────────────── */
+/* ── 유형 빠른 선택 칩 ─────────────────────────────────────────── */
 .collection-page .collection-form-type-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 0.625rem;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
 }
 .collection-page .collection-form-type-chip {
   display: inline-flex;
   align-items: center;
-  min-height: 2.25rem;
-  padding: 0 0.9375rem;
-  border: 1px solid var(--border-soft);
-  border-radius: 999px;
+  min-height: var(--hit-md);
+  padding: 0 var(--space-3);
+  border: var(--bw-1) solid var(--ink);
   background: var(--surface);
-  color: var(--text);
-  font-size: 0.8125rem;
-  font-weight: 600;
+  color: var(--ink);
+  font-size: var(--fs-2);
   cursor: pointer;
 }
-.collection-page .collection-form-type-chip:hover {
-  border-color: var(--brand);
-  background: var(--bg-soft);
-}
-.collection-page .collection-form-type-chip:focus-visible {
-  outline: none;
-  border-color: var(--brand);
-  box-shadow: 0 0 0 3px var(--brand-soft);
+@media (hover: hover) {
+  .collection-page .collection-form-type-chip:hover {
+    border-color: var(--select);
+    background: var(--select);
+    color: var(--on-select);
+  }
 }
 .collection-page .collection-form-type-chip.is-active,
 .collection-page .collection-form-type-chip[aria-pressed="true"] {
-  border-color: var(--brand);
-  background: var(--brand);
-  color: #fff;
-  font-weight: 700;
+  border-color: var(--select);
+  background: var(--select);
+  color: var(--on-select);
 }
 
-/* ── locked visit-record box (preselected, non-editable) ───────────────── */
+/* ── 미리 정해진 방문 기록 상자(고정, 수정 불가) ────────────────── */
 .collection-page .collection-form-locked {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  min-height: 2.625rem;
-  padding: 0 0.8125rem;
-  border: 1px solid var(--border-soft);
-  border-radius: 0.5625rem;
-  background: var(--bg-soft);
+  gap: var(--space-3);
+  min-height: var(--hit-lg);
+  padding: 0 var(--space-3);
+  border: var(--bw-1) solid var(--rule);
+  background: var(--surface);
 }
 .collection-page .collection-form-locked-label {
   margin: 0;
-  color: var(--text);
-  font-size: 0.8125rem;
-  font-weight: 600;
+  color: var(--ink);
+  font-size: var(--fs-2);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .collection-page .collection-form-locked-badge {
   flex: none;
-  color: var(--muted);
-  font-size: 0.72rem;
-  font-weight: 600;
+  color: var(--ink-2);
+  font-size: var(--fs-1);
   white-space: nowrap;
 }
 
-/* ── error banner — hidden entirely while empty ────────────────────────── */
+/* ── 오류 상자: 낭독 영역이라 숨기지 않고, 비면 높이만 0으로 둔다 ──── */
 .collection-page .collection-form-error {
-  margin: 1.25rem 0 0;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--rose-border);
-  border-radius: 0.5625rem;
-  background: var(--rose-soft);
-  color: var(--rose-ink);
-  font-size: 0.8125rem;
-  font-weight: 600;
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-3);
+  border: var(--bw-1) solid var(--error);
+  background: var(--surface);
+  color: var(--error);
+  font-size: var(--fs-2);
 }
 .collection-page .collection-form-error:empty {
-  display: none;
   margin: 0;
   padding: 0;
   border: 0;
 }
 
-/* ── actions row — becomes a fixed bottom bar under 45rem ───────────────── */
+/* ── 동작 줄: 45rem 이하에서는 하단 고정 바 ───────────────────── */
 .collection-page .collection-form-actions {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-top: 1.75rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid var(--line);
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: var(--bw-1) solid var(--rule);
 }
 .collection-page .collection-form-submit {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
-  padding: 0 1.5rem;
-  border: 0;
-  border-radius: 10px;
-  background: var(--brand);
-  color: #fff;
-  font-weight: 700;
-  font-size: 0.875rem;
+  min-height: var(--hit-md);
+  padding: 0 var(--space-4);
+  border: var(--bw-2) solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-2);
   cursor: pointer;
 }
-.collection-page .collection-form-submit:hover {
-  background: var(--brand-ink);
+@media (hover: hover) {
+  .collection-page .collection-form-submit:hover {
+    border-color: var(--select);
+    background: var(--select);
+    color: var(--on-select);
+  }
 }
 .collection-page .collection-form-cancel {
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
-  padding: 0 0.375rem;
+  min-height: var(--hit-md);
+  padding: 0 var(--space-1);
   border: 0;
-  color: var(--muted);
-  font-size: 0.875rem;
-  font-weight: 600;
-  text-decoration: none;
-}
-.collection-page .collection-form-cancel:hover {
+  color: var(--link);
+  font-size: var(--fs-2);
   text-decoration: underline;
   text-underline-offset: 0.2em;
 }
+@media (hover: hover) {
+  .collection-page .collection-form-cancel:hover {
+    background: var(--select);
+    color: var(--on-select);
+    text-decoration: none;
+  }
+}
+.collection-page .collection-form-cancel:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+  text-decoration: none;
+}
 .collection-page .collection-form-note {
   margin: 0 0 0 auto;
-  color: var(--muted);
-  font-size: 0.78rem;
+  color: var(--ink-2);
+  font-size: var(--fs-1);
 }
 
 @media (max-width: 45rem) {
   .collection-page .collection-form-grid {
     grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--space-3);
   }
   .collection-page .collection-form-fields {
     grid-column: 1;
     grid-row: 2;
+    padding-left: 0;
+    border-left: 0;
   }
   .collection-page .collection-form-image {
     grid-column: 1;
     grid-row: 1;
-    max-width: 150px;
-    margin: 0 auto 1.25rem;
+    max-width: 9.375rem;
+    margin: 0 auto;
   }
   .collection-page .collection-form-row--split,
   .collection-page .collection-form-row--even,
@@ -1321,10 +1221,10 @@
     grid-template-columns: 1fr;
   }
   /* 하단 고정 바로 만들어 긴 폼 끝까지 스크롤하지 않아도 제출/취소에
-     닿을 수 있게 한다. 폼에 준 하단 여백은 이 바가 마지막 필드를
-     가리지 않게 하기 위함이다. */
-  .collection-page .collection-form {
-    padding-bottom: calc(5rem + var(--site-tabbar-h, 0px));
+     닿을 수 있게 한다. 바가 마지막 필드를 가리지 않게 하는 여백은 문서 끝
+     한 곳(아래 body)에만 둔다. */
+  .collection-page .collection-form-head .window-title {
+    margin: 0 0 var(--space-1);
   }
   /* 고정 바가 푸터 끝을 덮지 않게 문서 끝에 바 높이만큼 여백 */
   body:has(.collection-page .collection-form-actions) {
@@ -1337,11 +1237,15 @@
     bottom: var(--site-tabbar-h, 0px);
     z-index: 20;
     margin-top: 0;
-    padding: 0.625rem var(--page-pad-x) calc(0.625rem + env(safe-area-inset-bottom));
-    border-top: 1px solid var(--line);
+    padding: var(--space-2) var(--page-pad-x) calc(var(--space-2) + env(safe-area-inset-bottom));
+    border-top: var(--bw-2) solid var(--ink);
     background: var(--surface);
   }
   .collection-page .collection-form-note {
     display: none;
+  }
+  /* Tab으로 이동한 필드가 고정 바 뒤에 가려지지 않게 스크롤 여유를 둔다. */
+  html:has(.collection-page .collection-form-actions) {
+    scroll-padding-bottom: calc(4.5rem + var(--site-tabbar-h, 0px));
   }
 }

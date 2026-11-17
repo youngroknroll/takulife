@@ -85,15 +85,20 @@ button.is-loading::after {
 밀린다 `[실측]`.
 
 제거 후 390px에서 아이콘 버튼 5종 전부 폭 불변·중앙 정렬·색 일치를
-확인했다 `[실측 2026-09-13]`: `.event-compact-interest` 34→34,
+확인했다 `[실측 2026-09-13]`(이력. 트랙 58에서 버튼 높이·누름 영역 규칙이 바뀌어 지금 폭은 다시 재지 않았다): `.event-compact-interest` 34→34,
 `.visit-detail-delete-btn` 44→44, `.photo-preview-remove` 22→22,
 `.visit-edit-delete-btn` 44→44, `.collection-detail-delete-btn` 44→44.
 
 ## 움직임 감소
 
-`prefers-reduced-motion: reduce`에서 회전을 멈추고 정지된 링만 남긴다.
-소비자 쪽 블록이 `hover-lift`와 `glint`만 끄고 스피너는 계속 돌게 두고
-있었다 — 새로 스피너를 추가할 때 이 처리를 빠뜨리지 마라.
+`prefers-reduced-motion: reduce`에서 회전을 멈추고 정지된 링만 남긴다
+`[코드 interaction.css:78-83]`. 이력: 예전에는 소비자 쪽 블록이 `hover-lift`와 `glint`만 끄고
+스피너는 계속 돌게 두고 있었다. `hover-lift` CSS는 트랙 58에서 삭제됐고 `.glint`는
+`interaction.css:17-21`에서 숨겨 둔다. 새로 스피너를 추가할 때 이 처리를 빠뜨리지 마라.
+
+스피너는 `.is-loading::after`를 쓴다 `[코드 interaction.css:29-40]`. 그래서 작은 단추의 누름 영역을
+넓히는 가상 요소는 `::before`를 쓴다 `[코드 archive_visit_edit.css:171, archive_visit_create.css:155]`.
+`::after`에 누름 영역을 만들면 스피너가 덮어쓴다(트랙 58 BIR 판정).
 
 ## 말줄임되는 셀에는 `title`을 달아라
 

@@ -1,20 +1,26 @@
 /* ── /mypage/ ──────────────────────────────────────────────── */
-/* archive.css는 이 페이지에 안 쓴다 — 계정 행·인덱스 행 모두 archive.css의
-   .record-row와 다른 그리드 구조라 이 페이지 전용 스타일로 둔다. */
+/* 허브 쪽이라 창이 셋이다: 머리(제목 없음) / 색인 목록(제목 없음) / [ 계정 ].
+   archive.css는 이 페이지에 안 쓴다 — 계정 행·인덱스 행은 그 파일의
+   .record-row와 그리드 구조가 달라 이 페이지 전용 스타일로 둔다. */
 
 .mypage-page {
+  /* 창 가로 안쪽 여백(cards.css .window와 같은 값). 색인 행을 창 안쪽
+     끝까지 늘려 반전 막대가 테두리에 닿게 할 때 쓴다. */
+  --mypage-pad-x: var(--space-3);
   max-width: 55rem;
   margin: 0 auto;
+}
+
+/* 창 사이 간격: 제목이 테두리 위로 반 줄 올라오므로 위 여백을 넉넉히 둔다. */
+.mypage-page > .window + .window {
+  margin-top: var(--space-5);
 }
 
 /* ── header ─────────────────────────────────────────────────── */
 .mypage-header {
   display: flex;
   align-items: center;
-  gap: 1.125rem;
-  padding-bottom: 1.25rem;
-  margin-bottom: 0.5rem;
-  border-bottom: 2px solid var(--text);
+  gap: var(--space-3);
 }
 
 /* 이니셜 아바타는 장식일 뿐이다 — h1과 이메일이 이미 신원을 전달하므로 스크린리더 트리에서는 숨긴다. */
@@ -23,14 +29,12 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 3.75rem;
-  height: 3.75rem;
-  border-radius: 50%;
-  border: 1px solid var(--border-soft);
-  background: var(--bg-soft);
-  font-size: 1.375rem;
-  font-weight: 800;
-  color: var(--text);
+  width: 3.5rem;
+  height: 3.5rem;
+  border: var(--bw-1) solid var(--ink);
+  background: var(--surface);
+  font-size: var(--fs-4);
+  color: var(--ink);
 }
 
 .mypage-header-body {
@@ -38,9 +42,9 @@
 }
 
 .mypage-header-body h1 {
-  margin: 0 0 0.1875rem;
-  font-size: 1.5rem;
-  font-weight: 800;
+  margin: 0;
+  font-size: var(--fs-4);
+  line-height: var(--lh-tight);
 }
 
 .mypage-nickname {
@@ -48,9 +52,8 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: 0.9375rem;
-  font-weight: 800;
-  color: var(--text);
+  font-size: var(--fs-3);
+  color: var(--ink);
 }
 
 .mypage-email {
@@ -58,78 +61,78 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: 0.84375rem;
-  color: var(--muted);
+  font-size: var(--fs-2);
+  color: var(--ink-2);
 }
 
 .mypage-tenure {
   display: flex;
   align-items: baseline;
-  gap: 0.3125rem;
+  gap: var(--space-1);
   margin: 0 0 0 auto;
   flex-shrink: 0;
 }
 
 .mypage-tenure-value {
-  font-size: 1.875rem;
-  font-weight: 800;
+  font-size: var(--fs-5);
+  line-height: var(--lh-tight);
   font-variant-numeric: tabular-nums;
-  color: var(--text);
+  color: var(--ink);
 }
 
 .mypage-tenure-label {
-  font-size: 0.78125rem;
-  font-weight: 700;
-  color: var(--muted);
+  font-size: var(--fs-2);
+  color: var(--ink-2);
 }
 
 /* ── index rows ─────────────────────────────────────────────── */
-.mypage-index {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 2.125rem;
+/* 제목 없는 창이라 행이 창 안쪽 끝까지 닿도록 위아래 안쪽 여백을 줄인다. */
+.mypage-page .mypage-index.window {
+  padding-block: var(--space-1);
 }
 
 .mypage-index-row {
   display: grid;
-  grid-template-columns: 0.1875rem 1fr auto auto;
+  grid-template-columns: var(--bw-2) 1fr auto auto;
   align-items: center;
-  gap: 0 1.125rem;
-  padding: 1.0625rem 0.125rem;
-  border-bottom: 1px solid var(--line);
-  color: inherit;
+  gap: 0 var(--space-3);
+  margin-inline: calc(-1 * var(--mypage-pad-x));
+  padding: var(--space-3) var(--mypage-pad-x);
+  color: var(--ink);
   text-decoration: none;
 }
 
+.mypage-index-row + .mypage-index-row {
+  border-top: var(--bw-1) solid var(--rule);
+}
+
+/* 행 전체가 링크라 포커스·hover에서 반전한다. 안쪽 링은 흰색 inset. */
 .mypage-index-row:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
-  border-radius: 6px;
+  background: var(--select);
+  color: var(--on-select);
+  outline-color: var(--on-select);
+  outline-offset: -4px;
 }
 
-.mypage-index-row:hover .mypage-index-title {
-  text-decoration: underline;
+.mypage-index-row:focus-visible * {
+  color: inherit;
 }
 
-/* --row-ink는 뷰가 내려준 "brand"/"teal"/"pink" 값과 정확히 일치해야 한다 —
-   철자가 틀리면 그 행의 색이 조용히 사라진다. */
-.mypage-index-row.is-brand {
-  --row-ink: var(--brand-ink);
+@media (hover: hover) {
+  .mypage-index-row:hover {
+    background: var(--select);
+    color: var(--on-select);
+  }
+
+  .mypage-index-row:hover * {
+    color: inherit;
+  }
 }
 
-.mypage-index-row.is-teal {
-  --row-ink: var(--teal-ink);
-}
-
-.mypage-index-row.is-pink {
-  --row-ink: var(--pink-ink);
-}
-
+/* 종류별 색 대신 2px 무채색 막대다. 글자색을 따라가서 반전 때도 보인다. */
 .mypage-index-tick {
-  width: 0.1875rem;
-  height: 2.125rem;
-  border-radius: 0.125rem;
-  background: var(--row-ink);
+  align-self: stretch;
+  background: currentColor;
 }
 
 .mypage-index-body {
@@ -139,78 +142,90 @@
 .mypage-index-title-line {
   display: flex;
   align-items: baseline;
-  gap: 0.5625rem;
-  margin-bottom: 0.0625rem;
+  flex-wrap: wrap;
+  gap: 0 var(--space-2);
 }
 
 .mypage-index-title {
-  font-size: 1.03125rem;
-  font-weight: 700;
-  color: var(--text);
+  font-size: var(--fs-3);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 
+/* 누르지 않는 배지라 눌림 영역 토큰(--hit-*)을 걸지 않는다. 좁은 화면에서
+   그 토큰이 44px로 커지기 때문이다. */
 .mypage-index-badge {
-  font-size: 0.65625rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--row-ink);
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.5rem;
+  padding: 0 var(--space-1);
+  border: var(--bw-1) solid currentColor;
+  font-size: var(--fs-1);
+  color: var(--ink-2);
 }
 
 .mypage-index-desc {
-  font-size: 0.78125rem;
-  color: var(--muted);
+  display: block;
+  font-size: var(--fs-2);
+  color: var(--ink-2);
 }
 
 .mypage-index-count {
   display: flex;
   align-items: baseline;
-  gap: 0.3125rem;
+  gap: var(--space-1);
 }
 
 .mypage-index-value {
-  font-size: 1.5rem;
-  font-weight: 800;
+  font-size: var(--fs-5);
+  line-height: var(--lh-tight);
   font-variant-numeric: tabular-nums;
-  color: var(--row-ink);
+  color: var(--ink);
 }
 
 .mypage-index-unit {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--muted);
+  font-size: var(--fs-2);
+  color: var(--ink-2);
 }
 
 .mypage-index-chevron {
-  font-size: 1rem;
-  color: var(--muted);
+  font-size: var(--fs-3);
+  color: var(--ink-2);
 }
 
-/* ── account section ────────────────────────────────────────── */
-.mypage-account h2 {
-  margin: 0 0 0.125rem;
-  padding-bottom: 0.625rem;
-  border-bottom: 2px solid var(--text);
-  font-size: 0.875rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
+/* ── account window ─────────────────────────────────────────── */
+/* 제목 대괄호는 CSS로 붙이고 대체 글자를 비워 스크린 리더에는 읽히지 않게 한다. */
+.mypage-account h2.window-title::before {
+  content: "[ ";
+  content: "[ " / "";
 }
 
-/* 계정 행은 위 인덱스 행과 달리 행 전체가 링크가 아니라 .mypage-account-action만
-   클릭 가능하다. 그래서 행 컨테이너엔 hover 효과를 주지 않아 둘을 구분한다. */
+.mypage-account h2.window-title::after {
+  content: " ]";
+  content: " ]" / "";
+}
+
+/* 계정 행은 행 전체가 링크가 아니라 .mypage-account-action만 누를 수 있다.
+   그래서 행에는 반전 효과를 주지 않고 링크만 반응한다. */
 .mypage-account-row {
   display: grid;
   grid-template-columns: 9.375rem 1fr auto;
   align-items: center;
-  gap: 1.125rem;
-  padding: 0.9375rem 0.125rem;
-  border-bottom: 1px solid var(--line);
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-top: var(--bw-1) solid var(--rule);
 }
 
-/* 파괴적 행은 색상만이 아니라 위쪽 구분선으로도 별도 그룹임을 표시한다
-   (설정 페이지 hr.panel-divider와 같은 관례). */
+.mypage-account-row:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+/* 파괴적 행은 위쪽 2px 구분선으로 별도 그룹임을 보인다. */
 .mypage-account-row-danger {
-  margin-top: 0.875rem;
-  border-top: 2px solid var(--line);
+  margin-top: var(--space-2);
+  padding-bottom: 0;
+  border-top: var(--bw-2) solid var(--rule);
 }
 
 .mypage-account-field {
@@ -218,9 +233,8 @@
 }
 
 .mypage-account-key {
-  font-size: 0.78125rem;
-  font-weight: 700;
-  color: var(--muted);
+  font-size: var(--fs-2);
+  color: var(--ink-2);
 }
 
 .mypage-account-value {
@@ -228,65 +242,89 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: 0.90625rem;
-  color: var(--text);
+  font-size: var(--fs-3);
+  color: var(--ink);
 }
 
 .mypage-account-action {
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  min-height: 2.75rem;
+  min-height: var(--hit-lg);
   white-space: nowrap;
-  font-size: 0.78125rem;
-  font-weight: 600;
+  font-size: var(--fs-2);
+  color: var(--link);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.mypage-account-action:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
   text-decoration: none;
 }
 
-.mypage-account-action:hover,
-.mypage-account-action:focus-visible {
-  text-decoration: underline;
+@media (hover: hover) {
+  .mypage-account-action:hover {
+    background: var(--select);
+    color: var(--on-select);
+    text-decoration: none;
+  }
 }
 
-.mypage-account-action.is-teal {
-  color: var(--teal-ink);
-}
-
+/* 탈퇴는 1px 오류색 테두리·글자 버튼 모양. 라벨 동사가 뜻을 전한다. */
 .mypage-account-action.is-rose {
-  color: var(--rose-ink);
+  min-height: var(--hit-md);
+  padding: 0 var(--space-2);
+  border: var(--bw-1) solid var(--error);
+  color: var(--error);
+  text-decoration: none;
+}
+
+.mypage-account-action.is-rose:focus-visible {
+  background: var(--error);
+  border-color: var(--error);
+  color: var(--surface);
+  outline-color: var(--on-select);
+  outline-offset: -2px;
+}
+
+@media (hover: hover) {
+  .mypage-account-action.is-rose:hover {
+    background: var(--error);
+    border-color: var(--error);
+    color: var(--surface);
+  }
 }
 
 /* ── mobile (320px reference) ───────────────────────────────── */
 @media (max-width: 45rem) {
+  .mypage-page {
+    --mypage-pad-x: var(--space-2);
+  }
+
   .mypage-tenure,
   .mypage-index-desc {
     display: none;
   }
 
   .mypage-header {
-    padding-bottom: 0.875rem;
+    gap: var(--space-2);
   }
 
   .mypage-avatar {
     width: 2.75rem;
     height: 2.75rem;
+    font-size: var(--fs-3);
   }
 
   .mypage-header-body h1 {
-    font-size: 1.1875rem;
-  }
-
-  .mypage-email {
-    font-size: 0.71875rem;
+    font-size: var(--fs-3);
   }
 
   .mypage-index-row {
-    padding: 0.8125rem 0;
-    gap: 0 0.75rem;
-  }
-
-  .mypage-index-tick {
-    height: 1.75rem;
+    gap: 0 var(--space-2);
+    padding-block: var(--space-2);
   }
 
   .mypage-index-title {
@@ -294,28 +332,15 @@
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-    font-size: 0.84375rem;
   }
 
   .mypage-index-value {
-    font-size: 1.125rem;
-  }
-
-  .mypage-index-unit {
-    font-size: 0.625rem;
-  }
-
-  .mypage-index-chevron {
-    font-size: 0.875rem;
-  }
-
-  .mypage-account h2 {
-    font-size: 0.78125rem;
+    font-size: var(--fs-4);
   }
 
   .mypage-account-row {
     grid-template-columns: 1fr auto;
-    padding: 0.75rem 0;
+    gap: var(--space-2);
   }
 
   .mypage-account-field {
@@ -325,11 +350,11 @@
   }
 
   .mypage-account-key {
-    font-size: 0.65625rem;
+    font-size: var(--fs-1);
   }
 
   .mypage-account-value {
-    font-size: 0.78125rem;
+    font-size: var(--fs-2);
   }
 
   /* 탈퇴 경고 문구는 잘리면 안 되므로 줄바꿈을 허용한다. */
@@ -340,7 +365,6 @@
   }
 
   .mypage-account-action {
-    font-size: 0.71875rem;
     align-self: center;
   }
 }

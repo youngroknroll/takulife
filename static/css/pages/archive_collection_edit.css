@@ -1,28 +1,36 @@
-/* /collection/<id>/edit/ 페이지 전용 CSS. 디자인 출처: "굿즈 수정 페이지 (에디토리얼).dc.html".
+/* /collection/<id>/edit/ 쪽 전용 CSS (DOS 형태).
 
    archive_collection.css와 함께 로드돼 `.collection-form-*` 클래스는 전부
-   그대로 재사용한다. 이 파일은 수정 페이지에만 있는 부분(뒤로가기 링크,
-   보유/구함 토글, "상세 정보" 구분선, 읽기전용 방문기록 박스, 커버 열 +
-   액션 행)만 더한다.
+   그대로 재사용한다. 이 파일은 수정 쪽에만 있는 부분(뒤로가기 링크, 보유/구함
+   토글, "상세 정보" 구분선, 읽기 전용 방문 기록 상자, 커버 열 + 동작 줄)만
+   더한다. <main>이 창(.page.window) 하나다.
 
    전부 `.collection-edit-page` 스코프다 — 이 템플릿의 <main>이
-   `.collection-page`와 함께 갖는 페이지 루트 클래스로, archive_collection.css
-   클래스가 적용되려면 반드시 필요하다. */
+   `.collection-page`와 함께 갖는 쪽 루트 클래스다. */
 
+/* 뒤로 가기 링크는 창 안 첫 줄이고 글자색(--ink) + 밑줄이다. */
 .collection-edit-page .collection-edit-back-link {
   display: inline-block;
-  margin-bottom: 1rem;
-  color: var(--brand-ink);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  text-decoration: none;
-}
-.collection-edit-page .collection-edit-back-link:hover {
+  margin-bottom: var(--space-3);
+  color: var(--ink);
+  font-size: var(--fs-2);
   text-decoration: underline;
   text-underline-offset: 0.2em;
 }
+@media (hover: hover) {
+  .collection-edit-page .collection-edit-back-link:hover {
+    background: var(--select);
+    color: var(--on-select);
+    text-decoration: none;
+  }
+}
+.collection-edit-page .collection-edit-back-link:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+  text-decoration: none;
+}
 
-/* ── subtitle: name + registered date, both 1-line ellipsis ──────────── */
+/* ── 부제: 이름 + 등록일, 둘 다 한 줄 말줄임 ─────────────────────── */
 /* flex로 만들면 템플릿이 넣은 " · {{ date }} 등록" 앞 공백이 사라져서
    `gap`으로 그 간격을 다시 만들어준다. */
 .collection-edit-page .collection-edit-subtitle-text {
@@ -42,29 +50,23 @@
   flex: none;
 }
 
-/* ── static group labels — no <label for>, since the control below isn't
-   single-target (the toggle, the read-only visit box) ───────────────── */
-/* 아래 컨트롤이 토글이나 읽기전용 박스처럼 단일 대상이 아니라
-   <label for>를 쓰지 않는다. */
+/* ── 고정 라벨: 아래 컨트롤이 토글·읽기 전용 상자처럼 단일 대상이 아니라
+   <label for>를 쓰지 않는다 ───────────────────────────────────────── */
 .collection-edit-page .collection-form-group-label-static {
   margin: 0;
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: var(--text);
+  font-size: var(--fs-2);
+  color: var(--ink);
 }
 
-/* ── status segmented toggle over a single checkbox ───────────────────
-   양쪽 라벨이 같은 체크박스를 가리켜 아무 쪽이나 눌러도 토글된다.
-   그래서 활성 쪽엔 pointer-events: none을 줘 비활성 쪽만 눌리게 한다.
-   키보드 스페이스는 이 속성과 무관하게 그대로 동작한다. */
+/* ── 상태 토글: 체크박스 하나 위의 두 칸, 현재 칸 = 반전 ───────────────
+   양쪽 라벨이 같은 체크박스를 가리켜 아무 쪽이나 눌러도 토글된다. 그래서
+   현재 칸에는 pointer-events: none을 줘 반대 칸만 눌리게 한다. 키보드
+   스페이스는 이 속성과 무관하게 그대로 동작한다. */
 .collection-edit-page .collection-edit-toggle {
   position: relative;
   display: inline-flex;
-  padding: 3px;
-  gap: 3px;
-  border: 1px solid var(--border-soft);
-  border-radius: 10px;
-  background: var(--bg-soft);
+  border: var(--bw-1) solid var(--ink);
+  background: var(--surface);
 }
 .collection-edit-page .collection-edit-toggle-input {
   position: absolute;
@@ -81,74 +83,68 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 34px;
-  padding: 0 1.25rem;
-  border-radius: 8px;
-  color: var(--muted);
-  font-size: 0.84375rem;
-  font-weight: 600;
+  min-height: var(--hit-lg);
+  padding: 0 var(--space-4);
+  color: var(--ink);
+  font-size: var(--fs-2);
   cursor: pointer;
 }
-/* 체크 안 됨 → 보유 중이 활성. */
-.collection-edit-page .collection-edit-toggle-input:not(:checked) ~ .collection-edit-toggle-option--owned {
-  background: var(--surface);
-  color: var(--brand-ink);
-  font-weight: 700;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  pointer-events: none;
-}
-/* 체크됨 → 구하는 중이 활성. */
+/* 체크 안 됨 → 보유 중이 현재. */
+.collection-edit-page .collection-edit-toggle-input:not(:checked) ~ .collection-edit-toggle-option--owned,
 .collection-edit-page .collection-edit-toggle-input:checked ~ .collection-edit-toggle-option--wanted {
-  background: var(--surface);
-  color: var(--brand-ink);
-  font-weight: 700;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: var(--select);
+  color: var(--on-select);
   pointer-events: none;
 }
-.collection-edit-page .collection-edit-toggle:focus-within {
-  border-color: var(--brand);
-  box-shadow: 0 0 0 3px var(--brand-soft);
+@media (hover: hover) {
+  /* 눌리는 쪽만 hover를 받는다. 반전은 현재 칸의 표시라 밑줄로만 알린다. */
+  .collection-edit-page .collection-edit-toggle-option:hover {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+}
+/* 포커스는 숨은 체크박스가 받으므로 링은 토글 상자에 그린다. */
+.collection-edit-page .collection-edit-toggle:has(.collection-edit-toggle-input:focus-visible) {
+  outline: var(--bw-2) solid var(--select);
+  outline-offset: 2px;
 }
 
-/* ── flat "상세 정보 · 선택" divider ─────────────────────────────────── */
-/* 등록 페이지의 <details> 대신 여기선 값이 이미 채워져 있어 그냥 <div>다. */
+/* ── "상세 정보 · 선택" 구분: 소제목 + 단선 ──────────────────────── */
+/* 등록 쪽의 <details> 대신 여기선 값이 이미 채워져 있어 그냥 <div>다. */
 .collection-edit-page .collection-edit-divider {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
-  margin: 1.625rem 0 1.125rem;
+  gap: var(--space-2);
+  margin: var(--space-4) 0 var(--space-3);
 }
 .collection-edit-page .collection-edit-divider-label {
-  font-size: 0.6875rem;
-  font-weight: 800;
-  letter-spacing: 0.07em;
-  color: var(--muted);
+  font-size: var(--fs-3);
+  color: var(--ink);
 }
 .collection-edit-page .collection-edit-divider-optional {
-  font-size: 0.6875rem;
-  color: var(--muted);
+  font-size: var(--fs-1);
+  color: var(--ink-2);
 }
 .collection-edit-page .collection-edit-divider-line {
   flex: 1;
-  height: 1px;
-  background: var(--line);
+  height: var(--bw-1);
+  background: var(--rule);
 }
 .collection-edit-page .collection-edit-detail-body {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: var(--space-3);
 }
 
-/* ── read-only connected visit-record box ─────────────────────────────── */
+/* ── 읽기 전용 방문 기록 상자 ─────────────────────────────────────── */
 .collection-edit-page .collection-edit-visit-locked {
   display: flex;
   align-items: center;
-  gap: 0.6875rem;
-  min-height: 2.625rem;
-  padding: 0.6875rem 0.8125rem;
-  border: 1px solid var(--border-soft);
-  border-radius: 0.5625rem;
-  background: var(--bg-soft);
+  gap: var(--space-2);
+  min-height: var(--hit-lg);
+  padding: var(--space-2) var(--space-3);
+  border: var(--bw-1) solid var(--rule);
+  background: var(--surface);
 }
 .collection-edit-page .collection-edit-visit-lock-icon {
   flex: none;
@@ -160,184 +156,200 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--text);
-  font-size: 0.875rem;
-  font-weight: 600;
+  color: var(--ink);
+  font-size: var(--fs-2);
 }
 .collection-edit-page .collection-edit-visit-locked-badge {
   flex: none;
-  color: var(--muted);
-  font-size: 0.75rem;
+  color: var(--ink-2);
+  font-size: var(--fs-1);
   white-space: nowrap;
 }
 
-/* ── cover column ──────────────────────────────────────────────────── */
-/* 등록 페이지는 드롭존이 왼쪽 열 전체지만, 여기는 위에 라벨과 아래에
-   교체 버튼 행을 더한다. 드롭존 자체 규칙은 archive_collection.css의
-   `.collection-form-dropzone`을 그대로 쓴다. */
+/* ── 커버 열 ───────────────────────────────────────────────────────── */
+/* 등록 쪽은 드롭존이 왼쪽 열 전체지만, 여기는 위에 라벨과 아래에 교체 버튼
+   줄을 더한다. 드롭존 자체 규칙은 archive_collection.css를 그대로 쓴다. */
 .collection-edit-page .collection-edit-photo-label {
-  margin: 0 0 0.4375rem;
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: var(--text);
+  margin: 0 0 var(--space-1);
+  font-size: var(--fs-2);
+  color: var(--ink);
 }
 .collection-edit-page .collection-edit-cover {
   margin: 0;
 }
 /* position을 relative가 아닌 static으로 둬야 재사용된
-   `input[type=file]{position:absolute}`가 이 행이 아닌 드롭존을
-   기준으로 위치를 잡는다. */
+   `input[type=file]{position:absolute}`가 이 줄이 아닌 드롭존을 기준으로
+   위치를 잡는다. */
 .collection-edit-page .collection-edit-image-row {
   display: flex;
   align-items: center;
-  gap: 0.5625rem;
-  margin-top: 0.625rem;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
 }
+/* 이미지 교체는 <label>이지만 모양은 보조 버튼(1px 테두리)이다. */
 .collection-edit-page .collection-edit-replace-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 36px;
-  padding: 0 0.875rem;
-  border: 1px solid var(--border-soft);
-  border-radius: 9px;
+  min-height: var(--hit-md);
+  padding: 0 var(--space-3);
+  border: var(--bw-1) solid var(--ink);
   background: var(--surface);
-  color: var(--text);
-  font-size: 0.8125rem;
-  font-weight: 600;
+  color: var(--ink);
+  font-size: var(--fs-2);
   cursor: pointer;
 }
-.collection-edit-page .collection-edit-replace-btn:hover {
-  border-color: var(--brand);
+@media (hover: hover) {
+  .collection-edit-page .collection-edit-replace-btn:hover {
+    border-color: var(--select);
+    background: var(--select);
+    color: var(--on-select);
+  }
 }
 .collection-edit-page .collection-edit-image-hint {
-  color: var(--muted);
-  font-size: 0.75rem;
+  color: var(--ink-2);
+  font-size: var(--fs-1);
 }
 
-/* ── actions row: 저장 · 취소 · (spacer) · 굿즈 삭제 ────────────────── */
+/* ── 동작 줄: 저장 · 취소 · (여백) · 굿즈 삭제 ───────────────────── */
 /* 어느 너비에서도 DOM 순서를 그대로 둔다(order·row-reverse 미사용,
    WCAG 2.4.3). */
 .collection-edit-page .collection-edit-actions-row {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-top: 1.75rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid var(--line);
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: var(--bw-1) solid var(--rule);
 }
 .collection-edit-page .collection-edit-actions {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
+/* 삭제 = 오류색 테두리·글자. 라벨 동사가 의미를 주고 테두리로도 구분된다. */
 .collection-edit-page .collection-edit-delete {
   margin-left: auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 46px;
-  padding: 0 1.125rem;
-  border: 1px solid var(--rose-border);
-  border-radius: 11px;
+  min-height: var(--hit-lg);
+  padding: 0 var(--space-3);
+  border: var(--bw-1) solid var(--error);
   background: var(--surface);
-  color: var(--rose-ink);
-  font-size: 0.875rem;
-  font-weight: 700;
-  white-space: nowrap;
+  color: var(--error);
+  font-size: var(--fs-2);
   cursor: pointer;
 }
-.collection-edit-page .collection-edit-delete:hover {
-  background: var(--rose-soft);
+@media (hover: hover) {
+  .collection-edit-page .collection-edit-delete:not(:disabled):hover {
+    background: var(--error);
+    color: var(--surface);
+  }
 }
+.collection-edit-page .collection-edit-delete:focus-visible {
+  background: var(--error);
+  color: var(--surface);
+}
+/* 취소 = 링크(등록 쪽과 같다). */
 .collection-edit-page .collection-edit-cancel {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  height: 46px;
-  padding: 0 1.25rem;
-  border: 1px solid var(--border-soft);
-  border-radius: 11px;
-  background: var(--surface);
-  color: var(--muted);
-  font-size: 0.90625rem;
-  font-weight: 600;
+  min-height: var(--hit-md);
+  padding: 0 var(--space-1);
+  color: var(--link);
+  font-size: var(--fs-2);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+@media (hover: hover) {
+  .collection-edit-page .collection-edit-cancel:hover {
+    background: var(--select);
+    color: var(--on-select);
+    text-decoration: none;
+  }
+}
+.collection-edit-page .collection-edit-cancel:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
   text-decoration: none;
 }
-.collection-edit-page .collection-edit-cancel:hover {
-  border-color: var(--brand);
-  color: var(--text);
-}
-/* archive_collection.css의 .collection-form-submit은 44px인데, 이 페이지는
-   취소/삭제 버튼과 높이를 맞추려고 46px로 올린다. */
-.collection-edit-page .collection-form-submit {
-  height: 46px;
-}
 
-/* ── 404 "item already gone" lock state ─────────────────────────────── */
-/* collection.js의 lockForm()이 다른 탭/기기에서 이미 삭제된 항목이면
-   input/select/textarea/button을 disabled로 만든다. 하지만 공용 입력
-   스킨이 background/color를 강제로 정해 브라우저 기본 흐림 효과를
-   가리고, <label> 요소는 애초에 disabled를 못 받는다. 그래서 아래
-   규칙들은 짝을 이루는 <input>의 :disabled 상태를 읽어 라벨 쪽 모습도
-   함께 흐리게 만든다. */
+/* ── 404 "이미 삭제된 항목" 잠금 상태 ──────────────────────────────── */
+/* collection.js의 lockForm()이 이미 삭제된 항목이면 input/select/textarea/
+   button을 disabled로 만든다. <label>은 disabled를 못 받으므로 짝을 이루는
+   <input>의 :disabled를 읽어 라벨 쪽도 비활성 모양(--off 글자·테두리)으로
+   만든다. 제출 중(.is-loading)인 버튼은 스피너가 보이게 글자색을 그대로 둔다. */
 .collection-edit-page .collection-form input:disabled,
 .collection-edit-page .collection-form select:disabled,
 .collection-edit-page .collection-form textarea:disabled {
-  background: var(--bg-soft);
-  color: var(--muted);
+  border-color: var(--off);
+  background: transparent;
+  color: var(--off);
   cursor: not-allowed;
-  opacity: 0.65;
 }
-.collection-edit-page .collection-form button:disabled {
-  opacity: 0.5;
+.collection-edit-page .collection-form button:disabled:not(.is-loading) {
+  border-color: var(--off);
+  background: transparent;
+  color: var(--off);
   cursor: not-allowed;
 }
 /* 취소는 <a>라 disabled 속성을 받을 수 없어, 형제인 저장의
    `.is-item-gone-locked` 클래스로 잠김 여부를 읽는다. `pointer-events: none`은
-   장식이 아니라 실제로 클릭 이동을 막는 역할이다 — 흐리게만 해서는
-   <a href>가 여전히 눌린다. */
+   장식이 아니라 실제로 클릭 이동을 막는 역할이다. */
 .collection-edit-page .collection-form-submit.is-item-gone-locked ~ .collection-edit-cancel {
-  opacity: 0.5;
+  color: var(--off);
   cursor: not-allowed;
   pointer-events: none;
 }
-/* 상태 토글도 라벨이 아닌 체크박스의 disabled를 형제 결합자로 읽어
-   흐림/커서만 바꾼다. */
+/* 상태 토글은 라벨이 아닌 체크박스의 disabled를 형제 결합자로 읽는다. */
 .collection-edit-page .collection-edit-toggle-input:disabled ~ .collection-edit-toggle-option {
-  opacity: 0.5;
+  color: var(--off);
   cursor: not-allowed;
 }
-/* "이미지 교체" 라벨의 파일 입력은 이 라벨의 형제가 아니라 앞선
-   드롭존 박스 안에 있어 형제 결합자만으로는 못 잇는다. 그래서
-   `:has()`로 드롭존의 disabled 여부를 먼저 읽는다. */
+.collection-edit-page .collection-edit-toggle-input:disabled:not(:checked) ~ .collection-edit-toggle-option--owned,
+.collection-edit-page .collection-edit-toggle-input:disabled:checked ~ .collection-edit-toggle-option--wanted {
+  background: var(--off);
+  color: var(--on-select);
+}
+/* "이미지 교체" 라벨의 파일 입력은 이 라벨의 형제가 아니라 앞선 드롭존 안에
+   있어 형제 결합자만으로는 못 잇는다. 그래서 `:has()`로 드롭존의 disabled
+   여부를 먼저 읽는다. */
 .collection-edit-page .collection-edit-cover:has(input:disabled) ~ .collection-edit-image-row .collection-edit-replace-btn {
-  opacity: 0.5;
+  border-color: var(--off);
+  color: var(--off);
   cursor: not-allowed;
 }
 
 @media (max-width: 45rem) {
-  /* 하단 고정 바 높이만큼 여백을 남겨 삭제 버튼과 오류 배너가
-     끝까지 스크롤해도 가려지지 않게 한다. */
-  .collection-edit-page {
-    padding-bottom: calc(6rem + var(--site-tabbar-h, 0px));
-  }
-  /* 고정 바가 푸터 끝을 덮지 않게 문서 끝에 바 높이만큼 여백 */
+  /* 하단 고정 바 높이만큼 문서 끝에 여백을 남겨 삭제 버튼과 오류 상자가
+     끝까지 스크롤해도 가려지지 않게 한다. 여백은 이 한 곳에만 둔다. */
   body:has(.collection-edit-page .collection-edit-actions) {
     padding-bottom: calc(6rem + var(--site-tabbar-h, 0px));
+  }
+  /* Tab으로 이동한 필드가 고정 바 뒤에 가려지지 않게 스크롤 여유를 둔다. */
+  html:has(.collection-edit-page .collection-edit-actions) {
+    scroll-padding-bottom: calc(4.5rem + var(--site-tabbar-h, 0px));
   }
 
   /* 클래스 3개짜리 특이도라 archive_collection.css의 2클래스 규칙을
      로드 순서와 무관하게 이긴다. */
   .collection-edit-page .collection-form-image.collection-edit-cover-col {
     display: flex;
+    flex-wrap: wrap;
     align-items: flex-end;
-    gap: 0.6875rem;
+    gap: var(--space-2);
     max-width: none;
-    margin: 0 0 1.125rem;
+    margin: 0 0 var(--space-3);
+  }
+  /* 라벨은 한 줄을 다 차지해 좁은 칸에서 글자가 세로로 꺾이지 않게 한다. */
+  .collection-edit-page .collection-edit-cover-col .collection-edit-photo-label {
+    flex: 0 0 100%;
+    margin: 0;
   }
   .collection-edit-page .collection-edit-cover-col .collection-edit-cover {
-    width: 110px;
+    width: 6.875rem;
     flex: none;
   }
   .collection-edit-page .collection-edit-cover-col .collection-edit-image-row {
@@ -355,8 +367,8 @@
   }
   .collection-edit-page .collection-edit-toggle-option {
     flex: 1;
-    height: 34px;
-    font-size: 0.78125rem;
+    padding: 0 var(--space-2);
+    text-align: center;
   }
 
   /* 고정 바가 되는 건 저장/취소뿐이다 — 굿즈 삭제는 그 위에 흐름대로
@@ -371,13 +383,14 @@
   .collection-edit-page .collection-edit-actions-row::before {
     content: "";
     display: block;
-    margin: 1.25rem 0 1rem;
-    height: 1px;
-    background: var(--line);
+    margin: var(--space-4) 0 var(--space-3);
+    height: var(--bw-1);
+    background: var(--rule);
   }
   .collection-edit-page .collection-edit-delete {
     display: flex;
     width: 100%;
+    white-space: normal;
   }
   .collection-edit-page .collection-edit-actions {
     position: fixed;
@@ -385,17 +398,12 @@
     right: 0;
     bottom: var(--site-tabbar-h, 0px);
     z-index: 20;
-    gap: 0.5rem;
-    padding: 0.625rem var(--page-pad-x) calc(0.625rem + env(safe-area-inset-bottom));
-    border-top: 1px solid var(--line);
+    gap: var(--space-2);
+    padding: var(--space-2) var(--page-pad-x) calc(var(--space-2) + env(safe-area-inset-bottom));
+    border-top: var(--bw-2) solid var(--ink);
     background: var(--surface);
-  }
-  .collection-edit-page .collection-edit-cancel {
-    flex: none;
-    height: 44px;
   }
   .collection-edit-page .collection-form-submit {
     flex: 1;
-    height: 44px;
   }
 }

@@ -10,8 +10,23 @@
   text-decoration: none;
 }
 
+/* 수정·삭제 버튼이 든 행·카드는 행 전체를 반전하지 않고 제목 링크만 반전한다.
+   제목 링크는 글자색 상속 + 기본 밑줄이다. */
 .collection-page .collection-row-name a,
 .collection-page .gcard-name a {
   color: inherit;
-  text-decoration: none;
+}
+
+@media (hover: hover) {
+  .collection-page .collection-row-name a:hover,
+  .collection-page .gcard-name a:hover {
+    background: var(--select);
+    color: var(--on-select);
+  }
+}
+
+.collection-page .collection-row-name a:focus-visible,
+.collection-page .gcard-name a:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
 }

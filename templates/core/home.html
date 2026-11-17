@@ -15,11 +15,10 @@
 
 {% block content %}
   <main class="page home-page" id="content">
-    <section class="hero">
+    <section class="hero window">
       <div class="hero-ticket">
         <div class="hero-ticket-main">
-          <p class="hero-ticket-eyebrow">{% translate "서브컬처 이벤트 티켓부스" %}</p>
-          <h1>{% translate "내가 원하는 이벤트를" %} <span class="emphasis">{% translate "찾아봐요!" %}</span></h1>
+          <h1 class="home-page-title">{{ brand_name_ko }} {{ project_name }}</h1>
           {% translate "작품명, 이벤트명, 장소를 검색" as search_placeholder %}
           {% translate "이벤트 검색" as search_aria_label %}
           <form class="search" action="/events/" method="get">
@@ -114,17 +113,17 @@
 
     {% include "core/partials/_home_event_calendar.html" %}
 
-    <section class="section">
-      <div class="section-head">
+    <section class="section window">
+      <div class="section-head window-head">
         <div>
           <span class="section-eyebrow">{% translate "카테고리" %}</span>
-          <h2>{% translate "카테고리로 둘러보기" %}</h2>
+          <h2 class="window-title"><span aria-hidden="true">[</span> {% translate "카테고리로 둘러보기" %} <span aria-hidden="true">]</span></h2>
         </div>
       </div>
       <div class="cat-browse">
         {% for tile in category_tiles %}
           <a class="cat-dot" href="/events/?category={{ tile.slug }}">
-            <span class="cat-dot-swatch" style="background: var(--cat-{{ tile.slug }}-ink, var(--brand-ink));" aria-hidden="true"></span>
+            <span class="cat-dot-swatch" data-category="{{ tile.slug }}" aria-hidden="true"></span>
             <span class="cat-dot-info">
               <span class="cat-name"{% if tile.lang %} lang="{{ tile.lang }}"{% endif %}>{{ tile.label }}</span>
               <span class="cat-count">{% blocktranslate trimmed count counter=tile.count %}{{ counter }}개{% plural %}{{ counter }}개{% endblocktranslate %}</span>
@@ -134,11 +133,11 @@
       </div>
     </section>
 
-    <section class="section">
-      <div class="section-head">
+    <section class="section window">
+      <div class="section-head window-head">
         <div>
           <span class="section-eyebrow">{% translate "이번 주" %}</span>
-          <h2>{% translate "이번 주 눈여겨 볼 이벤트" %}</h2>
+          <h2 class="window-title"><span aria-hidden="true">[</span> {% translate "이번 주 눈여겨 볼 이벤트" %} <span aria-hidden="true">]</span></h2>
         </div>
         <a class="section-more" href="/events/?status=ongoing">{% translate "더보기 ›" %}</a>
       </div>
@@ -153,11 +152,11 @@
       {% endif %}
     </section>
 
-    <section class="section">
-      <div class="section-head">
+    <section class="section window">
+      <div class="section-head window-head">
         <div>
           <span class="section-eyebrow section-eyebrow--amber">{% translate "마감 임박" %}</span>
-          <h2>{% translate "곧 종료돼요" %}</h2>
+          <h2 class="window-title"><span aria-hidden="true">[</span> {% translate "곧 종료돼요" %} <span aria-hidden="true">]</span></h2>
         </div>
         <a class="section-more" href="/events/?status=closing_soon">{% translate "더보기 ›" %}</a>
       </div>
@@ -172,11 +171,11 @@
       {% endif %}
     </section>
 
-    <section class="section">
-      <div class="section-head">
+    <section class="section window">
+      <div class="section-head window-head">
         <div>
           <span class="section-eyebrow">{% translate "방금 올라온" %}</span>
-          <h2>{% translate "새 이벤트" %}</h2>
+          <h2 class="window-title"><span aria-hidden="true">[</span> {% translate "새 이벤트" %} <span aria-hidden="true">]</span></h2>
         </div>
         <a class="section-more" href="/events/?sort=newest">{% translate "더보기 ›" %}</a>
       </div>

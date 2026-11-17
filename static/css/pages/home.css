@@ -3,174 +3,147 @@
   .home-page {
     padding-bottom: 1.5rem;
   }
-  /* ── Hero: 카드 박스 없이 배경에 바로 얹는다. `.hero`는 여백/그리드
-     래퍼로만 쓴다. 네 박스 속성을 여기서 명시적으로 재선언해야 한다 —
-     margin만 덮어쓰면 공유 cards.css의 박스가 그대로 살아남는다. */
-  .hero {
-    margin-bottom: 3.25rem; /* ~52px */
-    background: transparent;
-    border: none;
-    box-shadow: none;
-    padding: 0;
+
+  /* ── 창 사이 간격. 창 제목이 위 테두리 선 위에 반쯤 걸리므로 간격이
+     그만큼 넉넉해야 앞 창과 겹치지 않는다. */
+  .section {
+    margin-top: var(--space-4);
   }
-  .hero-ticket {
-    position: relative;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 21.25rem;
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 1.25rem;
-    box-shadow: var(--shadow);
+  /* 마지막 섹션의 꼬리 여백은 .page의 하단 패딩이 이미 담당한다. */
+  .section:last-child {
+    margin-bottom: 0;
+  }
+
+  /* ── 혼자 놓인 텍스트 링크(더보기·자세히·기록) — 클래스가 있어 전역 링크
+     규칙을 못 받으므로 색·밑줄·반전을 직접 준다. 누름 크기는 --hit-sm. */
+  .section-more,
+  .snapshot-more,
+  .hero-ticket-link,
+  .hero-featured-empty a,
+  .snapshot-record-row .record-action-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--hit-sm);
+    min-height: var(--hit-sm);
+    color: var(--link);
+    font-size: var(--fs-2);
+    font-weight: var(--fw-regular);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+  @media (hover: hover) {
+    .section-more:hover,
+    .snapshot-more:hover,
+    .hero-ticket-link:hover,
+    .hero-featured-empty a:hover,
+    .snapshot-record-row .record-action-link:hover {
+      background: var(--select);
+      color: var(--on-select);
+      text-decoration: none;
+    }
+  }
+  .section-more:focus-visible,
+  .snapshot-more:focus-visible,
+  .hero-ticket-link:focus-visible,
+  .hero-featured-empty a:focus-visible,
+  .snapshot-record-row .record-action-link:focus-visible {
+    background: var(--select);
+    color: var(--on-select);
+    text-decoration: none;
+    outline-color: var(--on-select);
+    outline-offset: -2px;
+  }
+
+  /* ── Hero 창. 창 모양은 cards.css의 `.window`가 맡고 여기서는 바깥 여백만 정한다. */
+  .hero.window {
+    margin-top: var(--space-4);
+    margin-bottom: 0;
+  }
+  /* 화면에는 안 보이고 스크린리더·문서 개요에만 쪽 제목을 준다. */
+  .home-page-title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
   .hero-ticket-main {
-    padding: 3rem 3rem 2.625rem;
     min-width: 0;
   }
-  /* cards.css의 `.hero p`(0,1,1)가 단일 클래스 p 규칙(0,1,0)을 이겨
-     muted 색·margin 0으로 눌러버린다 — .hero-ticket 하위로 스코프해
-     특이도를 (0,2,0)으로 올린다. */
-  .hero-ticket .hero-ticket-eyebrow {
-    margin: 0 0 0.875rem;
-    font-size: 0.75rem;
-    font-weight: 800;
-    letter-spacing: 0.14em;
-    color: var(--brand-ink);
-  }
-  .hero h1 {
-    margin: 0 0 1.625rem;
-    font-size: 2.75rem;
-    font-weight: 300;
-    line-height: 1.22;
-    letter-spacing: -0.02em;
-    word-break: keep-all;
-  }
-  .hero .emphasis {
-    font-weight: 800;
-  }
   .hero .search {
-    max-width: 540px;
+    max-width: 33.75rem;
+    margin: 0;
   }
   .quick-filters {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
   }
 
-  /* ── Hero ticket stub — 우측 열은 티켓 반쪽처럼 절취선(점선)으로
-     본문과 분리하고, notch 2개가 --bg 색으로 칠해져 실제 티켓의
-     펀치홀 구멍처럼 보이게 한다(장식, aria-hidden). */
+  /* ── 대표 행사 영역. 둥근 티켓 홈·절취선·바코드 무늬는 모양만 있는
+     장식이라 표시하지 않고, 검색 아래에 단선으로 나눈다. */
   .hero-ticket-stub {
-    position: relative;
-    background: var(--brand-soft);
-    border-left: 2px dashed var(--brand);
-    border-radius: 0 1.25rem 1.25rem 0;
-    padding: 2.375rem 2rem 2.125rem;
+    margin-top: var(--space-4);
+    padding-top: var(--space-3);
+    border-top: var(--bw-1) solid var(--rule);
     min-width: 0;
   }
-  .hero-ticket-notch {
-    position: absolute;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: var(--bg);
-  }
-  .hero-ticket-notch--a {
-    left: -12px;
-    top: -12px;
-  }
-  .hero-ticket-notch--b {
-    left: -12px;
-    bottom: -12px;
+  .hero-ticket-notch,
+  .hero-ticket-code {
+    display: none;
   }
   .hero-ticket .hero-ticket-admit {
-    margin: 0 0 0.75rem;
-    font-size: 0.6875rem;
-    font-weight: 800;
-    letter-spacing: 0.18em;
-    color: var(--brand-ink);
+    margin: 0;
+    font-size: var(--fs-1);
+    font-weight: var(--fw-regular);
+    color: var(--ink-2);
   }
   .hero-ticket .hero-ticket-work {
-    margin: 0 0 0.1875rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--muted);
+    margin: var(--space-1) 0 0;
+    font-size: var(--fs-2);
+    color: var(--ink-2);
     word-break: keep-all;
+    overflow-wrap: anywhere;
   }
   .hero-ticket-title {
-    margin: 0 0 0.5rem;
-    font-size: 1.3125rem;
-    font-weight: 800;
-    line-height: 1.3;
+    margin: var(--space-1) 0 0;
+    font-size: var(--fs-4);
+    font-weight: var(--fw-regular);
+    line-height: var(--lh-tight);
     word-break: keep-all;
-  }
-  .hero-ticket-title a {
-    color: inherit;
-    text-decoration: none;
-  }
-  .hero-ticket-title a:hover {
-    text-decoration: underline;
-  }
-  .hero-ticket-title a:focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: 3px;
-    border-radius: 4px;
+    overflow-wrap: anywhere;
   }
   .hero-ticket .hero-ticket-meta {
-    margin: 0 0 1.125rem;
-    font-size: 0.78125rem;
-    font-weight: 600;
-    color: var(--text);
+    margin: var(--space-1) 0 0;
+    font-size: var(--fs-2);
+    color: var(--ink-2);
     word-break: keep-all;
+    overflow-wrap: anywhere;
   }
   .hero-ticket .hero-ticket-dday {
-    margin: 0 0 1.125rem;
-    font-size: 2.5rem;
-    font-weight: 800;
-    line-height: 1;
-    letter-spacing: -0.02em;
-    color: var(--brand-ink);
-    font-variant-numeric: tabular-nums;
-  }
-  .hero-ticket-code {
-    height: 2.375rem;
-    margin-bottom: 0.875rem;
-    background: repeating-linear-gradient(
-      90deg,
-      var(--text) 0 2px,
-      transparent 2px 5px,
-      var(--text) 5px 8px,
-      transparent 8px 10px,
-      var(--text) 10px 11px,
-      transparent 11px 16px
-    );
-    opacity: 0.75;
+    margin: var(--space-1) 0 0;
+    font-size: var(--fs-2);
+    font-weight: var(--fw-regular);
+    color: var(--ink);
   }
   .hero-ticket-link {
-    display: inline-block;
-    /* 시각 위치는 그대로 두고 탭 영역만 히트타깃만큼 넓힌다. */
-    padding: 0.625rem 0.25rem;
-    margin: -0.625rem -0.25rem;
-    font-size: 0.8125rem;
-    font-weight: 700;
-    color: var(--brand-ink);
-    text-decoration: none;
-  }
-  .hero-ticket-link:hover {
-    text-decoration: underline;
-  }
-  .hero-ticket-link:focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: 2px;
-    border-radius: 4px;
+    margin-top: var(--space-2);
   }
 
   /* ── Hero rotator — 대표 행사 2건 이상일 때 grid 겹침 스택으로 크로스페이드.
      모든 슬라이드가 같은 grid-area를 공유해 컨테이너 높이가 가장 긴
-     슬라이드에 고정되고, 전환 중 레이아웃 점프가 없다. */
+     슬라이드에 고정되고, 전환 중 레이아웃 점프가 없다. 교체 효과(transition)는
+     사용자 결정으로 유지한다. */
   .hero-rotator-wrap {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: var(--space-2);
   }
   .hero-rotator {
     display: grid;
@@ -193,25 +166,23 @@
     }
   }
 
-  /* 도트·정지 버튼은 JS가 주입한다(no-JS 안전). 히트 타깃 44x44,
-     활성 도트는 색과 폭을 동시에 바꿔 색만으로 상태를 전달하지 않는다. */
+  /* 점·정지 버튼은 JS가 주입한다(no-JS 안전). 누름 크기 --hit-lg, 활성 점은
+     색과 폭을 동시에 바꿔 색만으로 상태를 전달하지 않는다. */
   .hero-rotator-controls {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
-    margin-top: 0.25rem;
+    gap: var(--space-1);
   }
   .hero-rotator-dots {
     display: flex;
     align-items: center;
-    gap: 0.125rem;
   }
   .hero-rotator-dot {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
+    width: var(--hit-lg);
+    height: var(--hit-lg);
     padding: 0;
     border: none;
     background: transparent;
@@ -220,40 +191,33 @@
   .hero-rotator-dot::before {
     content: "";
     display: block;
-    width: 8px;
-    height: 8px;
-    border-radius: 999px;
-    background: var(--muted);
-    transition: background-color 0.2s ease, width 0.2s ease, border-radius 0.2s ease;
+    width: 0.5rem;
+    height: 0.5rem;
+    background: var(--ink-2);
   }
   .hero-rotator-dot[aria-current="true"]::before {
-    width: 20px;
-    border-radius: 4px;
-    background: var(--brand-ink);
-  }
-  .hero-rotator-dot:focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: 2px;
-    border-radius: 4px;
+    width: 1.25rem;
+    background: var(--select);
   }
   .hero-rotator-toggle {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
+    width: var(--hit-lg);
+    height: var(--hit-lg);
     padding: 0;
     border: none;
     background: transparent;
     cursor: pointer;
   }
+  /* 정지 버튼의 두 막대: 첫 막대는 본체, 둘째는 box-shadow 글리프다. */
   .hero-rotator-toggle::before {
     content: "";
     display: block;
-    width: 3px;
-    height: 12px;
-    background: var(--brand-ink);
-    box-shadow: 6px 0 0 var(--brand-ink);
+    width: 0.1875rem;
+    height: 0.75rem;
+    background: var(--ink);
+    box-shadow: 6px 0 0 var(--ink);
   }
   .hero-rotator-toggle[aria-pressed="true"]::before {
     width: 0;
@@ -262,433 +226,289 @@
     box-shadow: none;
     border-style: solid;
     border-width: 6px 0 6px 10px;
-    border-color: transparent transparent transparent var(--brand-ink);
+    border-color: transparent transparent transparent var(--ink);
   }
-  .hero-rotator-toggle:focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: 2px;
-    border-radius: 4px;
+  /* 눌림 반전(버튼 전체가 --select) 동안 글리프가 같은 색에 묻히지 않게 한다. */
+  .hero-rotator-dot:active::before,
+  .hero-rotator-dot[aria-current="true"]:active::before {
+    background: var(--on-select);
+  }
+  .hero-rotator-toggle:active::before {
+    background: var(--on-select);
+    box-shadow: 6px 0 0 var(--on-select);
+  }
+  .hero-rotator-toggle[aria-pressed="true"]:active::before {
+    background: transparent;
+    box-shadow: none;
+    border-color: transparent transparent transparent var(--on-select);
   }
 
-  /* 대표 행사가 없을 때 — 장식용 빈 카드 대신 안내 문구 + 회복 링크 하나. */
+  /* 대표 행사가 없을 때 — 안내 문구 + 회복 링크 하나. */
   .hero-featured-empty {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: var(--space-2);
     align-items: flex-start;
     justify-content: center;
-    min-height: 120px;
   }
   .hero-featured-empty p {
     margin: 0;
-    color: var(--muted);
-    font-size: var(--fs-md);
-  }
-  .hero-featured-empty a {
-    font-size: var(--fs-sm);
-    font-weight: 700;
-    color: var(--brand-ink);
-    text-decoration: none;
-  }
-  .hero-featured-empty a:hover {
-    text-decoration: underline;
+    color: var(--ink-2);
+    font-size: var(--fs-3);
   }
 
-  /* ── Responsive: collapse to 1-column at 860px ────────────── */
-  @media (max-width: 53.75rem) {
-    .hero-ticket {
-      grid-template-columns: 1fr;
-    }
-    .hero-ticket-stub {
-      border-left: none;
-      border-top: 2px dashed var(--brand);
-      border-radius: 0 0 1.25rem 1.25rem;
-    }
-    .hero-ticket-notch--b {
-      left: auto;
-      right: -12px;
-      top: -12px;
-      bottom: auto;
-    }
-  }
-  /* 열 개수는 모든 화면 폭에서 4로 고정, 블록 너비·글자 크기만 반응한다
-     (좁은 화면 값은 아래 ≤64rem 블록 참조). */
+  /* ── 카테고리 둘러보기 — 1px 단선 타일 안에 점·이름·개수. 점 색은
+     템플릿의 data-category가 고른다(미지정 슬러그는 보조 글자색). */
   .cat-browse {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 0.625rem;
+    grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+    gap: var(--space-2);
   }
-  /* ── Category chips (.cat-dot) — 스와치는 `--cat-*-ink` 커스텀 속성을
-     인라인 스타일로 직접 읽는다. 기본 규칙은 데스크톱(>64rem) 크기고,
-     ≤64rem에서는 가로 배치 대신 세로(아이콘 위·라벨 아래) 배치로 바뀐다. */
   .cat-dot {
     display: flex;
     align-items: center;
-    gap: 0.6875rem;
+    gap: var(--space-2);
     min-width: 0;
-    padding: 0.8125rem 1.0625rem;
-    border: 1px solid var(--line);
-    border-radius: 12px;
+    min-height: var(--hit-lg);
+    padding: var(--space-1) var(--space-2);
+    border: var(--bw-1) solid var(--rule);
     background: var(--surface);
     text-decoration: none;
-    color: var(--text);
+    color: var(--ink);
   }
-  .cat-dot:hover {
-    border-color: var(--border-soft);
-    box-shadow: var(--shadow);
+  @media (hover: hover) {
+    .cat-dot:hover {
+      background: var(--select);
+      color: var(--on-select);
+    }
+    .cat-dot:hover * {
+      color: inherit;
+    }
+    .cat-dot:hover .cat-dot-swatch {
+      border: var(--bw-1) solid var(--on-select);
+    }
   }
   .cat-dot:focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: 2px;
+    background: var(--select);
+    color: var(--on-select);
+    outline-color: var(--on-select);
+    outline-offset: -2px;
+  }
+  .cat-dot:focus-visible * {
+    color: inherit;
+  }
+  .cat-dot:focus-visible .cat-dot-swatch {
+    border: var(--bw-1) solid var(--on-select);
   }
   .cat-dot-swatch {
     flex: none;
-    width: 0.625rem;
-    height: 0.625rem;
+    width: 0.5rem;
+    height: 0.5rem;
     border-radius: 50%;
+    background: var(--ink-2);
   }
+  .cat-dot-swatch[data-category="popup_store"] { background: var(--dot-popup_store); }
+  .cat-dot-swatch[data-category="collaboration_cafe"] { background: var(--dot-collaboration_cafe); }
+  .cat-dot-swatch[data-category="theater_bonus"] { background: var(--dot-theater_bonus); }
+  .cat-dot-swatch[data-category="goods_reservation"] { background: var(--dot-goods_reservation); }
+  .cat-dot-swatch[data-category="exhibition"] { background: var(--dot-exhibition); }
+  .cat-dot-swatch[data-category="fan_meeting"] { background: var(--dot-fan_meeting); }
+  .cat-dot-swatch[data-category="concert"] { background: var(--dot-concert); }
   .cat-dot-info {
     display: flex;
     flex-direction: column;
     min-width: 0;
   }
   .cat-name {
-    font-size: var(--fs-md);
-    font-weight: 600;
+    font-size: var(--fs-3);
+    font-weight: var(--fw-regular);
   }
   .cat-count {
-    font-size: var(--fs-sm);
-    color: var(--muted);
+    font-size: var(--fs-1);
+    color: var(--ink-2);
   }
 
-  /* ── Section chrome — 카드 박스 없이 eyebrow 라벨 + h2 + 여백으로만
-     구성한다. */
-  /* 여백만으로 나누면 섹션들이 흩어져 보여, 여백을 줄이고 헤어라인
-     구분선을 더했다 — 구분은 선이, 여백은 숨 쉴 틈만 맡는다.
-     `.section + .section`이라 첫 섹션엔 선이 안 붙고, 스냅샷 패널이
-     통째로 빠져도 다음 섹션이 자동으로 첫 섹션이 된다. */
-  .section {
-    margin-bottom: 1.25rem; /* 20px */
-  }
-  .section + .section {
-    border-top: 1px solid var(--line);
-    padding-top: 1.25rem; /* 20px — 위아래 대칭 */
-  }
-  /* 마지막 섹션의 꼬리 여백은 .page의 하단 패딩이 이미 담당한다. */
-  .section:last-child {
-    margin-bottom: 0;
-  }
+  /* ── 창 머리 — 제목은 .window-title이 테두리 위에 얹으므로, 머리 안에는
+     eyebrow(창 안 첫 줄, 왼쪽)와 더보기 링크(오른쪽)만 남는다. */
   .section-head {
-    display: flex;
     justify-content: space-between;
-    align-items: flex-end;
-    margin-bottom: 1.125rem;
+    margin-bottom: var(--space-2);
   }
+  /* eyebrow는 글자만 남기고 모양을 본문 보조 글자로 맞춘다. */
   .section-eyebrow {
     display: block;
-    font-size: 0.6875rem;
-    font-weight: 800;
-    letter-spacing: 0.1em;
-    color: var(--brand-ink);
-    margin-bottom: 0.25rem;
-  }
-  .section-eyebrow--amber {
-    color: var(--amber-ink);
-  }
-  .section h2 {
-    margin: 0;
-    font-size: var(--fs-lg);
-  }
-  .section-more {
-    position: relative;
-    font-size: var(--fs-sm);
-    font-weight: 600;
-    color: var(--brand-ink);
-    text-decoration: none;
-  }
-  .section-more::before {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 44px;
-    height: 44px;
-    transform: translate(-50%, -50%);
-  }
-  .section-more:hover {
-    text-decoration: underline;
-  }
-  .section-more:focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: 2px;
-    border-radius: 4px;
+    font-size: var(--fs-1);
+    font-weight: var(--fw-regular);
+    color: var(--ink-2);
   }
 
-  /* ── collection-first home snapshot panel — 위 .section/.section-head/
-     .section h2를 공유하며 이 셀렉터들 자체는 건드리지 않는다. */
-  /* ── 4-up stat strip — 헤어라인으로 나눈 하나의 테두리 카드다. 셀마다
-     박스가 따로인 공유 .summary-grid/.summary-card와 구조가 달라 별도
-     <dl>로 둔다(cards.css는 무접촉). 값의 weight 300은 라벨(600)과의
-     대비를 위한 의도적인 선택이다. */
+  /* ── 컬렉션 스냅샷 — 4칸 통계는 하나의 상자를 단선으로 나눈다. 공유
+     .summary-grid와 구조가 달라 별도 <dl>로 둔다. */
   .snapshot-stats {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    margin: 0;
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    overflow: hidden;
+    margin: var(--space-3) 0 0;
+    padding: 0;
     background: var(--surface);
+    border-block: var(--bw-1) solid var(--rule);
   }
   .snapshot-stat {
-    padding: 1.25rem 1.375rem;
     min-width: 0;
+    padding: var(--space-2);
+    border-left: var(--bw-1) solid var(--rule);
   }
-  .snapshot-stat + .snapshot-stat {
-    border-left: 1px solid var(--line);
+  .snapshot-stat:first-child {
+    border-left: none;
   }
   .snapshot-stat dt {
     display: flex;
     align-items: center;
-    gap: 0.4375rem;
-    margin-bottom: 0.625rem;
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: var(--muted);
+    gap: var(--space-1);
+    margin: 0;
+    font-size: var(--fs-2);
+    font-weight: var(--fw-regular);
+    color: var(--ink-2);
   }
   .snapshot-stat dd {
-    margin: 0;
-    font-size: 2.25rem;
-    font-weight: 300;
-    line-height: 1;
-    letter-spacing: -0.01em;
-    font-variant-numeric: tabular-nums;
-    color: var(--text);
+    margin: var(--space-1) 0 0;
+    font-size: var(--fs-5);
+    font-weight: var(--fw-regular);
+    line-height: var(--lh-tight);
+    color: var(--ink);
   }
   .snapshot-stat-dot {
     flex: none;
-    width: 8px;
-    height: 8px;
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
     border-radius: 50%;
-    background: var(--muted);
-  }
-  /* 각 셀의 점은 새 색을 만들지 않고 기존 상태/카테고리 색을 그대로
-     빌려 쓴다. */
-  .snapshot-stat[data-tone="owned"] .snapshot-stat-dot {
-    background: var(--cat-goods_reservation-ink);
-  }
-  .snapshot-stat[data-tone="wanted"] .snapshot-stat-dot {
-    background: var(--brand-ink);
-  }
-  .snapshot-stat[data-tone="visited"] .snapshot-stat-dot {
-    background: var(--up-ink);
-  }
-  .snapshot-stat[data-tone="interest"] .snapshot-stat-dot {
-    background: var(--pink-ink);
+    background: var(--select);
   }
   .snapshot-sublist {
-    margin-top: 0.875rem;
+    margin-top: var(--space-4);
   }
   .snapshot-sublist-head {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.5rem;
+    align-items: baseline;
+    gap: var(--space-2);
   }
   .snapshot-sublist-head h3 {
     margin: 0;
-    font-size: var(--fs-md);
+    font-size: var(--fs-3);
   }
-  .snapshot-more {
-    font-size: var(--fs-sm);
-    font-weight: 600;
-    color: var(--brand-ink);
-    text-decoration: none;
-  }
-  .snapshot-more:hover {
-    text-decoration: underline;
+  .snapshot-count {
+    font-weight: var(--fw-regular);
+    color: var(--ink-2);
   }
 
-  /* "기록 대기" 행 — 가로 레일을 3열 그리드로 바꿨다(다른 두 서브리스트는
-     레일 그대로). 카테고리 강조는 행 자체 border-left가 아니라 3px 바로
-     둬 행의 둥근 테두리를 그대로 유지한다. */
+  /* "기록 대기" 행 — 막대 + 본문 + 기록 링크. 카테고리 색은 쓰지 않는다. */
   .snapshot-record-rows {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.75rem;
-    margin: 0;
+    margin: var(--space-2) 0 0;
     padding: 0;
     list-style: none;
+    background: var(--surface);
   }
   .snapshot-record-row {
-    --rec-ink: var(--muted);
     display: flex;
     align-items: center;
-    gap: 0.875rem;
+    gap: var(--space-2);
     min-width: 0;
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    background: var(--surface);
-    padding: 0.875rem 1rem;
+    min-height: 2.5rem;
+    padding: var(--space-1) var(--space-2);
+    border-bottom: var(--bw-1) solid var(--rule);
   }
-  .snapshot-record-row[data-cat="popup_store"] { --rec-ink: var(--cat-popup_store-ink); }
-  .snapshot-record-row[data-cat="collaboration_cafe"] { --rec-ink: var(--cat-collaboration_cafe-ink); }
-  .snapshot-record-row[data-cat="theater_bonus"] { --rec-ink: var(--cat-theater_bonus-ink); }
-  .snapshot-record-row[data-cat="goods_reservation"] { --rec-ink: var(--cat-goods_reservation-ink); }
-  .snapshot-record-row[data-cat="exhibition"] { --rec-ink: var(--cat-exhibition-ink); }
-  .snapshot-record-row[data-cat="fan_meeting"] { --rec-ink: var(--cat-fan_meeting-ink); }
   .snapshot-record-bar {
     flex: none;
-    width: 3px;
+    width: var(--bw-2);
     align-self: stretch;
-    min-height: 2.625rem;
-    border-radius: 2px;
-    background: var(--rec-ink);
+    background: var(--ink);
   }
   .snapshot-record-body {
     flex: 1;
     min-width: 0;
   }
+  .snapshot-record-body p {
+    margin: 0;
+  }
   .snapshot-record-cat {
-    margin: 0 0 0.125rem;
-    font-size: 0.69rem;
-    font-weight: 700;
-    color: var(--rec-ink);
+    font-size: var(--fs-1);
+    color: var(--ink-2);
   }
   /* 1줄 말줄임 — 이 행은 전체 제목을 읽는 곳이 아니라 기록 폼으로 가는
      길잡이다. */
   .snapshot-record-title {
-    margin: 0;
-    font-size: 0.9rem;
-    font-weight: 700;
-    line-height: 1.35;
-    color: var(--text);
+    font-size: var(--fs-3);
+    color: var(--ink);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
   .snapshot-record-when {
-    margin: 0.0625rem 0 0;
-    font-size: 0.75rem;
-    color: var(--muted);
+    font-size: var(--fs-1);
+    color: var(--ink-2);
   }
-  /* .record-action-link는 archive.css의 공유 컴포넌트라 이 행 안에서만
-     재선언한다 — 배경·글자색·테두리 4속성을 모두 명시해야 원본 상자가
-     비치지 않는다. */
+  /* .record-action-link는 archive.css의 공유 컴포넌트(채움 버튼)라 이 행 안에서만
+     다시 선언한다 — 배경·테두리·반경·패딩을 모두 명시해야 원본 상자가
+     비치지 않는다. 링크 모양은 위 공용 텍스트 링크 규칙이 맡는다. */
   .snapshot-record-row .record-action-link {
     flex: none;
-    border-radius: 999px;
-    background: none;
-    border: 1px solid var(--brand);
-    color: var(--brand-ink);
-    padding: 0.4375rem 1.0625rem;
-    font-size: 0.78rem;
-  }
-  .snapshot-record-row .record-action-link:hover {
-    background: var(--brand-soft);
-  }
-  .snapshot-count {
-    color: var(--brand-ink);
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    padding: 0 var(--space-1);
   }
 
-  /* 스냅샷 모바일 (≤45rem) — 시안의 모바일 보드 그대로: 통계는 헤어라인으로
-     나눈 한 장 대신 낱장 카드 4개(가로 폭이 좁아 셀 내부 여백이 먼저 무너진다),
-     기록 대기는 3열 → 1열. */
+  /* 스냅샷 모바일 (≤45rem) — 통계는 2열, 칸 사이는 단선. */
   @media (max-width: 45rem) {
     .snapshot-stats {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 0.4375rem;
-      border: none;
-      border-radius: 0;
-      overflow: visible;
-      background: none;
+      grid-template-columns: repeat(2, 1fr);
     }
-    .snapshot-stat {
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      background: var(--surface);
-      padding: 0.6875rem 0.5rem;
-      text-align: center;
+    .snapshot-stat:nth-child(odd) {
+      border-left: none;
     }
-    .snapshot-stat + .snapshot-stat {
-      border-left: 1px solid var(--line);
-    }
-    .snapshot-stat dt {
-      justify-content: center;
-      gap: 0.3125rem;
-      margin-bottom: 0.375rem;
-      font-size: 0.66rem;
-    }
-    .snapshot-stat dd {
-      font-size: 1.375rem;
-    }
-    .snapshot-stat-dot {
-      width: 6px;
-      height: 6px;
-    }
-    .snapshot-record-rows {
-      grid-template-columns: minmax(0, 1fr);
-      gap: 0.5625rem;
-    }
-    .snapshot-record-row {
-      gap: 0.75rem;
-      padding: 0.75rem 0.875rem;
-    }
-    .snapshot-record-bar {
-      min-height: 2.375rem;
-    }
-    .snapshot-record-title {
-      font-size: 0.85rem;
-    }
-    .snapshot-record-cat {
-      font-size: 0.66rem;
-    }
-    .snapshot-record-when {
-      font-size: 0.69rem;
+    .snapshot-stat:nth-child(n+3) {
+      border-top: var(--bw-1) solid var(--rule);
     }
   }
 
-  /* 삭제된 archive_visits.css에서 옮겨온 규칙 — "최근 등록한 굿즈" 타일의
-     기본 박스/미디어/제목 스타일이라 파일과 함께 사라지지 않게 여기로
-     이식했다. 값은 원본 그대로다. */
+  /* "최근 등록한 굿즈" 타일 — 박스 없이 사진 칸(1px 단선) + 제목. 삭제된
+     archive_visits.css에서 옮겨온 규칙이라 파일과 함께 사라지지 않게 여기에 둔다. */
   .visit-card {
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    background: var(--bg-card);
-    padding: 0.75rem;
+    border: none;
+    background: transparent;
+    padding: 0;
   }
   .visit-card-media {
     align-self: stretch;
   }
   .visit-card h3 {
     margin: 0 0 0.3125rem;
-    font-size: var(--fs-base);
+    font-size: var(--fs-3);
     line-height: 1.35;
     overflow-wrap: anywhere;
   }
-  /* "최근 등록한 굿즈" 타일은 .visit-card의 테두리/배경을 재사용하되 이
-     페이지의 168px 가로 스크롤 폭에 맞춘다. .visit-card-body가 없어 기존
-     2열 그리드 대신 미디어-위/제목-아래 블록으로 떨어진다. */
   .snapshot-goods-card .visit-card-media {
     width: 100%;
     aspect-ratio: 3 / 4;
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--space-2);
+    background: var(--surface);
+    border: var(--bw-1) solid var(--rule);
   }
   .snapshot-goods-card .visit-card-media img,
   .snapshot-goods-card .collection-thumb-placeholder {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: 8px;
     display: block;
   }
-  /* 이미지 없을 때 대체 — 빈 색 블록 대신 가운데 정렬된 굿즈 이모지.
-     .snapshot-goods-card에만 스코프해 컬렉션 페이지의 같은 클래스 사용은
-     건드리지 않는다. */
+  /* 이미지 없을 때 대체 — 무채색 블록 가운데에 굿즈 이모지. .snapshot-goods-card에만
+     스코프해 컬렉션 페이지의 같은 클래스 사용은 건드리지 않는다. */
   .snapshot-goods-card .collection-thumb-placeholder {
     display: flex;
     align-items: center;
     justify-content: center;
+    background: var(--off);
     font-size: 2rem;
   }
   .snapshot-goods-card .collection-thumb-placeholder::before {
@@ -696,7 +516,8 @@
   }
   .snapshot-goods-card h3 {
     margin: 0;
-    font-size: var(--fs-sm);
+    font-size: var(--fs-2);
+    font-weight: var(--fw-regular);
     line-height: 1.35;
     overflow-wrap: anywhere;
     display: -webkit-box;
@@ -704,78 +525,20 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  .snapshot-goods-card h3 a {
-    color: inherit;
-    text-decoration: none;
+
+  /* ── horizontal scroller — 홈 전용 값. 공통 컴포넌트 규칙은
+     static/css/components/hscroll.css에 있다. 남은 사용처는 "최근 등록한 굿즈"
+     레일 하나뿐이다(발견 레일 3개와 다가오는 일정은 세로 목록이다). */
+  .hscroll-track li {
+    flex: none;
+    width: 8rem;
   }
 
   @media (max-width: 45rem) {
     .home-page {
-      padding: 1rem var(--page-pad-x) 3rem;
+      padding: var(--space-3) var(--page-pad-x) var(--space-6);
     }
-    .hero {
-      margin-bottom: 2.5rem;
-    }
-    .hero-ticket-main {
-      padding: 1.5rem 1.25rem 1.375rem;
-    }
-    .hero h1 {
-      font-size: 1.75rem;
-      margin-bottom: 1.125rem;
-    }
-    .hero-ticket-stub {
-      padding: 1.625rem 1.25rem 1.5rem;
-    }
-    .hero-ticket .hero-ticket-dday {
-      font-size: 2rem;
-    }
-    .section-head {
-      align-items: flex-start;
-      flex-direction: column;
-      gap: 0.25rem;
-    }
-  }
-
-  /* ── horizontal scroller — 홈 전용 값. 공통 컴포넌트 규칙은
-     static/css/hscroll.css에 있다. 남은 사용처는 "최근 등록한 굿즈"
-     레일 하나뿐이다(발견 레일 3개와 다가오는 일정은 세로 목록으로
-     전환했다). */
-  .hscroll-track li {
-    flex: none;
-    width: 168px;
-  }
-
-  @media (max-width: 45rem) {
     .hscroll-track li {
       scroll-snap-align: start;
-    }
-  }
-
-  /* ── Category chips: 열 개수는 4로 고정, 좁은 화면에서는 세로 스택으로 —
-     320px 기준 열 너비가 약 64.5px라 가로 배치(스와치+2줄 텍스트)로는
-     "콜라보 카페" 같은 라벨이 안 들어간다. 세로 스택(스와치 위·라벨
-     아래)으로 바꾸고, 라벨은 잘라내지 않고 2줄까지 자연스럽게 줄바꿈한다. */
-  @media (max-width: 64rem) {
-    .cat-dot {
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      gap: 0.25rem;
-      padding: 0.5rem 0.25rem;
-      border-radius: 8px;
-    }
-    .cat-dot-swatch {
-      width: 0.5rem;
-      height: 0.5rem;
-    }
-    .cat-dot-info {
-      align-items: center;
-    }
-    .cat-name {
-      font-size: var(--fs-xs);
-      line-height: 1.25;
-    }
-    .cat-count {
-      font-size: var(--fs-xs);
     }
   }

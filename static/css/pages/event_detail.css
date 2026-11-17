@@ -1,421 +1,403 @@
-/* event_detail.css — /events/<id>/ 단일 칼럼 에디토리얼 상세. 이미지 열을
-   없애고 본문 하나만 남긴다(`docs/FE/event-typography-editorial.md`).
-   `.event-detail-page` 스코프에서만 동작하며 공용 파일은 수정하지 않는다.
-   상태 톤 색은 event_list.css의 [data-tone] 메커니즘을 페이지 스코프로
-   복제해 관련 행사 톤 배지와 상단 상태 칩이 함께 쓴다. */
+/* event_detail.css — /events/<id>/ 행사 상세(DOS 형태). 본문 격자가 제목 없는
+   주 창이고(안의 참여 상태·행사 소개·공지는 창 안 단선 구획), 위치와 관련
+   행사는 제목 달린 창으로 따로 둔다. 카테고리 색은 점에만 쓰고 상태는 테두리
+   모양 + 글자로 나눈다. 색은 토큰만 쓰고 반경·그림자·전환은 쓰지 않는다. */
 
 .event-detail-page {
-  padding-bottom: 6rem;
-}
-
-/* ── breadcrumb ──────────────────────────────────────────────────────── */
-.event-detail-page .event-detail-breadcrumb {
-  margin: 0 0 1rem;
-  font-size: var(--fs-md);
-}
-.event-detail-page .event-detail-breadcrumb a {
-  color: var(--muted);
-  font-weight: 600;
-  text-decoration: none;
-}
-.event-detail-page .event-detail-breadcrumb a:hover {
-  color: var(--text);
-  text-decoration: underline;
-}
-
-/* ── single content column ──────────────────────────────────────────────
-   옛 이미지 칼럼이 하던 폭 제한을 대신한다. `.event-detail-page`가 확장하는
-   `.page`(base.css:57)는 이미 1120px로 캡되므로, 그 안에서 본문 가독폭을
-   한 번 더 좁힌다. 근거: 이 저장소에서 갤러리 없이 단일 칼럼 본문만 쓰는
-   형제 페이지(archive_visit_detail.css:11-14, archive_visit_edit.css:14,
-   archive_visit_create.css:14)가 전부 동일한 51.25rem(820px)을 쓰고 있어
-   그 관례를 그대로 재사용한다. */
-.event-detail-page .event-detail-grid {
-  max-width: 51.25rem;
+  max-width: 53rem;
   margin: 0 auto;
 }
 
-/* ── kicker: 카테고리 표식 + 작품명 ──────────────────────────────────── */
+/* 카테고리 점 색: 7개 슬러그만 색을 갖고 그 밖은 보조 글자색(점에서만 쓴다). */
+.event-detail-page [data-category="popup_store"] { --event-dot: var(--dot-popup_store); }
+.event-detail-page [data-category="collaboration_cafe"] { --event-dot: var(--dot-collaboration_cafe); }
+.event-detail-page [data-category="theater_bonus"] { --event-dot: var(--dot-theater_bonus); }
+.event-detail-page [data-category="goods_reservation"] { --event-dot: var(--dot-goods_reservation); }
+.event-detail-page [data-category="exhibition"] { --event-dot: var(--dot-exhibition); }
+.event-detail-page [data-category="fan_meeting"] { --event-dot: var(--dot-fan_meeting); }
+.event-detail-page [data-category="concert"] { --event-dot: var(--dot-concert); }
+
+/* ── breadcrumb: 바탕 위 링크는 공용 링크 규칙을 받는다 ─────────────── */
+.event-detail-page .event-detail-breadcrumb {
+  margin: 0 0 var(--space-3);
+  font-size: var(--fs-2);
+}
+
+/* ── 주 창 안: 카테고리 · 작품 · 제목 · 출처 ───────────────────────── */
 .event-detail-page .event-detail-cat-row {
   display: flex;
   align-items: center;
-  gap: 0.4375rem;
-  margin-bottom: 0.5rem;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
 }
 .event-detail-page .event-detail-cat-bar {
-  width: 0.625rem;
-  height: 0.625rem;
-  border-radius: 2px;
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--event-dot, var(--ink-2));
 }
 .event-detail-page .event-detail-cat-label {
-  font-size: 0.8125rem;
-  font-weight: 700;
+  font-size: var(--fs-2);
 }
+/* keep-all은 띄어쓰기 없는 긴 글자를 못 끊으므로 overflow-wrap으로 좁은 폭의 가로 넘침을 막는다. */
 .event-detail-page .event-detail-work {
-  margin: 0 0 0.375rem;
-  color: var(--muted);
-  font-size: 0.9375rem;
-  font-weight: 700;
+  margin: 0 0 var(--space-1);
+  color: var(--ink-2);
+  font-size: var(--fs-3);
   word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 .event-detail-page .event-detail-title {
-  margin: 0 0 0.375rem;
-  font-size: var(--fs-xl);
-  font-weight: 800;
-  line-height: 1.3;
-  color: var(--text);
+  margin: 0 0 var(--space-1);
+  font-size: var(--fs-5);
+  line-height: var(--lh-tight);
+  color: var(--ink);
   word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 .event-detail-page .event-detail-subtitle {
-  margin: 0 0 1rem;
-  color: var(--muted);
-  font-size: var(--fs-base);
+  margin: 0 0 var(--space-3);
+  color: var(--ink-2);
+  font-size: var(--fs-2);
 }
 
-/* ── status line: 텍스트 상태 칩 + 공식 확인 칩 ───────────────────────
-   옛 회전 원형 스탬프(2열 그리드에 절대배치)는 단일 칼럼에서 성립하지
-   않아 인라인 칩으로 바꿨다. 공식 확인 칩은 새 토큰 없이 .applied-chip
-   레시피를 그대로 재사용한다(cards.css:119-128). */
+/* ── 상태 줄: 누르지 않는 배지(높이 1.5rem 고정) ───────────────────── */
 .event-detail-page .event-detail-status-line {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.375rem;
-  margin: 0 0 1rem;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
 }
-.event-detail-page .event-detail-status-chip {
-  display: inline-block;
-  padding: 0.25rem 0.625rem;
-  border-radius: var(--radius-chip);
-  font-size: var(--fs-xs);
-  font-weight: 700;
-  color: var(--muted);
-  background: var(--muted-soft);
+.event-detail-page .event-detail-status-chip,
+.event-detail-page .event-detail-related-tone,
+.event-detail-page .event-detail-official-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.5rem;
+  padding: 0 var(--space-2);
+  border: var(--bw-1) solid var(--rule);
+  background: transparent;
+  color: var(--ink);
+  font-size: var(--fs-1);
+  white-space: nowrap;
 }
-.event-detail-page .event-detail-status-chip[data-tone="ongoing"] {
-  color: var(--mint-ink);
-  background: var(--mint-soft);
+/* 진행 중 = 글자색 1px, 곧 종료 = 2px, 종료 = 점선 + 보조 글자색 */
+.event-detail-page [data-tone="ongoing"] {
+  border-color: var(--ink);
 }
-.event-detail-page .event-detail-status-chip[data-tone="closing_soon"] {
-  color: var(--amber-ink);
-  background: var(--amber-soft);
+.event-detail-page [data-tone="closing_soon"] {
+  border-width: var(--bw-2);
+  border-color: var(--ink);
 }
-.event-detail-page .event-detail-status-chip[data-tone="upcoming"] {
-  color: var(--up-ink);
-  background: var(--up-soft);
-}
-.event-detail-page .event-detail-status-chip[data-tone="ended"] {
-  color: var(--end-ink);
-  background: var(--end-soft);
+.event-detail-page [data-tone="ended"] {
+  border-style: dashed;
+  color: var(--ink-2);
 }
 
-/* ── metadata dl ───────────────────────────────────────────────────────── */
+/* ── 메타 dl: 행마다 단선 ──────────────────────────────────────────── */
 .event-detail-page .event-detail-meta {
-  margin: 1rem 0 1.25rem;
-  border-top: 2px solid var(--text);
+  margin: 0 0 var(--space-3);
+  border-top: var(--bw-1) solid var(--rule);
 }
 .event-detail-page .event-detail-meta-row {
   display: grid;
-  grid-template-columns: 96px 1fr;
-  gap: 0.5rem;
-  border-bottom: 1px solid var(--line);
-  padding: 0.625rem 0;
+  grid-template-columns: 6rem minmax(0, 1fr);
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-bottom: var(--bw-1) solid var(--rule);
 }
 .event-detail-page .event-detail-meta-row dt {
   margin: 0;
-  color: var(--muted);
-  font-weight: 700;
-  font-size: 0.8125rem;
+  color: var(--ink-2);
+  font-size: var(--fs-2);
 }
 .event-detail-page .event-detail-meta-row dd {
   margin: 0;
-  color: var(--text);
-  font-size: 0.875rem;
+  color: var(--ink);
+  font-size: var(--fs-2);
   word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
-/* ── actions row: 찜 + 공식 페이지 pills ────────────────────────────── */
+/* ── 버튼 줄: 찜(보조) + 공식 페이지(주, 2px 테두리) ──────────────── */
 .event-detail-page .event-detail-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.625rem;
-  margin-bottom: 1.25rem;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
 }
-.event-detail-page .event-detail-actions .status-row {
+.event-detail-page .status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
   margin: 0;
 }
-.event-detail-page .event-detail-pill {
+/* display를 지정한 규칙이 hidden을 덮지 않게 한다(상태 선택 줄이 접힌 채 시작). */
+.event-detail-page .status-row[hidden] {
+  display: none;
+}
+.event-detail-page .event-detail-pill-official {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.3125rem;
-  min-height: 44px;
-  padding: 0 1.125rem;
-  border-radius: var(--radius-chip);
-  font-size: 0.875rem;
-  font-weight: 700;
-  text-decoration: none;
-  border: 1px solid var(--border-soft);
-  cursor: pointer;
-}
-.event-detail-page .event-detail-pill-interest {
-  border-color: var(--pink-border);
+  min-height: var(--hit-md);
+  padding: 0 var(--space-3);
+  border: var(--bw-2) solid var(--ink);
   background: var(--surface);
-  color: var(--pink-ink);
+  color: var(--ink);
+  font-size: var(--fs-2);
+  text-decoration: none;
 }
-.event-detail-page .event-detail-pill-interest.active {
-  background: var(--pink-soft);
+/* 방문 완료 뒤에는 "기록 남기기"가 주 버튼이라 공식 페이지는 보조(1px)로 낮춘다. */
+.event-detail-page .event-detail-actions:has(~ .event-detail-participation .action-link.primary) .event-detail-pill-official {
+  border-width: var(--bw-1);
 }
-.event-detail-page .event-detail-pill-official {
-  border-color: var(--brand);
-  background: var(--brand);
-  color: #fff;
+@media (hover: hover) {
+  .event-detail-page .event-detail-pill-official:hover,
+  .event-detail-page .action-link:hover {
+    background: var(--select);
+    border-color: var(--select);
+    color: var(--on-select);
+  }
+}
+.event-detail-page .event-detail-pill-official:focus-visible,
+.event-detail-page .action-link:focus-visible {
+  background: var(--select);
+  border-color: var(--select);
+  color: var(--on-select);
 }
 
-/* ── participation sub-panel ─────────────────────────────────────────── */
-.event-detail-page .event-detail-participation {
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--bg-card);
-  padding: 0.875rem 1rem;
-  margin-bottom: 1.25rem;
+/* ── 창 안 구획: 참여 상태 · 행사 소개 · 공지 (단선은 cards.css) ───── */
+.event-detail-page .window-section h2 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--fs-3);
+  line-height: var(--lh-tight);
 }
-.event-detail-page .event-detail-participation h2 {
-  margin: 0 0 0.625rem;
-  font-size: var(--fs-md);
+.event-detail-page .event-detail-section p {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--fs-3);
+  line-height: var(--lh-base);
 }
 .event-detail-page .event-detail-participation .status-change-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 0.625rem;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
 }
 .event-detail-page .event-detail-participation .status-change-row .action-link {
   flex: 1;
   min-width: 0;
 }
-.event-detail-page .event-detail-participation .action-link {
+/* 주·보조 링크 버튼 모양(참여 상태 구획과 하단 고정 막대가 함께 쓴다) */
+.event-detail-page .action-link {
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  min-height: 44px;
-  padding: 0.5625rem 0.625rem;
-  border-radius: 8px;
+  min-height: var(--hit-md);
+  padding: var(--space-1) var(--space-2);
+  border: var(--bw-1) solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-2);
+  line-height: var(--lh-tight);
+  text-align: center;
   text-decoration: none;
-  font-size: var(--fs-md);
-  font-weight: 600;
-  border: 1px solid var(--border-soft);
-  color: var(--text);
-  background: var(--bg-soft);
+  cursor: pointer;
+}
+.event-detail-page .action-link.primary {
+  border-width: var(--bw-2);
 }
 .event-detail-page .event-detail-participation .action-link.primary {
-  border-color: var(--brand);
-  background: var(--brand);
-  color: #fff;
-  margin-top: 0.625rem;
   width: 100%;
-}
-.event-detail-page .event-detail-participation #status-choices {
-  margin-top: 0;
-}
-.event-detail-page .event-detail-participation #status-choices .status-btn {
-  min-height: 40px;
+  margin-top: var(--space-2);
 }
 
-/* ── 행사 소개 / 공식 공지 · 특전 ───────────────────────────────────── */
-.event-detail-page .event-detail-section {
-  margin-bottom: 1.25rem;
+/* ── 위치 창 ───────────────────────────────────────────────────────── */
+.event-detail-page .event-detail-location,
+.event-detail-page .event-detail-related {
+  margin-top: var(--space-5);
 }
-.event-detail-page .event-detail-section h2 {
-  margin: 0 0 0.5rem;
-  font-size: var(--fs-md);
+.event-detail-page h2.window-title::before {
+  content: "[ ";
+  content: "[ " / "";
 }
-.event-detail-page .event-detail-section p {
-  margin: 0;
-  color: var(--text);
-  font-size: 0.9375rem;
-  line-height: 1.7;
-}
-
-/* ── 위치 section (본문 칼럼 폭에 맞춤) ─────────────────────────────── */
-.event-detail-page .event-detail-location {
-  max-width: 51.25rem;
-  margin: 1.5rem auto 0;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--line);
-}
-.event-detail-page .event-detail-location h2 {
-  margin: 0 0 0.75rem;
-  font-size: var(--fs-md);
+.event-detail-page h2.window-title::after {
+  content: " ]";
+  content: " ]" / "";
 }
 .event-detail-page .event-detail-location-name {
   margin: 0;
-  font-weight: 700;
-  color: var(--text);
-  font-size: 0.9375rem;
+  color: var(--ink);
+  font-size: var(--fs-3);
 }
 .event-detail-page .event-detail-location-region {
-  margin: 0.1875rem 0 0;
-  color: var(--muted);
-  font-size: 0.8125rem;
+  margin: var(--space-1) 0 0;
+  color: var(--ink-2);
+  font-size: var(--fs-2);
 }
 .event-detail-page .event-detail-location-link {
   display: inline-block;
-  margin-top: 0.625rem;
-  color: var(--brand-ink);
-  font-weight: 700;
-  font-size: 0.875rem;
+  margin-top: var(--space-2);
+  color: var(--link);
+  font-size: var(--fs-2);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+@media (hover: hover) {
+  .event-detail-page .event-detail-location-link:hover {
+    background: var(--select);
+    color: var(--on-select);
+    text-decoration: none;
+  }
+}
+.event-detail-page .event-detail-location-link:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
   text-decoration: none;
 }
-.event-detail-page .event-detail-location-link:hover {
-  text-decoration: underline;
-}
-/* 실제 지도 그래픽이 아닌 중립적인 테두리 플레이스홀더 — 실제 임베드는
-   백엔드/프론트엔드 후속 작업이다(템플릿의 TODO 주석 참고). */
+/* 지도 임베드 자리: 내용이 생기기 전에는 보이지 않는다. */
 .event-detail-page .event-detail-map {
-  margin-top: 0.875rem;
+  margin-top: var(--space-3);
   min-height: 8rem;
-  border: 1px dashed var(--border-soft);
-  border-radius: 10px;
-  background: var(--bg-soft);
+  border: var(--bw-1) solid var(--rule);
+}
+.event-detail-page .event-detail-map:empty {
+  display: none;
 }
 
-/* ── 이런 행사도 있어요 (본문 칼럼 폭에 맞춤) ──────────────────────── */
-.event-detail-page .event-detail-related {
-  max-width: 51.25rem;
-  margin: 1.5rem auto 0;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--line);
-}
+/* ── 이런 행사도 있어요 창 ─────────────────────────────────────────── */
 .event-detail-page .event-detail-related-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin-bottom: 0.5rem;
-}
-.event-detail-page .event-detail-related-head h2 {
-  margin: 0;
-  font-size: var(--fs-md);
-}
-.event-detail-page .event-detail-related-head a {
-  color: var(--muted);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  text-decoration: none;
-}
-.event-detail-page .event-detail-related-head a:hover {
-  color: var(--text);
-  text-decoration: underline;
+  font-size: var(--fs-2);
 }
 .event-detail-page .event-detail-related-rows {
   display: flex;
   flex-direction: column;
 }
-/* 얇은 카테고리 바(옛 52×52 단색 타일 대체): 행 왼쪽 테두리에 카테고리
-   색을 얇게 물려 색면 없이 표식만 남긴다. */
 .event-detail-page .event-detail-related-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 0.875rem;
-  min-height: 44px;
-  padding: 0.75rem 0 0.75rem 0.75rem;
-  border-bottom: 1px solid var(--line);
-  border-left: 3px solid transparent;
-  color: inherit;
+  gap: var(--space-3);
+  min-height: var(--hit-lg);
+  padding: var(--space-2);
+  border-top: var(--bw-1) solid var(--rule);
+  color: var(--ink);
   text-decoration: none;
 }
-.event-detail-page .event-detail-related-row:hover .event-detail-related-title {
-  text-decoration: underline;
-}
-.event-detail-page .event-detail-related-row:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
-  border-radius: 6px;
+.event-detail-page .event-detail-related-row:first-child {
+  border-top: none;
 }
 .event-detail-page .event-detail-related-body {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.1875rem;
+  gap: var(--space-1);
 }
 .event-detail-page .event-detail-related-work {
-  color: var(--muted);
-  font-size: 0.75rem;
-  font-weight: 700;
+  color: var(--ink-2);
+  font-size: var(--fs-1);
   word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 .event-detail-page .event-detail-related-title {
-  font-weight: 700;
-  font-size: 0.9375rem;
-  color: var(--text);
+  color: var(--ink);
+  font-size: var(--fs-3);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
   word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 .event-detail-page .event-detail-related-meta {
-  color: var(--muted);
-  font-size: 0.75rem;
+  color: var(--ink-2);
+  font-size: var(--fs-1);
   word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.event-detail-page .event-detail-related-meta::before {
+  content: "";
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-right: var(--space-1);
+  border-radius: 50%;
+  background: var(--event-dot, var(--ink-2));
 }
 .event-detail-page .event-detail-related-tone {
   justify-self: end;
-  padding: 0.25rem 0.625rem;
-  border-radius: var(--radius-chip);
-  font-size: var(--fs-xs);
-  font-weight: 700;
-  white-space: nowrap;
+}
+/* 행 전체가 링크라 hover·포커스에서 반전하고, 안의 글자·배지·점은 흰색으로 맞춘다. */
+.event-detail-page .event-detail-related-row:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+  outline-offset: calc(-1 * var(--bw-2));
+  outline-color: var(--on-select);
+}
+.event-detail-page .event-detail-related-row:focus-visible :is(span) {
+  color: inherit;
+}
+.event-detail-page .event-detail-related-row:focus-visible .event-detail-related-tone {
+  border-color: var(--on-select);
+}
+.event-detail-page .event-detail-related-row:focus-visible .event-detail-related-meta::before {
+  border: var(--bw-1) solid var(--on-select);
+}
+@media (hover: hover) {
+  .event-detail-page .event-detail-related-row:hover {
+    background: var(--select);
+    color: var(--on-select);
+  }
+  .event-detail-page .event-detail-related-row:hover :is(span) {
+    color: inherit;
+  }
+  .event-detail-page .event-detail-related-row:hover .event-detail-related-tone {
+    border-color: var(--on-select);
+  }
+  .event-detail-page .event-detail-related-row:hover .event-detail-related-meta::before {
+    border: var(--bw-1) solid var(--on-select);
+  }
 }
 
-/* ── mobile fixed CTA bar ────────────────────────────────────────────── */
+/* ── 모바일 하단 고정 막대(60rem 이하) ─────────────────────────────── */
 .event-detail-page .mobile-cta {
   display: none;
 }
 
 @media (max-width: 60rem) {
-  .event-detail-page {
-    padding-bottom: calc(6rem + var(--site-tabbar-h, 0px));
-  }
-  /* 고정 바가 푸터 끝을 덮지 않게 문서 끝에 바 높이만큼 여백 */
+  /* 고정 막대가 푸터 끝을 덮지 않게 문서 끝에 막대 높이만큼 여백을 둔다. */
   body:has(.event-detail-page .mobile-cta:not([hidden])) {
     padding-bottom: calc(6rem + var(--site-tabbar-h, 0px));
   }
+  /* 포커스가 고정 막대 뒤로 들어가지 않게 스크롤 여백을 막대 높이만큼 둔다. */
+  html:has(.event-detail-page .mobile-cta:not([hidden])) {
+    scroll-padding-bottom: calc(4.5rem + var(--site-tabbar-h, 0px));
+  }
+  /* 탭 바 위에 붙는 막대: 표면 + 위쪽 2px 테두리, 전폭 주 버튼. */
   .event-detail-page .mobile-cta {
     display: block;
     position: fixed;
     left: 0;
     right: 0;
     bottom: var(--site-tabbar-h, 0px);
-    padding: 0.625rem var(--page-pad-x) calc(10px + env(safe-area-inset-bottom));
-    background: var(--chrome-glass-cta);
-    border-top: 1px solid var(--line);
-    box-shadow: var(--shadow-cta);
     z-index: 20;
-  }
-  .event-detail-page .mobile-cta .action-link.primary {
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 44px;
-    width: 100%;
-    border-radius: 8px;
-    border: 1px solid var(--brand);
-    background: var(--brand);
-    color: #fff;
-    font-weight: 700;
-    text-decoration: none;
+    padding: var(--space-2) var(--page-pad-x) calc(var(--space-2) + env(safe-area-inset-bottom));
+    background: var(--surface);
+    border-top: var(--bw-2) solid var(--ink);
   }
   .event-detail-page .mobile-cta[hidden] {
     display: none;
+  }
+  .event-detail-page .mobile-cta .action-link.primary {
+    display: flex;
+    width: 100%;
   }
 }
 
 @media (max-width: 45rem) {
   .event-detail-page .event-detail-title {
-    font-size: var(--fs-xl-mobile);
-  }
-  .event-detail-page .event-detail-participation #status-choices .status-btn {
-    min-height: 32px;
-    font-size: var(--fs-xs);
+    font-size: var(--fs-4);
   }
 }

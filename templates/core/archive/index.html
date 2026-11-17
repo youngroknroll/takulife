@@ -49,7 +49,7 @@
     </div>
 
     <section class="layout">
-      <aside class="panel" aria-label="{{ archive_aside_label }}">
+      <aside class="panel window" aria-label="{{ archive_aside_label }}">
         <div class="chips">
           <a class="chip{% if not selected_status %} active{% endif %}"{% if not selected_status %} aria-current="page"{% endif %} href="/archive/{% if has_query %}?q={{ q|urlencode }}{% endif %}">{% translate "전체" %}</a>
           {% for slug, label in ARCHIVE_STATUS %}
@@ -66,9 +66,9 @@
         </div>
       </aside>
 
-      <article class="panel">
-        <div class="results-head">
-          <h2>{% blocktranslate trimmed count counter=page_obj.paginator.count %}전체 <span class="results-count">{{ counter }}</span>건{% plural %}전체 <span class="results-count">{{ counter }}</span>건{% endblocktranslate %}</h2>
+      <article class="panel window">
+        <div class="results-head window-head">
+          <h2 class="window-title">{% blocktranslate trimmed count counter=page_obj.paginator.count %}전체 <span class="results-count">{{ counter }}</span>건{% plural %}전체 <span class="results-count">{{ counter }}</span>건{% endblocktranslate %}</h2>
           {# 옵션이 평범한 GET 링크라 JS 드롭다운 대신 <details>를 쓴다 — #}
           {# 네이티브 disclosure만으로 키보드 조작과 무JS 대체 수단이 공짜로 #}
           {# 생긴다. event_list.js는 바깥 클릭 시 닫는 동작만 더한다. #}

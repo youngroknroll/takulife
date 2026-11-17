@@ -1,5 +1,6 @@
 /* confirm-modal.js와 짝을 이룬다: [hidden] 속성으로 숨기고, 열 때 [hidden]을
-   제거하며 .is-open을 붙여 전환 애니메이션을 튼다. */
+   제거하며 .is-open을 붙인다. 전환 효과는 없다 — 전환 길이가 0이면 JS가
+   닫을 때 바로 [hidden]을 건다. */
 
 .confirm-overlay {
   position: fixed;
@@ -9,8 +10,6 @@
   justify-content: center;
   background: var(--backdrop);
   z-index: 1000;
-  opacity: 0;
-  transition: opacity 0.15s ease;
 }
 
 .confirm-overlay[hidden] {
@@ -28,72 +27,60 @@
   pointer-events: none;
 }
 
-.confirm-overlay.is-open {
-  opacity: 1;
-}
-
+/* 떠 있는 패널이라 이중선 창 + 단단한 오프셋 그림자를 쓴다. */
 .confirm-dialog {
   background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  box-shadow: var(--shadow);
-  padding: 1.25rem;
-  max-width: 360px;
-  width: calc(100% - 32px);
-  transform: translateY(6px);
-  transition: transform 0.15s ease;
-}
-
-.confirm-overlay.is-open .confirm-dialog {
-  transform: translateY(0);
+  border: var(--bw-3) double var(--ink);
+  box-shadow: var(--shadow-dropdown);
+  padding: var(--space-3);
+  max-width: 22.5rem;
+  width: calc(100% - 2rem);
 }
 
 .confirm-message {
-  font-size: 0.95rem;
-  color: var(--text);
-  margin: 0 0 1.125rem;
-  line-height: 1.5;
+  font-size: var(--fs-3);
+  color: var(--ink);
+  margin: 0 0 var(--space-3);
+  line-height: var(--lh-base);
 }
 
 .confirm-actions {
   display: flex;
-  gap: 0.625rem;
+  flex-wrap: wrap;
+  gap: var(--space-2);
   justify-content: flex-end;
 }
 
+/* 아니오 = 보조 버튼(1px), 예 = 주 버튼(2px) */
 .confirm-no,
 .confirm-yes {
-  border-radius: 8px;
-  padding: 0.5rem 1rem;
-  min-height: 44px;
-  font-weight: 600;
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-
-.confirm-no {
+  padding: var(--space-1) var(--space-3);
+  min-height: var(--hit-md);
+  border: var(--bw-1) solid var(--ink);
   background: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: var(--fs-3);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-tight);
+  cursor: pointer;
 }
 
 .confirm-yes {
-  background: var(--brand);
-  color: #fff;
-  border: 1px solid var(--brand);
+  border-width: var(--bw-2);
 }
 
-.confirm-no:hover {
-  background: var(--surface-alt);
-}
-
-.confirm-yes:hover {
-  filter: brightness(0.93);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .confirm-overlay,
-  .confirm-dialog {
-    transition: none;
+@media (hover: hover) {
+  .confirm-no:hover,
+  .confirm-yes:hover {
+    background: var(--select);
+    border-color: var(--select);
+    color: var(--on-select);
   }
+}
+
+.confirm-no:focus-visible,
+.confirm-yes:focus-visible {
+  background: var(--select);
+  border-color: var(--select);
+  color: var(--on-select);
 }

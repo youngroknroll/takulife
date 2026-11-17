@@ -1,546 +1,398 @@
-/* ── /archive/calendar/ page skin ─────────────────────────────────────────
- * 그리드/셀/점/오류패널 기본 모습은 components/calendar.css(이벤트 달력과
- * 공유)에서 온다. 헤더·툴바 모습은 pages/archive.css를 그대로 쓰고, 이
- * 파일은 `.activity-page` 스코프로 에디토리얼 차이만 얹는다.
- *
- * 이 파일 자체 레이아웃(aside/grid/legend/detail)은 45rem 하나만 쓰고,
- * 헤더·툴바는 archive.css의 53.75rem에서 따로 접힌다 — 두 경계가 독립적으로
- * 공존하는 것이지 충돌이 아니다.
+/* ── /archive/calendar/ 쪽 (DOS) ─────────────────────────────────────────
+ * 월 격자·칸·오늘·선택 규칙은 components/calendar.css(행사·홈 달력과 공유)가 맡고,
+ * 머리·도구줄은 pages/archive.css를 그대로 쓴다. 이 파일은 검색 폼, 두 칸 배치,
+ * 범례(종류 기호), 월 이동 줄, 선택일 목록만 둔다.
+ * 활동 종류는 색이 아니라 기호로 구분한다: 일정 ○, 찜 ♥, 방문 ■, 굿즈 ●.
+ * 접힘 경계는 53.75rem(도구줄·두 칸 배치) 하나만 쓰고, 칸 안 점 표시는
+ * 공용 달력의 45rem이 맡는다.
  */
 
-/* ── sub-nav / search / 찜 목록 rail ──────────────────────────────────── */
-/* 이 페이지 전용 순수 GET 검색이다 — _archive_search.html 파셜은
-   archive_search.js의 라이브 리전을 함께 로드하는데, 이 페이지는
-   전체 새로고침(PRG) 방식이라 그걸 쓰면 안 된다. 나머지 툴바 모습은
-   pages/archive.css의 공용 `.activity-toolbar` 규칙을 그대로 따른다. */
+/* ── 도구줄의 검색 폼 ─────────────────────────────────────────────── */
+/* 이 쪽 검색은 라이브 검색이 아니라 일반 GET 폼이다(_archive_search.html의
+   라이브 리전을 쓰면 안 된다). 칸은 명시해 두어 형제가 밀려도 자리를 지킨다. */
 .activity-toolbar .calendar-search {
+  grid-column: 2;
+  grid-row: 1;
   display: flex;
-  align-items: center;
-  gap: 0.375rem;
+  gap: var(--space-2);
   width: 21.25rem;
   max-width: 100%;
+  min-width: 0;
   justify-self: center;
   margin: 0;
 }
 
-/* archive.css의 `.activity-toolbar`는 53.75rem에서 한 열로 접힌다. 검색창의
-   고정 너비도 그 지점에서 풀어줘야 접힌 한 열 행을 넘치지 않는다. */
-@media (max-width: 53.75rem) {
-  .activity-toolbar .calendar-search {
-    width: auto;
-    max-width: none;
-    margin-bottom: 1.75rem;
-  }
-}
-
-/* 달력 페이지는 검색 폼이 `search` 영역을 쓰지 않고 1열에 자동 배치돼, 폼의 최소
-   폭이 1열을 고정해 찜 링크 열이 눌린다(영어는 화면 밖으로 밀리고 일본어는 글자가
-   세로로 쌓인다). 다른 아카이브 페이지처럼 두 열에 걸치게 한다. */
-@media (max-width: 24rem) {
-  .activity-toolbar .calendar-search {
-    grid-area: search;
-    justify-self: stretch;
-    min-width: 0;
-  }
-}
-
 .calendar-search input[type="text"] {
-  width: 15.5rem; /* ~248px */
-  max-width: 100%;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 0.5rem 0.75rem 0.5rem 0.875rem;
-  font-size: 0.9rem;
-  color: var(--text);
+  flex: 1;
+  min-width: 0;
+  min-height: var(--hit-md);
+  padding: 0 var(--space-2) 0 var(--space-3);
+  border: var(--bw-1) solid var(--ink);
   background: var(--surface);
+  color: var(--ink);
   font-family: inherit;
+  font-size: var(--fs-3);
+}
+
+.calendar-search input[type="text"]::placeholder {
+  color: var(--ink-2);
 }
 
 .calendar-search button[type="submit"] {
-  border: 1px solid var(--teal);
-  background: var(--teal);
-  color: #fff;
-  border-radius: 8px;
-  min-height: 34px;
-  padding: 0.5rem 0.875rem;
-  font-size: 0.9rem;
-  font-weight: 700;
-  cursor: pointer;
+  min-height: var(--hit-md);
+  padding: 0 var(--space-3);
+  border: var(--bw-1) solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
   font-family: inherit;
+  font-size: var(--fs-3);
   white-space: nowrap;
+  cursor: pointer;
 }
 
-.calendar-search button[type="submit"]:hover {
-  filter: brightness(0.95);
+@media (hover: hover) {
+  .calendar-search button[type="submit"]:hover {
+    background: var(--select);
+    border-color: var(--select);
+    color: var(--on-select);
+  }
 }
 
-/* ── two-column layout: aside (232px) | calendar column ──────────────── */
+.calendar-search button[type="submit"]:focus-visible {
+  background: var(--select);
+  border-color: var(--select);
+  color: var(--on-select);
+}
+
+/* ── 두 칸 배치: 범례 창 | 달력 창 ────────────────────────────────── */
 .activity-layout {
   display: grid;
-  grid-template-columns: minmax(200px, 14.5rem) minmax(0, 1fr);
-  gap: 1.75rem;
+  grid-template-columns: 14rem minmax(0, 1fr);
+  gap: var(--space-4);
   align-items: start;
 }
 
-.activity-aside {
+.activity-aside,
+.activity-calendar-col {
   min-width: 0;
 }
 
-.aside-label {
-  margin: 0 0 0.6875rem;
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: var(--muted);
+/* archive.css의 도구줄은 이 지점에서 한 열로 접힌다 — 검색창은 둘째 줄 전폭이다. */
+@media (max-width: 53.75rem) {
+  .activity-toolbar .calendar-search {
+    grid-area: search;
+    width: auto;
+    max-width: none;
+    justify-self: stretch;
+  }
+
+  .activity-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
+  }
 }
 
-/* 범례 캡션("종류")만 .aside-label 기본보다 작고 굵게 만든 별도 수정자
-   클래스다. 아래 "빠른 이동"은 대상이 아니라 기존 모습 그대로다. */
+/* ── 범례: 종류 필터 링크 ─────────────────────────────────────────── */
 .legend-caption-row {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 0.5rem;
-  margin: 0 0 0.6875rem;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
 }
 
-.legend-caption {
+.legend-caption-row .aside-label {
   margin: 0;
-  font-size: 0.6875rem;
-  font-weight: 800;
-  letter-spacing: 0.07em;
 }
 
 /* "전체 보기"는 다중 선택된 범례를 한 번에 되돌리는 링크다. */
 .legend-reset {
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  color: var(--teal-ink);
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--hit-sm);
+  color: var(--link);
+  font-size: var(--fs-2);
   text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 
-/* ── legend — 클릭 가능한 다중 토글 필터를 겸한다 ─────────────────────── */
-/* 각 행은 kind_filters[].toggle_url로 가는 GET 링크다. 활성 상태는
-   색만이 아니라 배경 채움 + 굵은 글자로 함께 표시한다 — 스와치 색은
-   종류 식별용이지 상태 신호가 아니기 때문이다. */
+@media (hover: hover) {
+  .legend-reset:hover {
+    background: var(--select);
+    color: var(--on-select);
+    text-decoration: none;
+  }
+}
+
+.legend-reset:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+  text-decoration: none;
+}
+
+/* 행은 곧 필터 링크다. 켜진 행은 반전으로 알리고(aria-current), 기호가 종류를 알린다. */
 .calendar-legend {
   display: grid;
-  gap: 0.375rem;
-  margin: 0 0 1rem;
+  gap: var(--space-1);
+  margin: 0 0 var(--space-3);
   padding: 0;
   list-style: none;
-  font-size: var(--fs-xs);
+  font-size: var(--fs-2);
+  color: var(--ink);
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.1875rem 0.375rem;
-  border-radius: 6px;
+  gap: var(--space-2);
+  min-height: var(--hit-md);
+  padding: var(--space-1) var(--space-2);
+  color: var(--ink);
   text-decoration: none;
-  color: inherit;
-}
-
-.legend-item:hover {
-  background: var(--bg-soft);
 }
 
 .legend-item.is-active {
-  background: var(--teal-soft);
+  background: var(--select);
+  color: var(--on-select);
 }
 
-.legend-item.is-active .legend-label,
-.legend-item.is-active .legend-count {
-  font-weight: 700;
+@media (hover: hover) {
+  .legend-item:hover {
+    background: var(--select);
+    color: var(--on-select);
+  }
+
+  .legend-item:not(.is-active):hover .legend-label {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+}
+
+/* 반전된 행의 포커스 링은 안쪽 흰색이다. */
+.legend-item:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+  outline-color: var(--on-select);
+  outline-offset: -2px;
 }
 
 .legend-label {
-  color: var(--text);
   flex: 1;
   min-width: 0;
+  color: inherit;
 }
 
 .legend-count {
-  color: var(--muted);
-  font-size: var(--fs-xs);
+  color: inherit;
   font-variant-numeric: tabular-nums;
 }
 
-/* 범례 스와치는 .day-dot이 아닌 별도 클래스다 — 이벤트 달력이 쓰는 공용
-   6px 원과 모양이 달라서(9x9 각진 사각형) 공유 클래스를 그대로 못 쓴다. */
-.legend-swatch {
-  display: inline-block;
+/* ── 종류 기호: 칸 안·범례·선택일 목록이 같은 글자를 쓴다 ─────────── */
+/* 글자는 CSS로 넣고 마크업은 그대로다. 기호 요소는 모두 aria-hidden이라
+   스크린 리더는 읽지 않고, 종류 이름은 옆의 보이는 글자가 알린다.
+   색은 상속이라 반전된 칸·행 안에서는 흰색이 된다. */
+.legend-swatch,
+.day-item-bar,
+.detail-item-bar,
+.day-dot[data-kind] {
   flex: none;
-  width: 9px;
-  height: 9px;
-  border-radius: 2px;
+  display: inline-block;
+  text-align: center;
+  line-height: 1;
+  color: inherit;
 }
 
-.legend-swatch[data-kind="schedule"] {
-  background: var(--up-ink);
+.legend-swatch {
+  width: 1rem;
+  font-size: var(--fs-2);
 }
 
-.legend-swatch[data-kind="interest"] {
-  background: var(--pink-ink);
+.day-item-bar {
+  width: 0.75rem;
+  font-size: var(--fs-1);
 }
 
-.legend-swatch[data-kind="visit"] {
-  background: var(--mint-ink);
+.detail-item-bar {
+  width: 1rem;
+  font-size: var(--fs-3);
 }
 
-.legend-swatch[data-kind="goods"] {
-  background: var(--amber-ink);
+/* 종류 기호: 일정 ○, 찜 ♥(다른 화면의 찜 표시와 같음), 방문 ■, 굿즈 ●. */
+:is(.legend-swatch, .day-item-bar, .detail-item-bar, .day-dot)[data-kind="schedule"]::before {
+  content: "○";
 }
 
-.aside-quick {
-  margin-top: 1rem;
-  border-top: 1px solid var(--border-soft);
-  padding-top: 1rem;
+:is(.legend-swatch, .day-item-bar, .detail-item-bar, .day-dot)[data-kind="interest"]::before {
+  content: "♥";
 }
 
-/* 빠른 이동: 박스가 아니라 평문 링크 + 화살표(화살표는 템플릿 텍스트
-   리터럴 "→"). objects/layout.css의 공용 .side-list 박스 스타일을 이
-   페이지에서만 되돌린다 (pages/archive.css의 동일 처리를 duplicate). */
-.activity-aside .side-list li {
-  display: flex;
-  align-items: center;
-  min-height: 44px;
+:is(.legend-swatch, .day-item-bar, .detail-item-bar, .day-dot)[data-kind="visit"]::before {
+  content: "■";
+}
+
+:is(.legend-swatch, .day-item-bar, .detail-item-bar, .day-dot)[data-kind="goods"]::before {
+  content: "●";
+}
+
+/* 좁은 화면 칸의 종류 표시. 공용 .day-dot은 원형 점이라 기호 글자로 바꾼다.
+   반전된 칸의 점 테두리 규칙(calendar.css)은 글자에는 필요 없어 지운다. */
+.activity-page .day-cell .day-dot[data-kind] {
+  width: 0.5625rem;
+  height: auto;
   border: none;
+  border-radius: 0;
   background: none;
-  padding: 0;
+  font-size: 0.625rem;
+}
+
+/* ── 빠른 이동 ────────────────────────────────────────────────────── */
+.aside-quick {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: var(--bw-1) solid var(--rule);
+}
+
+.activity-aside .side-list {
+  margin: 0;
 }
 
 .activity-aside .side-list a {
-  font-size: 0.84375rem;
-  color: var(--teal-ink);
+  font-size: var(--fs-2);
 }
 
-.activity-aside .side-list a.quick-link-events {
-  color: var(--up-ink);
+/* ── 달력 창: 월 이동 줄(h2가 창 제목, 이동 컨트롤은 오른쪽) ────────── */
+/* 월 제목의 대괄호는 글자 요소 대신 CSS로 둔다. 대체 글자를 비워 스크린
+   리더에는 읽히지 않게 한다. */
+.calendar-month-label::before {
+  content: "[ ";
+  content: "[ " / "";
 }
 
-/* ── calendar column ──────────────────────────────────────────────────── */
-.activity-calendar-col {
-  min-width: 0;
+.calendar-month-label::after {
+  content: " ]";
+  content: " ]" / "";
 }
 
-/* 월 제목은 한 줄, `‹ 이번달 ›`은 그 아래 줄에 justify-content:center로
-   가운데 정렬한다. DOM 순서가 이미 `‹`, 이번달, `›`라 position/order 없이도
-   된다. */
 .calendar-month-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 0.625rem;
-  margin-bottom: 0.875rem;
-}
-
-.calendar-month-label {
-  margin: 0;
-  font-size: 1.625rem;
-  font-weight: 300;
-  color: var(--text);
-}
-
-/* "2026 · 7월"에서 가운데 점만 muted/regular이고 연·월 숫자는 부모의
-   --text/300을 그대로 이어받는다. */
-.calendar-month-sep {
-  color: var(--muted);
-  font-weight: 400;
+  gap: var(--space-2);
 }
 
 .calendar-month-controls {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 1rem; /* 16px */
+  gap: var(--space-2);
 }
 
-.calendar-month-glyph {
-  color: var(--text);
-  text-decoration: none;
-  font-size: 1.125rem;
-  line-height: 1;
-  padding: 0.25rem;
-}
-
-.calendar-month-glyph:hover {
-  color: var(--teal-ink);
-}
-
+.calendar-month-glyph,
 .calendar-month-today {
-  color: var(--teal-ink);
-  text-decoration: underline;
-  font-size: var(--fs-md);
-  font-weight: 600;
-}
-
-/* ── grid editorial skin ──────────────────────────────────────────────── */
-/* 공용 .month-grid/.day-cell 뼈대(calendar.css)에서 다른 부분만
-   `.activity-page` 스코프로 얹는다. */
-.activity-page .month-grid-body {
-  gap: 1px;
-  background: var(--line);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.activity-page .month-grid-head {
-  margin-bottom: 0.5rem;
-}
-
-.activity-page .month-grid-head .month-grid-weekday {
-  text-align: left;
-  padding: 0 0.3125rem;
-  font-size: 0.625rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-}
-
-.activity-page .month-grid-head .month-grid-weekday:first-child {
-  color: var(--brand);
-}
-
-.activity-page .month-grid-head .month-grid-weekday:last-child {
-  color: var(--up-ink);
-}
-
-.activity-page .day-cell {
-  min-height: 7rem; /* 112px */
-  border: none;
-  border-radius: 0;
-  background: var(--surface);
-}
-
-.activity-page .day-num {
-  align-self: flex-end;
-}
-
-/* 공용 calendar.css의 hover는 테두리 색을 바꾸는 방식인데, 이 페이지는
-   셀 테두리 자체를 없앴으니 배경색으로 대신 hover를 표시한다. */
-.activity-page .day-cell:hover {
-  background: var(--bg-soft);
-}
-
-.activity-page .day-cell[data-today="true"] {
-  border: none;
-}
-
-.activity-page .day-cell[data-today="true"] .day-num {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 26px;
-  height: 26px;
-  border-radius: 999px;
-  background: var(--teal);
-  color: #fff;
-  font-weight: 700;
+  min-width: var(--hit-md);
+  min-height: var(--hit-md);
+  color: var(--ink);
+  text-decoration: none;
 }
 
-.activity-page .day-cell[data-selected="true"] {
-  background: var(--bg-soft);
-  box-shadow: inset 0 -3px 0 var(--teal);
+.calendar-month-glyph {
+  font-size: var(--fs-4);
 }
 
-.activity-page .day-cell[data-selected="true"] .day-num {
-  color: var(--teal-ink);
-  font-weight: 700;
+.calendar-month-today {
+  padding: 0 var(--space-2);
+  font-size: var(--fs-2);
 }
 
-/* 셀 안 항목 줄(제목마다 3px 색 막대 + "+N" 넘침 표시)의 형태만 여기서
-   정하고, 종류별 색은 아래 .day-item-bar[data-kind]가 맡는다.
-   components/calendar.css의 `.day-item`(이벤트 달력용 단순 말줄임 텍스트)을
-   재사용하되 이 페이지는 막대+제목이 있는 flex 행이라 overflow/white-space를
-   여기서 다시 풀어준다 — 안 그러면 이벤트 쪽 `overflow: hidden`이 막대를
-   가린다. 말줄임은 .day-item-title에서만 처리한다. */
-.day-item {
-  display: flex;
-  align-items: center;
-  gap: 0.3125rem;
-  overflow: visible;
-  white-space: normal;
-  font-size: 0.65625rem; /* 10.5px */
-  line-height: 1.3;
+@media (hover: hover) {
+  .calendar-month-glyph:hover,
+  .calendar-month-today:hover {
+    background: var(--select);
+    color: var(--on-select);
+  }
 }
 
-.day-item-title {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
+.calendar-month-glyph:focus-visible,
+.calendar-month-today:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
 }
 
-.day-item-bar,
-.detail-item-bar {
-  flex: none;
-  display: inline-block;
-  border-radius: 2px;
+/* 데스크톱 칸은 제목 2줄이 들어갈 만큼 높다. 좁은 화면은 공용 규칙이 맡는다. */
+@media (min-width: 45.01rem) {
+  .activity-page .day-cell {
+    min-height: 6.5rem;
+  }
 }
 
-.day-item-bar {
-  width: 3px;
-  height: 1rem;
-  align-self: stretch;
-}
-
-.detail-item-bar {
-  width: 4px;
-  align-self: stretch;
-}
-
-.day-item-bar[data-kind="schedule"],
-.detail-item-bar[data-kind="schedule"] {
-  background: var(--up-ink);
-}
-
-.day-item-bar[data-kind="interest"],
-.detail-item-bar[data-kind="interest"] {
-  background: var(--pink-ink);
-}
-
-.day-item-bar[data-kind="visit"],
-.detail-item-bar[data-kind="visit"] {
-  background: var(--mint-ink);
-}
-
-.day-item-bar[data-kind="goods"],
-.detail-item-bar[data-kind="goods"] {
-  background: var(--amber-ink);
-}
-
-/* ── selected-date detail ────────────────────────────────────────────── */
+/* ── 선택일 구획: 달력 창 안(위 단선은 .window-section) ───────────── */
 .date-detail-section {
-  margin-top: 1.25rem;
   scroll-margin-top: calc(var(--site-header-h) + 1rem);
 }
 
 .date-detail-section:focus {
-  outline: none; /* 날짜 이동 후 포커스가 오는 지점일 뿐, 키보드로 직접
-    탭하는 컨트롤이 아니라 포커스 링이 필요 없다. */
+  outline: none; /* 날짜 이동 뒤 포커스가 오는 지점일 뿐, 직접 탭하는 컨트롤이 아니다. */
 }
 
 .date-detail-head {
   display: flex;
-  align-items: baseline;
   flex-wrap: wrap;
-  gap: 0.625rem;
-  margin: 0 0 0.625rem;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
 }
 
 .date-detail-head h2 {
   margin: 0;
-  font-size: var(--fs-base);
+  font-size: var(--fs-3);
 }
 
-.date-detail-weekday {
-  color: var(--muted);
-  font-weight: 400;
-}
-
+.date-detail-weekday,
 .date-detail-count {
-  color: var(--muted);
-  font-size: var(--fs-xs);
+  color: var(--ink-2);
+  font-size: var(--fs-2);
 }
 
-.calendar-item-row {
-  display: flex;
+/* 행: 기호 | 종류 | 제목 | 날짜 | 링크. `.activity-page .side-list li`(archive.css)를
+   이기려고 클래스를 하나 더 건다. */
+.activity-page .side-list.calendar-item-list {
+  margin: var(--space-2) 0 0;
+}
+
+.activity-page .side-list .calendar-item-row {
   flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-bottom: var(--bw-1) solid var(--rule);
 }
 
-.calendar-item-kind {
-  font-size: 0.6875rem; /* 11px */
-  font-weight: 700;
+.activity-page .side-list .calendar-item-row:last-child {
+  border-bottom: none;
 }
 
-.calendar-item-kind[data-kind="schedule"] {
-  color: var(--up-ink);
-}
-
-.calendar-item-kind[data-kind="interest"] {
-  color: var(--pink-ink);
-}
-
-.calendar-item-kind[data-kind="visit"] {
-  color: var(--mint-ink);
-}
-
-.calendar-item-kind[data-kind="goods"] {
-  color: var(--amber-ink);
+.calendar-item-kind,
+.calendar-item-date {
+  color: var(--ink-2);
+  font-size: var(--fs-1);
 }
 
 .calendar-item-label {
-  font-size: 0.9375rem; /* 15px */
-  font-weight: 600;
+  min-width: 0;
+  font-size: var(--fs-3);
+  overflow-wrap: anywhere;
 }
 
-.calendar-item-date {
-  color: var(--muted);
-  font-size: var(--fs-xs);
-}
-
-/* 이 링크는 공용 .side-action-link 박스가 아니라 단순 텍스트 링크라
-   박스 속성을 전부 여기서 지운다. `.activity-page` 접두사는 공용
-   `.side-action-link` 규칙보다 확실히 이기도록 특이도를 올린다. */
-.activity-page .calendar-item-row .side-action-link {
+/* 이 링크는 공용 .side-action-link 버튼이 아니라 오른쪽 끝 글자 링크다.
+   hover·포커스 반전은 archive.css의 `.side-list a`가 맡는다. */
+.calendar-item-row .side-action-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--hit-sm);
   margin-left: auto;
-  display: inline;
+  padding: 0;
   border: none;
   background: none;
-  border-radius: 0;
-  padding: 0;
-  min-height: 0;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--teal-ink);
-  white-space: nowrap;
-}
-
-@media (max-width: 45rem) {
-  .calendar-search input[type="text"] {
-    width: auto;
-    flex: 1;
-  }
-
-  .activity-layout {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .activity-page .day-cell {
-    min-height: 52px;
-    align-items: center;
-  }
-
-  .activity-page .day-num {
-    align-self: center;
-  }
-
-  .activity-page .day-cell[data-today="true"] {
-    border: 2px solid var(--teal);
-  }
-
-  .activity-page .day-cell[data-today="true"] .day-num {
-    display: inline;
-    min-width: 0;
-    height: auto;
-    border-radius: 0;
-    background: none;
-    color: inherit;
-    font-weight: 600;
-  }
-
-  /* 모바일에서는 선택 날짜 밑줄 두께가 데스크톱 -3px이 아니라 -2px다. */
-  .activity-page .day-cell[data-selected="true"] {
-    box-shadow: inset 0 -2px 0 var(--teal);
-  }
-
-  /* 모바일 종류 점은 공용 .day-dot의 6x6이 아니라 5x5다. .day-mobile-dots는
-     이 페이지만 렌더링해 이벤트 달력에는 영향이 없다. */
-  .day-mobile-dots .day-dot {
-    width: 5px;
-    height: 5px;
-  }
+  color: var(--link);
+  font-size: var(--fs-2);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }

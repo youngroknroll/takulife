@@ -1,654 +1,662 @@
-/* ── /events/ page skin ────────────────────────────────────────── */
-/* 디자인 출처: claude.ai/design "행사 목록 페이지 (에디토리얼).dc.html".
- * 카드 그리드 대신 3/4 카테고리 타일 + 텍스트 열 + 우측 상태 배지/찜
- * 원형 버튼으로 된 매거진식 행 목록이다.
- *
- * 이 파일은 templates/core/events/calendar.html도 함께 로드한다 — 두
- * 페이지가 `.events-page`/`.events-head`/`.layout`/`.filters` 등 같은
- * 셸 마크업을 공유하기 때문이다. 그 공유 클래스를 다시 꾸미는 규칙은
- * 모두 `.events-page`로 스코프해 다른 셸을 쓰는 페이지로 새지 않게 한다.
+/* ── /events/ page skin (DOS) ──────────────────────────────────── */
+/* 이 파일은 templates/core/events/calendar.html도 함께 로드한다. 두 쪽이
+ * `.events-page`/`.events-head`/`.layout`/`.filters` 같은 셸 마크업을 공유해서다.
+ * 공유 클래스를 다시 꾸미는 규칙은 `.events-page`로 좁혀 다른 쪽으로 새지 않게 한다.
+ * 바탕 위에는 h1·탭·검색·빠른 칩만 놓고, 점과 색은 창 안에서만 쓴다.
  */
 
-/* ── page head: title left, 목록/달력 tabs centered ───────────── */
-/* `1fr auto 1fr`로 짜서 탭은 시각적으로 중앙에 있으면서도 제목 칸이
-   최소 너비를 확보해 320px에서 겹치지 않는다. */
-  .events-head {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
+/* ── page head: h1 + 목록/달력 탭 (바탕 위) ──────────────────── */
+.events-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-3);
+}
+
+.events-head h1 {
+  margin: 0;
+  font-size: var(--fs-5);
+}
+
+.events-tabs {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.events-tabs a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--hit-md);
+  padding: 0 var(--space-3);
+  background: var(--surface);
+  color: var(--ink);
+  border: var(--bw-1) solid var(--ink);
+  font-size: var(--fs-2);
+  text-decoration: none;
+}
+
+@media (hover: hover) {
+  .events-tabs a:not(.active):hover {
+    background: var(--select);
+    color: var(--on-select);
+    border-color: var(--select);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
   }
-  .events-head h1 {
-    margin: 0;
-    font-size: 1.375rem;
-    font-weight: 800;
-  }
-  .events-tabs {
-    display: flex;
-    gap: 1.5rem;
-  }
-  /* 채운 필 대신 밑줄로 활성 상태를 표시한다 — 내비게이션 칩이 아니라
-     섹션 탭이라서다. */
-  .events-tabs a {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    padding: 0.25rem 0.125rem 0.5rem;
-    text-decoration: none;
-    color: var(--muted);
-    font-size: 0.94rem;
-    font-weight: 600;
-    transition: color 0.15s ease;
-  }
-  .events-tabs a:hover {
-    color: var(--brand-ink);
-  }
-  .events-tabs a.active {
-    color: var(--text);
-    font-weight: 700;
-  }
-  .events-tabs a.active::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0.375rem;
-    height: 2px;
-    border-radius: 2px;
-    background: var(--brand);
-  }
+}
+
+.events-tabs a:focus-visible,
+.events-tabs a.active {
+  background: var(--select);
+  color: var(--on-select);
+  border-color: var(--select);
+}
 
 /* ── search row ───────────────────────────────────────────────── */
-/* 다른 페이지도 쓰는 공용 `.search`를 덮어쓰지 않고 이 페이지 전용
-   클래스를 둔다 — 44px 필드에 ⌕ 아이콘, brand 채움 버튼이라 다른
-   페이지엔 영향을 주면 안 된다. */
-  .events-search {
-    gap: 0.5rem;
-    margin: 0 0 1rem;
-  }
-  .events-search-field {
-    position: relative;
-    display: flex;
-    align-items: center;
-    flex: 1;
-    min-width: 0;
-  }
-  .events-search-icon {
-    position: absolute;
-    left: 0.9375rem;
-    color: var(--muted);
-    font-size: 0.95rem;
-    line-height: 1;
-    pointer-events: none;
-  }
-  .events-search input {
-    height: 44px;
-    padding: 0 0.9375rem 0 2.25rem;
-    border: 1px solid var(--border-soft);
-    border-radius: 10px;
-    font-size: var(--fs-md);
-  }
-  .events-search button {
-    height: 44px;
-    padding: 0 1.25rem;
-    border: 1px solid var(--brand);
-    border-radius: 10px;
-    background: var(--brand);
-    color: #fff;
-    font-size: var(--fs-md);
-    font-weight: 700;
-  }
+/* 공용 `.search`를 덮지 않고 이 쪽 전용 클래스를 둔다. */
+.events-search {
+  display: flex;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+}
+
+.events-search-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.events-search-icon {
+  position: absolute;
+  left: var(--space-2);
+  color: var(--ink-2);
+  line-height: 1;
+  pointer-events: none;
+}
+
+.events-search input {
+  width: 100%;
+  min-height: var(--hit-md);
+  padding: 0 var(--space-2) 0 var(--space-5);
+  background: var(--surface);
+  color: var(--ink);
+  border: var(--bw-1) solid var(--ink);
+  font-size: var(--fs-3);
+}
+
+.events-search button {
+  min-height: var(--hit-md);
+  padding: 0 var(--space-3);
+  background: var(--surface);
+  color: var(--ink);
+  border: var(--bw-1) solid var(--ink);
+  font-size: var(--fs-3);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
   .events-search button:hover {
-    filter: brightness(0.95);
+    background: var(--select);
+    color: var(--on-select);
+    border-color: var(--select);
   }
+}
 
-/* ── quick chips ──────────────────────────────────────────────── */
-/* .quick-row로 스코프해 다른 곳의 공용 `.chip` 모습은 그대로 둔다.
-   여기서는 활성 상태를 더 부드러운 brand-soft/brand-ink 조합으로 쓴다. */
-  .quick-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4375rem;
-    margin-bottom: 1.25rem;
-  }
-  .quick-row .chip {
-    display: inline-flex;
-    align-items: center;
-    border-radius: 999px;
-    border: 1px solid var(--border-soft);
-    background: var(--surface);
-    color: var(--text);
-    font-size: 0.78rem;
-    padding: 0.375rem 0.8125rem;
-    text-decoration: none;
-  }
-  .quick-row .chip.active {
-    background: var(--brand-soft);
-    border-color: var(--brand);
-    color: var(--brand-ink);
-    font-weight: 600;
-  }
+.events-search button:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+  border-color: var(--select);
+}
 
-/* ── two-column layout ────────────────────────────────────────── */
-/* .layout은 달력 페이지도 같이 쓰지만 두 페이지 모양이 동일해
-   .events-page 접두사 없이 그대로 둔다. */
+/* ── quick chips (바탕 위: 자기 표면 + 1px 테두리) ───────────── */
+.quick-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+}
+
+.quick-row .chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--hit-md);
+  padding: 0 var(--space-3);
+  background: var(--surface);
+  color: var(--ink);
+  border: var(--bw-1) solid var(--rule);
+  font-size: var(--fs-2);
+  text-decoration: none;
+}
+
+.quick-row .chip.active {
+  background: var(--select);
+  color: var(--on-select);
+  border-color: var(--select);
+}
+
+@media (hover: hover) {
+  .quick-row .chip:not(.active):hover {
+    background: var(--select);
+    color: var(--on-select);
+    border-color: var(--select);
+  }
+}
+
+.quick-row .chip:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+  border-color: var(--select);
+}
+
+/* ── two-column layout: 필터 창 + 결과 창 ─────────────────────── */
+/* 달력 쪽도 같은 모양이라 .events-page 접두사 없이 둔다. */
+.layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+  align-items: start;
+}
+
+@media (min-width: 56.25rem) {
   .layout {
-    display: grid;
-    grid-template-columns: minmax(180px, 232px) minmax(0, 1fr);
-    gap: 1.75rem;
-    align-items: start;
+    grid-template-columns: 13rem minmax(0, 1fr);
+    gap: var(--space-4);
   }
-  /* 공용 .panel 박스를 이 두 열에서만 평평하게 만든다 — padding만 지우면
-     원래 박스 스타일이 일부 남으므로 4개 속성을 전부 다시 선언한다. */
-  .layout .panel {
-    background: none;
-    border: none;
-    box-shadow: none;
-    padding: 0;
-  }
+}
+
+/* 그리드 열이 내용 때문에 늘어나지 않게 한다. */
+.layout .panel.window {
+  min-width: 0;
+}
+
+.filters {
+  align-self: start;
+  position: sticky;
+  top: calc(var(--site-header-h) + 1rem);
+}
+
+/* ── filter 안쪽 ──────────────────────────────────────────────── */
+.events-page .filter-group {
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  border: none;
+  background: none;
+  min-width: 0;
+}
+
+.events-page .filter-group legend {
+  margin: 0 0 var(--space-2);
+  padding: 0;
+  font-size: var(--fs-3);
+  font-weight: var(--fw-regular);
+  color: var(--ink);
+}
+
+.events-page .filter-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.events-page .filter-check {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  min-height: var(--hit-sm);
+  color: var(--ink);
+  font-size: var(--fs-2);
+}
+
+.events-page .filter-check input {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: var(--select);
+}
+
+/* 카테고리 점: data-category 7개 슬러그만 색을 갖고, 그 밖은 보조 글자색. */
+.events-page .dot {
+  display: inline-block;
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--ink-2);
+}
+
+.events-page .dot[data-category="popup_store"] { background: var(--dot-popup_store); }
+.events-page .dot[data-category="collaboration_cafe"] { background: var(--dot-collaboration_cafe); }
+.events-page .dot[data-category="theater_bonus"] { background: var(--dot-theater_bonus); }
+.events-page .dot[data-category="goods_reservation"] { background: var(--dot-goods_reservation); }
+.events-page .dot[data-category="exhibition"] { background: var(--dot-exhibition); }
+.events-page .dot[data-category="fan_meeting"] { background: var(--dot-fan_meeting); }
+.events-page .dot[data-category="concert"] { background: var(--dot-concert); }
+
+.events-page .filter-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* ── filter disclosure (태블릿 이하) ──────────────────────────── */
+/* 목록·달력이 같은 event_list.js로 .filter-toggle/.filter-body를 여닫는
+   단일 접힘 지점이다. 열림 상태는 JS가 세팅하는 aria-expanded 하나로 읽는다. */
+.filter-toggle {
+  display: none;
+}
+
+@media (max-width: 56.24rem) {
   .filters {
-    align-self: start;
-    position: sticky;
-    top: calc(var(--site-header-h) + 1rem);
+    position: static;
   }
 
-/* ── sidebar filter sections (list page only) ─────────────────── */
-/* `:first-child` 대신 `.filter-group + .filter-group`로 구분선을 준다 —
-   폼의 첫 자식이 조건부 숨김 `q` 입력일 수 있어 first-child는 검색어가
-   있을 때 잘못된 요소를 가리킨다. */
-  .events-page .filter-group {
-    margin: 0;
-    padding: 0;
-    border: none;
-    background: none;
-    min-width: 0;
-  }
-  .events-page .filter-group + .filter-group,
-  .events-page .filter-actions {
-    margin-top: 0.875rem;
-    padding-top: 0.9375rem;
-    border-top: 1px solid var(--line);
-  }
-  .events-page .filter-group h2,
-  .events-page .filter-group legend {
-    margin: 0 0 0.5625rem;
-    padding: 0;
-    font-size: 0.69rem;
-    font-weight: 800;
-    letter-spacing: 0.07em;
-    color: var(--muted);
-  }
-  .events-page .filter-list {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    display: grid;
-    gap: 0;
-  }
-  .events-page .filter-check {
+  .filter-toggle {
     display: flex;
-    gap: 0.5625rem;
     align-items: center;
-    padding: 0.3125rem 0;
-    color: var(--muted);
-    font-size: 0.84rem;
-  }
-  .events-page .filter-check input {
-    flex: none;
-    width: 16px;
-    height: 16px;
-    margin: 0;
-    accent-color: var(--brand);
-  }
-  /* 체크된 행은 진하고 굵게 표시한다. :has()를 지원 안 하는 브라우저는
-     이 효과만 빠지고 체크박스 자체는 정상 표시된다. */
-  .events-page .filter-check:has(input:checked) {
-    color: var(--text);
-    font-weight: 600;
-  }
-  .events-page .filter-actions {
-    display: flex;
-    gap: 0.5rem;
-  }
-  .events-page .results-head {
-    display: flex;
     justify-content: space-between;
-    align-items: baseline;
-    gap: 0.625rem;
-    margin-bottom: 0.75rem;
-  }
-  /* `.events-page` 접두사가 없으면 components/cards.css의
-     `.panel h2 { font-size: 1rem }`(특이도 (0,1,1))가 이겨 제목이
-     16px로 고정된다. */
-  .events-page .results-title {
-    margin: 0;
-    font-size: 0.94rem;
-    font-weight: 700;
-  }
-  .results-count {
-    color: var(--brand-ink);
-  }
-/* 정렬 패널은 절대 위치라 열려도 아래 행 목록이 밀리지 않는다. */
-  .results-sort {
-    position: relative;
-    flex: none;
-  }
-  .results-sort-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3125rem;
-    min-height: 44px;
-    padding: 0 0.125rem;
-    font-size: 0.78rem;
-    color: var(--muted);
-    cursor: pointer;
-    list-style: none;          /* Firefox 기본 마커 제거 */
-    white-space: nowrap;
-  }
-  /* Safari/Chrome는 이게 없으면 기본 삼각형을 라벨 반대쪽에 그린다. */
-  .results-sort-toggle::-webkit-details-marker {
-    display: none;
-  }
-  .results-sort-toggle span {
-    color: var(--text);
-    font-weight: 600;
-  }
-  .results-sort-toggle::after {
-    content: "▾";
-    font-size: 0.66rem;
-    color: var(--muted);
-    transition: transform 0.15s ease;
-  }
-  .results-sort[open] .results-sort-toggle::after {
-    transform: rotate(180deg);
-  }
-  .results-sort-toggle:focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: 2px;
-    border-radius: 4px;
-  }
-  .results-sort-menu {
-    position: absolute;
-    right: 0;
-    top: calc(100% - 0.375rem);
-    z-index: 30;
-    min-width: 9.5rem;
-    margin: 0;
-    padding: 0.3125rem;
-    list-style: none;
+    width: 100%;
+    min-height: var(--hit-md);
+    padding: 0 var(--space-3);
     background: var(--surface);
-    border: 1px solid var(--border-soft);
-    border-radius: 10px;
-    box-shadow: var(--shadow-dropdown);
-  }
-  .results-sort-menu a {
-    display: flex;
-    align-items: center;
-    min-height: 40px;
-    padding: 0 0.6875rem;
-    border-radius: 7px;
-    font-size: 0.8rem;
-    color: var(--text);
-    text-decoration: none;
-    white-space: nowrap;
-  }
-  .results-sort-menu a:hover {
-    background: var(--bg-soft);
-  }
-  /* 상태는 aria-current 속성 하나로만 관리한다 — 별도 클래스와
-     동기화할 필요가 없다. */
-  .results-sort-menu a[aria-current="true"] {
-    background: var(--brand-soft);
-    color: var(--brand-ink);
-    font-weight: 700;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .results-sort-toggle::after {
-      transition: none;
-    }
+    color: var(--ink);
+    border: var(--bw-1) solid var(--ink);
+    font-size: var(--fs-3);
+    cursor: pointer;
   }
 
-/* ── editorial event rows ─────────────────────────────────────── */
-/* 포스터 타일 대신 날짜 열 | 정보 열 | 행동 열의 3열 구조다. 카테고리·
-   상태 색은 행 자체의 커스텀 속성으로 발행해 라벨·D-day 배지가 같은
-   값을 셀렉터 반복 없이 공유한다. */
-  .event-rows {
-    display: flex;
-    flex-direction: column;
+  .filter-toggle[aria-expanded="true"] {
+    background: var(--select);
+    color: var(--on-select);
+    border-color: var(--select);
   }
-  .event-index-row {
-    --row-cat-ink: var(--muted);
-    --row-tone-ink: var(--muted);
-    --row-tone-soft: var(--muted-soft);
+
+  .filter-body {
+    display: none;
+    padding-top: var(--space-3);
+  }
+
+  .filter-toggle[aria-expanded="true"] + .filter-body {
+    display: block;
+  }
+}
+
+/* ── 결과 창 머리: h2가 창 제목, 정렬 메뉴는 오른쪽 ───────────── */
+.events-page .results-head {
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* `.events-page` 접두사가 없으면 cards.css의 `.panel h2`가 이긴다. */
+.events-page .results-title {
+  font-size: var(--fs-3);
+}
+
+/* 창 제목 대괄호는 글자 요소 대신 CSS로 둔다 — 결과 제목 글자를 테스트가
+   통째로 비교해서다. 대체 글자를 비워 스크린 리더에는 읽히지 않게 한다. */
+.events-page .results-title::before {
+  content: "[ ";
+  content: "[ " / "";
+}
+
+.events-page .results-title::after {
+  content: " ]";
+  content: " ]" / "";
+}
+
+.results-count {
+  font-weight: var(--fw-regular);
+}
+
+/* ── 정렬 메뉴: 떠 있는 패널 ──────────────────────────────────── */
+/* 패널은 절대 위치라 열려도 아래 행 목록이 밀리지 않는다. */
+.results-sort {
+  position: relative;
+  flex: none;
+}
+
+.results-sort-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--hit-md);
+  padding: 0 var(--space-3);
+  background: var(--surface);
+  color: var(--ink);
+  border: var(--bw-1) solid var(--ink);
+  font-size: var(--fs-2);
+  cursor: pointer;
+  list-style: none;
+  white-space: nowrap;
+}
+
+/* Safari/Chrome는 이게 없으면 기본 삼각형을 라벨 반대쪽에 그린다. */
+.results-sort-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.results-sort-toggle span {
+  color: inherit;
+}
+
+.results-sort-toggle::after {
+  content: "▾";
+  font-size: var(--fs-1);
+}
+
+/* 열림 표시 화살표는 모양을 맡은 회전이라 남긴다(전환은 없다). */
+.results-sort[open] .results-sort-toggle::after {
+  transform: rotate(180deg);
+}
+
+.results-sort[open] .results-sort-toggle {
+  background: var(--select);
+  color: var(--on-select);
+  border-color: var(--select);
+}
+
+@media (hover: hover) {
+  .results-sort-toggle:hover {
+    background: var(--select);
+    color: var(--on-select);
+    border-color: var(--select);
+  }
+}
+
+.results-sort-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 30;
+  min-width: 12rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--surface);
+  border: var(--bw-1) solid var(--ink);
+  box-shadow: var(--shadow-dropdown);
+}
+
+.results-sort-menu a {
+  display: flex;
+  align-items: center;
+  min-height: var(--hit-md);
+  padding: var(--space-1) var(--space-3);
+  color: var(--ink);
+  font-size: var(--fs-2);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+@media (hover: hover) {
+  .results-sort-menu a:hover {
+    background: var(--select);
+    color: var(--on-select);
+  }
+  /* 현재 항목과 구분되도록 hover에만 밑줄을 더한다. */
+  .results-sort-menu a:not([aria-current]):hover {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+}
+
+/* 상태는 aria-current 속성 하나로만 관리한다. 포커스·현재 항목은 반전이라
+   링은 안쪽 흰색으로 둔다. */
+.results-sort-menu a[aria-current="true"],
+.results-sort-menu a:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+}
+
+.results-sort-menu a:focus-visible {
+  outline-offset: -2px;
+  outline-color: var(--on-select);
+}
+
+/* ── 열 머리 줄 (넓은 화면에서만) ─────────────────────────────── */
+.event-index-head {
+  display: none;
+}
+
+@media (min-width: 56.25rem) {
+  /* 칸 너비는 아래 행(.event-index-row·.event-index-actions)과 같은 값이라
+     라벨이 실제 칸의 시작 위치와 맞는다. */
+  .event-index-head {
     display: grid;
-    grid-template-columns: 4.625rem minmax(0, 1fr) auto;
-    gap: 1rem;
-    align-items: start;
-    padding: 1.125rem 0.125rem;
-    border-bottom: 1px solid var(--line);
+    grid-template-columns: 7.5rem minmax(0, 1fr) auto;
+    column-gap: var(--space-2);
+    align-items: baseline;
+    margin-top: var(--space-2);
+    padding: var(--space-1) var(--space-2) var(--space-2);
+    border-bottom: var(--bw-2) solid var(--ink);
+    font-size: var(--fs-1);
+    color: var(--ink-2);
   }
-  .event-index-row[data-cat="popup_store"] {
-    --row-cat-ink: var(--cat-popup_store-ink);
+
+  .eih-actions {
+    display: grid;
+    grid-template-columns: 4.5rem var(--hit-sm) 4.5rem;
+    justify-items: end;
+    gap: var(--space-2);
   }
-  .event-index-row[data-cat="collaboration_cafe"] {
-    --row-cat-ink: var(--cat-collaboration_cafe-ink);
+
+  .eih-visit {
+    grid-column: 3;
+    justify-self: start;
   }
-  .event-index-row[data-cat="theater_bonus"] {
-    --row-cat-ink: var(--cat-theater_bonus-ink);
+}
+
+/* ── 목록 행: 날짜 | 작품·제목·메타 | D-day·찜·방문 ────────────── */
+/* 행 hover·포커스 반전은 cards.css의 공용 규칙이 맡는다. */
+.event-rows {
+  margin-top: var(--space-2);
+  background: var(--surface);
+}
+
+.event-index-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  padding: var(--space-2);
+  border-bottom: var(--bw-1) solid var(--rule);
+}
+
+/* status.js가 .event-index-row 자체에 .status-inline-error를 붙인다. */
+.event-index-row > .status-inline-error {
+  flex: 1 0 100%;
+}
+
+.event-index-date {
+  flex-shrink: 0;
+  font-size: var(--fs-2);
+  color: var(--ink-2);
+}
+
+.event-index-month {
+  margin-right: var(--space-1);
+}
+
+.event-index-main {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+.event-index-main p {
+  margin: 0;
+}
+
+.event-index-work {
+  font-size: var(--fs-1);
+  color: var(--ink-2);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.events-page .event-index-title {
+  margin: 0;
+  font-size: var(--fs-3);
+  line-height: var(--lh-base);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  overflow-wrap: anywhere;
+}
+
+.event-index-title a {
+  color: inherit;
+}
+
+.event-index-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+  font-size: var(--fs-2);
+  color: var(--ink-2);
+}
+
+.event-index-dot {
+  flex: none;
+  width: 0.1875rem;
+  height: 0.1875rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.event-index-place {
+  overflow-wrap: anywhere;
+}
+
+.event-index-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* 행사 상태는 색 없이 글자로만 알린다. */
+.event-index-dday {
+  font-size: var(--fs-2);
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+/* 찜 버튼: 테두리 없는 글리프 칸. 활성 색은 반전 행 안에서 상속으로 되돌린다. */
+.events-page .event-index-interest {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--hit-sm);
+  height: var(--hit-sm);
+  min-height: 0;
+  padding: 0;
+  gap: 0;
+  background: transparent;
+  border: none;
+  color: var(--ink);
+  font-size: var(--fs-4);
+  line-height: 1;
+}
+
+.events-page .event-index-interest.active {
+  color: var(--select);
+}
+
+.events-page :is(.event-index-row, .agenda-row):has(:focus-visible) .event-index-interest {
+  color: inherit;
+}
+
+@media (hover: hover) {
+  .events-page :is(.event-index-row, .agenda-row):hover .event-index-interest {
+    color: inherit;
   }
-  .event-index-row[data-cat="goods_reservation"] {
-    --row-cat-ink: var(--cat-goods_reservation-ink);
+}
+
+@media (min-width: 56.25rem) {
+  .event-index-row {
+    display: grid;
+    grid-template-columns: 7.5rem minmax(0, 1fr) auto;
+    column-gap: var(--space-2);
+    align-items: center;
+    min-height: 2rem;
+    padding-block: var(--space-1);
+    line-height: var(--lh-tight);
   }
-  .event-index-row[data-cat="exhibition"] {
-    --row-cat-ink: var(--cat-exhibition-ink);
-  }
-  .event-index-row[data-cat="fan_meeting"] {
-    --row-cat-ink: var(--cat-fan_meeting-ink);
-  }
-  .event-index-row[data-tone="ongoing"] {
-    --row-tone-ink: var(--mint-ink);
-    --row-tone-soft: var(--mint-soft);
-  }
-  .event-index-row[data-tone="closing_soon"] {
-    --row-tone-ink: var(--amber-ink);
-    --row-tone-soft: var(--amber-soft);
-  }
-  .event-index-row[data-tone="upcoming"] {
-    --row-tone-ink: var(--up-ink);
-    --row-tone-soft: var(--up-soft);
-  }
-  .event-index-row[data-tone="ended"] {
-    --row-tone-ink: var(--end-ink);
-    --row-tone-soft: var(--end-soft);
-  }
-  /* status.js가 .event-index-row 자체에 .status-inline-error를 붙인다.
-     이 규칙이 없으면 오류가 3번째(auto) 열에만 갇혀 행 전체를 못 덮는다. */
+
   .event-index-row > .status-inline-error {
     grid-column: 1 / -1;
   }
 
-/* 날짜 열: month/day 큰 표기 + 종료일이 다를 때만 짧은 기간 보조 표기.
-   `_archive_results_visits.html`의 record-row-date 패턴을 재사용한다. */
   .event-index-date {
-    text-align: center;
-  }
-  .event-index-date-value {
-    display: block;
-  }
-  .event-index-month {
-    display: block;
-    font-size: 0.68rem;
-    font-weight: 700;
-    color: var(--muted);
-  }
-  .event-index-day {
-    display: block;
-    font-size: 1.3rem;
-    font-weight: 800;
-    color: var(--text);
-    line-height: 1.15;
-  }
-  .event-index-date-end {
-    display: block;
-    margin-top: 0.125rem;
-    font-size: 0.66rem;
-    color: var(--muted);
-  }
-  .event-index-date-empty {
-    display: block;
-    padding-top: 0.375rem;
-    font-size: 0.72rem;
-    color: var(--muted);
+    display: flex;
+    gap: var(--space-1);
+    white-space: nowrap;
   }
 
+  /* 작품 6rem | 제목, 메타는 제목 아래 줄. 작품이 없어도 제목은 2열에 놓인다. */
   .event-index-main {
+    display: grid;
+    grid-template-columns: 6rem minmax(0, 1fr);
+    column-gap: var(--space-2);
+    align-items: baseline;
     min-width: 0;
   }
+
   .event-index-work {
-    margin: 0 0 0.1875rem;
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: var(--row-cat-ink);
-    word-break: keep-all;
+    grid-column: 1;
+    grid-row: 1;
   }
+
   .events-page .event-index-title {
-    margin: 0 0 0.3125rem;
-    font-size: 1.09rem;
-    font-weight: 700;
-    line-height: 1.35;
-    word-break: keep-all;
-    overflow-wrap: anywhere;
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
   }
-  .event-index-title a {
-    color: inherit;
-    text-decoration: none;
-  }
-  .event-index-title a:focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: 2px;
-    border-radius: 4px;
-  }
+
   .event-index-meta {
-    margin: 0;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.4375rem;
-    font-size: 0.78rem;
-    color: var(--muted);
-  }
-  .event-index-cat {
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    color: var(--row-cat-ink);
-  }
-  .event-index-dot {
-    flex: none;
-    width: 3px;
-    height: 3px;
-    border-radius: 50%;
-    background: var(--muted);
-  }
-  .event-index-place {
-    overflow-wrap: anywhere;
+    grid-column: 2;
+    grid-row: 2;
+    margin-top: 0;
   }
 
   .event-index-actions {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.625rem;
+    display: grid;
+    grid-template-columns: 4.5rem var(--hit-sm) 4.5rem;
+    justify-items: end;
+    margin-left: 0;
   }
+
   .event-index-dday {
-    border-radius: 999px;
-    padding: 0.25rem 0.6875rem;
-    font-size: 0.75rem;
-    font-weight: 700;
+    grid-column: 1;
+  }
+
+  .events-page .event-index-interest {
+    grid-column: 2;
+  }
+
+  .event-index-actions .status {
+    grid-column: 3;
+    justify-self: start;
     white-space: nowrap;
-    background: var(--row-tone-soft);
-    color: var(--row-tone-ink);
   }
-  /* 찜 버튼은 행 끝 열의 테두리 원형이다 — 포스터 오버레이가 아니라서
-     반투명 검정 대신 테마 토큰을 그대로 쓴다. */
-  .event-index-interest {
-    flex: none;
-    width: 30px;
-    height: 30px;
-    min-height: 0;
-    padding: 0;
-    gap: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    border: 1px solid var(--border-soft);
-    background: var(--surface);
-    color: var(--muted);
-    font-size: 0.875rem;
-    line-height: 1;
-  }
-  .event-index-interest:hover {
-    border-color: var(--pink-ink);
-    background: var(--pink-soft);
-    color: var(--pink-ink);
-  }
-  .event-index-interest.active {
-    border-color: var(--pink-border);
-    background: var(--pink-soft);
-    color: var(--pink-ink);
-    font-weight: 700;
-  }
+}
 
-/* ── filter disclosure (tablet and below) ─────────────────────── */
-/* 목록·달력 두 페이지가 같은 event_list.js 핸들러로 .filter-toggle/
-   .filter-body를 여닫는 단일 접힘 지점이다 — 여기 고치면 두 페이지 다
-   확인해야 한다. */
-  .filter-toggle {
-    display: none;
-  }
-  @media (max-width: 56.25rem) {
-    .layout {
-      grid-template-columns: 1fr;
-      gap: 1rem;
-    }
-    .filters {
-      position: static;
-    }
-    .filter-toggle {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.375rem;
-      width: 100%;
-      min-height: 44px;
-      border: 1px solid var(--border-soft);
-      background: var(--surface);
-      color: var(--text);
-      border-radius: 10px;
-      padding: 0.625rem 0.75rem;
-      font-size: var(--fs-md);
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .filter-body {
-      display: none;
-    }
-    .filters.open .filter-body {
-      display: block;
-      padding-top: 0.875rem;
-    }
-  }
+/* 반전 행 안의 방문 상태 배지는 배경이 행과 같은 파랑이 되어 모양이 사라진다.
+   레이아웃을 밀지 않도록 안쪽 outline으로 윤곽을 낸다. */
+.events-page :is(.event-index-row, .agenda-row):has(:focus-visible) .status {
+  outline: var(--bw-1) solid currentColor;
+  outline-offset: -1px;
+}
 
-  @media (max-width: 45rem) {
-    .page {
-      padding: 1rem var(--page-pad-x) 3rem;
-    }
-    .events-head {
-      margin-bottom: 0.75rem;
-    }
-    .events-head h1 {
-      font-size: 1.25rem;
-    }
-    .events-tabs {
-      gap: 1.25rem;
-    }
-    .events-tabs a {
-      font-size: 0.85rem;
-    }
-    .events-search input {
-      height: 40px;
-      font-size: var(--fs-sm);
-    }
-    .events-search button {
-      height: 40px;
-      padding: 0 1rem;
-    }
-    .quick-row {
-      gap: 0.375rem;
-      margin-bottom: 0.875rem;
-    }
-    .quick-row .chip {
-      font-size: 0.72rem;
-      padding: 0.3125rem 0.6875rem;
-      white-space: nowrap;
-    }
-    /* 결과 제목은 아래 행 제목보다 작아야 한다 — 데스크톱 크기를 그대로
-       쓰면 모바일 행 제목보다 커져 위계가 뒤집힌다. */
-    .events-page .results-title {
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: var(--muted);
-    }
-    .results-count {
-      font-weight: 700;
-    }
-    .results-sort {
-      font-size: 0.72rem;
-    }
-    /* 모바일은 3열 그리드를 접어 세로 한 흐름으로 만든다. 날짜 열이
-       소스에서 이미 정보 열보다 앞에 있으므로 `order:`를 쓰지 않고도
-       제목 위 가로 eyebrow로 자연스럽게 올라간다(WCAG 1.3.2). */
-    .event-index-row {
-      grid-template-columns: 1fr;
-      gap: 0.25rem;
-      padding: 1rem 0;
-    }
-    .event-index-date {
-      text-align: left;
-      display: flex;
-      align-items: baseline;
-      flex-wrap: wrap;
-      gap: 0.3125rem;
-    }
-    .event-index-date-value {
-      display: inline-flex;
-      align-items: baseline;
-      gap: 0.1875rem;
-    }
-    .event-index-month,
-    .event-index-day {
-      display: inline;
-      font-size: 0.72rem;
-      font-weight: 700;
-      color: var(--muted);
-    }
-    .event-index-date-end {
-      display: inline;
-      margin-top: 0;
-      font-size: 0.66rem;
-    }
-    .event-index-date-empty {
-      display: inline;
-      padding-top: 0;
-      font-size: 0.72rem;
-    }
-    .event-index-work {
-      font-size: 0.66rem;
-    }
-    .events-page .event-index-title {
-      font-size: 0.9rem;
-      margin-bottom: 0.25rem;
-    }
-    .event-index-meta {
-      gap: 0.375rem;
-      font-size: 0.72rem;
-    }
-    .event-index-actions {
-      flex-direction: row;
-      align-items: center;
-      justify-content: flex-start;
-      gap: 0.5rem;
-      margin-top: 0.125rem;
-    }
-    .event-index-dday {
-      font-size: 0.66rem;
-      padding: 0.1875rem 0.5rem;
-    }
-    .event-index-interest {
-      width: 26px;
-      height: 26px;
-      font-size: 0.75rem;
-    }
+@media (hover: hover) {
+  .events-page :is(.event-index-row, .agenda-row):hover .status {
+    outline: var(--bw-1) solid currentColor;
+    outline-offset: -1px;
   }
+}

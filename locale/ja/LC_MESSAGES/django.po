@@ -2260,8 +2260,8 @@ msgid "기간"
 msgstr "期間"
 
 #: templates/core/events/detail.html
-msgid "공식 페이지로 ↗"
-msgstr "公式ページへ ↗"
+msgid "공식 페이지로"
+msgstr "公式ページへ"
 
 #: templates/core/events/detail.html
 msgid "참여 상태"
@@ -2316,8 +2316,8 @@ msgid "행사 목록 →"
 msgstr "イベント一覧 →"
 
 #: templates/core/events/detail.html
-msgid "공식 페이지에서 보기 ↗"
-msgstr "公式ページで見る ↗"
+msgid "공식 페이지에서 보기"
+msgstr "公式ページで見る"
 
 #: templates/core/events/list.html
 msgctxt "페이지 제목"
@@ -2391,18 +2391,6 @@ msgstr "終了分も含めてすべて見る"
 #: templates/core/home.html
 msgid "굿즈 컬렉션·서브컬처 이벤트 기록"
 msgstr "グッズコレクション・サブカルイベント記録"
-
-#: templates/core/home.html
-msgid "서브컬처 이벤트 티켓부스"
-msgstr "サブカルイベントのチケットブース"
-
-#: templates/core/home.html
-msgid "내가 원하는 이벤트를"
-msgstr "行きたいイベントを"
-
-#: templates/core/home.html
-msgid "찾아봐요!"
-msgstr "見つけよう！"
 
 #: templates/core/home.html
 #, python-format
@@ -2903,10 +2891,6 @@ msgid "타쿠라이프 — 그대들의 오타쿠 라이프를 위하여."
 msgstr "takulife — 君たちのオタクライフのために。"
 
 #: templates/core/partials/_site_footer.html
-msgid "이벤트·컬렉션·활동 기록을 한곳에."
-msgstr "イベント・コレクション・アクティビティの記録を一か所に。"
-
-#: templates/core/partials/_site_footer.html
 msgid "바닥글 링크"
 msgstr "フッターリンク"
 
@@ -3117,3 +3101,18 @@ msgstr "紐づけられた訪問記録"
 #, python-format
 msgid "검색: %(q)s"
 msgstr "検索: %(q)s"
+
+#: templates/core/events/list.html
+msgctxt "목록 열 머리"
+msgid "날짜"
+msgstr "日付"
+
+#: templates/core/events/list.html
+msgctxt "목록 열 머리"
+msgid "작품 · 제목"
+msgstr "作品 · タイトル"
+
+#: templates/core/events/list.html
+msgctxt "목록 열 머리"
+msgid "방문"
+msgstr "訪問"

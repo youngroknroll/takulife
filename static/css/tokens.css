@@ -2,118 +2,62 @@
 :root {
   color-scheme: light;
 
-  /* ── core palette (§0 confirmed values) ─────────────────────── */
-  --bg: #f5f6f8;
-  --surface: #ffffff;
-  --surface-alt: #f5f5f5;
-  --line: #dde1e8;
-  --text: #1c222e;
-  --muted: #5b6472;
-  --brand: #d8432a;
-  --brand-soft: #fbe7e2;
-  /* --brand를 흰 배경 위 글자색으로 쓰면 대비 4.42:1로 AA 4.5:1에 살짝
-     못 미친다. 이 잉크색(5.39:1)은 작은 글자에 쓸 때만 쓴다. */
-  --brand-ink: #c13a22;
-  /* 강조 문구 블록. 글자색을 뒤집은 짙은 배경이라 bg/ink를 한 쌍으로
-     같이 정의한다. */
-  --emphasis-bg: var(--text);
-  --emphasis-ink: var(--surface);
-  --focus: #8a94a6;
+  /* ── DOS 색 역할 (트랙 58) ──────────────────────────────────── */
+  /* 바탕 위 글자는 --ink·--ink-2, 링크는 창(--surface) 안에서만 --link를
+     쓴다. 반전(--select 배경 + --on-select 글자)이 선택·현재·눌림 표시다. */
+  --bg: #C6C6C6;
+  --surface: #F4F4F4;
+  --ink: #000000;
+  --ink-2: #404040;
+  --rule: #7A7A7A;
+  --off: #8C8C8C;
+  --select: #0000A8;
+  --on-select: #FFFFFF;
+  --link: #005F6B;
+  --error: #A80000;
 
-  /* 상태 색상 쌍(배경/잉크): mint=진행중, amber=종료임박, pink=찜·관심,
-     rose=에러, up=예정. */
-  --pink-soft: #fce7ee;
-  --pink-ink: #b01e52;
-  --mint-soft: #dff3e6;
-  --mint-ink: #1f7a44;
-  --amber-soft: #fbebd2;
-  --amber-ink: #9a5b12;
-  --rose-soft: #ffe4e6;
-  --rose-ink: #be123c;
-  --up-soft: #e4eafb;
-  --up-ink: #33488f;
-  /* teal = 내 활동(archive) 전용 액센트. 값이 위 --up-ink와 같아 별도
-     색상 체계 없이 그대로 맞춰 정의했다. */
-  --teal: #0e7490;
-  --teal-soft: #d3edf2;
-  --teal-ink: #0e7490;
-  /* end = 종료 상태(찾아온 기록의 4번째 상태). 잉크색은 대비 4.28:1로
-     AA 기준에 못 미쳐 4.75:1로 살짝 어둡게 보정했다. */
-  --end-soft: #ececef;
-  --end-ink: #64686e;
-  /* muted-soft = 중립·"비공식" 마커 배경, 잉크는 --muted. */
-  --muted-soft: #eef0f3;
+  /* 카테고리 색 점 7개 — 점에만 쓰고 글자·배경에는 쓰지 않는다. */
+  --dot-popup_store: #7E22CE;
+  --dot-collaboration_cafe: #92633A;
+  --dot-theater_bonus: #3730A3;
+  --dot-goods_reservation: #0F766E;
+  --dot-exhibition: #475569;
+  --dot-fan_meeting: #9D174D;
+  --dot-concert: #B45309;
 
-  /* 활동 달력 날짜/범례용 얇은 테두리 색. 각 -soft 배경보다 살짝 어둡게
-     둬 --bg-card 위에서도 테두리가 구분되게 했다. */
-  --rose-border: #f8b7c3;
-  /* 찜 버튼 테두리 전용 색. 팔레트에 딱 맞는 기존 값이 없어 별도로 뒀다. */
-  --pink-border: #f8bfd8;
-
-  --shadow: 0 18px 38px rgba(17, 31, 55, 0.08);
-
-  /* ── translucent chrome ─────────────────────────────────────── */
-  /* 반투명 크롬 색상들. */
-  /* 상단 고정 헤더(site-chrome.css .site-header)용. */
-  --chrome-glass: rgba(255, 255, 255, 0.9);
-  /* 모바일 고정 CTA 바(.mobile-cta)용. --chrome-glass보다 불투명도가 조금 높다. */
-  --chrome-glass-cta: rgba(255, 255, 255, 0.96);
-  --shadow-cta: 0 -8px 24px rgba(17, 31, 55, 0.1);
-  /* 드롭다운 패널(.account-menu-panel, .region-select-menu 등)용. 값이
-     같아 토큰 하나로 공유한다. */
-  --shadow-dropdown: 0 8px 24px rgba(17, 31, 55, 0.14);
-  /* 모달·확인창 배경 오버레이용. 값이 같아 토큰 하나로 공유한다. */
-  --backdrop: rgba(17, 31, 55, 0.45);
-
-  --radius-card: 10px;
-  --radius-control: 8px;
-  /* 칩·배지·필 형태 라운드 값. 예전의 "티켓 스텁" 모양(한쪽만 둥근 형태)은
-     폐기하고 완전한 캡슐형으로 통일했다(사용자 확정 사안). */
-  --radius-chip: 999px;
-
-  /* 6단계 글자 크기 체계. --fs-xl은 페이지당 가장 강조되는 제목 한 곳에만
-     쓴다(현재는 홈 히어로 h1뿐) — 그래야 기존 제목 위계가 흐트러지지
-     않는다. */
-  --fs-xs: 0.75rem;
-  --fs-sm: 0.8rem;
-  --fs-md: 0.875rem;
-  --fs-base: 0.95rem;
-  --fs-lg: 1.125rem;
-  --fs-xl: 1.75rem;
-  /* --fs-xl의 모바일용 크기. */
-  --fs-xl-mobile: 1.375rem;
-
-  /* 중성 배경 톤. border-soft는 --line보다 살짝 밝고, bg-soft/bg-card는
-     --bg와 --surface 사이 중간 톤이다. */
-  --border-soft: #e6e9ef;
-  --bg-soft: #f7f8fa;
-  --bg-card: #fbfbfc;
-
-  /* 카테고리 배색 — 상태 색상(핑크/브랜드/민트/회색)과 겹치지 않게 채도를
-     낮췄다. -ink는 템플릿에서 카테고리 slug로 직접 참조한다. -soft는
-     지금 당장 참조하는 곳이 없어 보여도 지우지 마라 — 카테고리마다
-     soft/ink 쌍 구조를 유지하려고 남겨둔 것이다. */
-  --cat-popup_store-soft: #f3e8ff;
-  --cat-popup_store-ink: #7e22ce;
-  --cat-collaboration_cafe-soft: #f5ecdf;
-  --cat-collaboration_cafe-ink: #92633a;
-  --cat-theater_bonus-soft: #e0e7ff;
-  --cat-theater_bonus-ink: #3730a3;
-  --cat-goods_reservation-soft: #d8f3ee;
-  --cat-goods_reservation-ink: #0f766e;
-  --cat-exhibition-soft: #e2e8f0;
-  --cat-exhibition-ink: #475569;
-  --cat-fan_meeting-soft: #fce7f3;
-  --cat-fan_meeting-ink: #9d174d;
-  --cat-concert-soft: #fef3c7;
-  --cat-concert-ink: #b45309;
+  /* ── DOS 형태 토큰 ──────────────────────────────────────────── */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 1rem;
+  --space-4: 1.5rem;
+  --space-5: 2rem;
+  --space-6: 3rem;
+  --fs-1: 0.75rem;
+  --fs-2: 0.875rem;
+  --fs-3: 1rem;
+  --fs-4: 1.25rem;
+  --fs-5: 1.75rem;
+  --lh-tight: 1.25;
+  --lh-base: 1.5;
+  --fw-regular: 400;
+  --fw-strong: 700;
+  --font: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Hiragino Sans", "Yu Gothic", "Noto Sans JP", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --bw-1: 1px;
+  --bw-2: 2px;
+  --bw-3: 3px;
+  --container: 70rem;
+  --hit-sm: 1.5rem;
+  --hit-md: 2rem;
+  --hit-lg: 2.75rem;
+  /* 떠 있는 패널(계정 메뉴·정렬 메뉴)에만 쓰는 단단한 오프셋 그림자. */
+  --shadow-dropdown: 6px 6px 0 var(--ink);
+  /* 모달 뒤 오버레이. 불투명이면 뒤 페이지가 가려져 반투명을 남긴다. */
+  --backdrop: rgba(0, 0, 0, 0.45);
 
   /* 팔레트 슬롯 토큰(트랙 27) — 스태프가 만드는 카테고리는 고정 슬러그가
      없어 슬롯 번호로 색을 고른다. 값은 core/categories.py의 PALETTE와
-     반드시 일치해야 한다(그쪽이 단일 출처). 0~6은 위 슬러그 토큰과 같은
-     색이라 기존 카테고리 색이 바뀌지 않는다. 위 슬러그 토큰은 기존
-     소비처가 아직 슬러그로 참조하고 있어 남겨둔다(공존, 전환은 이후
-     단계). */
+     반드시 일치해야 한다(그쪽이 단일 출처). 화면은 아직 쓰지 않아도
+     테스트가 soft/ink 쌍을 고정하므로 지우지 마라. */
   --cat-slot-0-soft: #f3e8ff;
   --cat-slot-0-ink: #7e22ce;
   --cat-slot-1-soft: #f5ecdf;
@@ -178,5 +122,13 @@
 @media (max-width: 45rem) {
   :root {
     --page-pad-x: 1rem; /* 16px, 모바일 */
+  }
+}
+
+/* 좁은 화면·터치에서는 누르는 크기를 44px(--hit-lg)로 올린다. */
+@media (max-width: 44.99rem), (pointer: coarse) {
+  :root {
+    --hit-sm: var(--hit-lg);
+    --hit-md: var(--hit-lg);
   }
 }
