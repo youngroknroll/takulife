@@ -19,6 +19,7 @@ CTA 순서는 [기록 CTA] → [예정으로] → [삭제]를 유지해야 한�
 margin-right:auto가 첫 자식에만 걸리기 때문이다.
 {% endcomment %}
 <p hidden data-result-count="{{ page_obj.paginator.count }}"></p>
+<template data-results-title>{% include "core/partials/_archive_results_title_record.html" %}</template>
 {% if has_statuses %}
   <div class="record-rows">
     {% for row in status_rows %}

@@ -16,6 +16,7 @@ _archive_results_record.html/_archive_results_statuses.html과 같은
 않게 하기 위해서다.
 {% endcomment %}
 <p hidden data-result-count="{{ page_obj.paginator.count }}"></p>
+<template data-results-title>{% include "core/partials/_archive_results_title_visits.html" %}</template>
 {% if visit_rows %}
   <div class="record-rows">
     {% for row in visit_rows %}

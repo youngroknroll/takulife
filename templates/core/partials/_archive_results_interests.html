@@ -17,6 +17,7 @@
 사고를 막는다.
 {% endcomment %}
 <p hidden data-result-count="{{ page_obj.paginator.count }}"></p>
+<template data-results-title>{% include "core/partials/_archive_results_title_interests.html" %}</template>
 {% if interest_rows %}
   <div class="record-rows">
     {% for row in interest_rows %}

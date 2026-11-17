@@ -122,6 +122,18 @@
     });
   }
 
+  // 건수 제목은 #archive-results 밖에 있어 교체되지 않는다. 서버가 조각에
+  // 실어 보낸 제목 마크업(번역·단복수 처리 끝난 것)을 그대로 옮긴다. 제목이나
+  // 운반 요소를 못 찾으면 아무것도 하지 않는다.
+  var titleTarget = document.querySelector("[data-results-title-target]");
+
+  function syncResultsTitle() {
+    if (!titleTarget) { return; }
+    var carrier = results.querySelector("template[data-results-title]");
+    if (!carrier) { return; }
+    titleTarget.innerHTML = carrier.innerHTML.trim();
+  }
+
   // `term`에 대한 결과 조각을 받아 교체한다. `push`는 새 히스토리 항목을
   // 만들지 여부(popstate 재실행 시에는 false).
   function runSearch(term, push) {
@@ -159,6 +171,7 @@
         setLoading(false);
         if (html === null) { return; }
         results.innerHTML = html;
+        syncResultsTitle();
         announceResultCount(term);
         syncSortLinks(term);
         if (push) {

@@ -62,7 +62,7 @@
 
       <article class="panel window">
         <div class="results-head window-head">
-          <h2 class="window-title">{% blocktranslate trimmed count counter=page_obj.paginator.count %}찜한 이벤트 <span class="results-count">{{ counter }}</span>건{% plural %}찜한 이벤트 <span class="results-count">{{ counter }}</span>건{% endblocktranslate %}</h2>
+          <h2 class="window-title" data-results-title-target>{% include "core/partials/_archive_results_title_interests.html" %}</h2>
           {# 옵션이 평범한 GET 링크라 JS 드롭다운 대신 <details>를 쓴다 — #}
           {# 네이티브 disclosure만으로 키보드 조작과 무JS 대체 수단이 공짜로 #}
           {# 생긴다(visits.html/personal_entries.html과 동일한 이유). #}
