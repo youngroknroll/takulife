@@ -17,6 +17,7 @@ pytestmark = [pytest.mark.django_db, pytest.mark.domain]
 def _슬롯을_비운_카테고리를_만든다():
     category = Category.objects.create(slug="slotless_fair", label="슬롯없는 박람회")
     Category.objects.filter(pk=category.pk).update(palette_slot=None)
+    assert Category.objects.get(pk=category.pk).palette_slot is None
     return category.slug
 
 

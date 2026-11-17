@@ -34,12 +34,17 @@ def _parse_elements(body):
 
 
 @pytest.mark.parametrize(
-    "path_template",
-    ["/", "/events/", "/events/calendar/", "/events/{event_id}/"],
-    ids=["홈", "행사_목록", "행사_달력", "행사_상세"],
+    ("path_template", "고정_점이_나온다"),
+    [
+        pytest.param("/", True, id="홈"),
+        pytest.param("/events/", True, id="행사_목록"),
+        pytest.param("/events/calendar/", True, id="행사_달력"),
+        # 상세는 같은 카테고리 행사만 관련 행사로 나와 고정 카테고리 요소가 없다.
+        pytest.param("/events/{event_id}/", False, id="행사_상세"),
+    ],
 )
 def test_새_카테고리_행사가_있는_공개_화면을_열면_새_카테고리_점에만_배정_슬롯_속성이_붙는다(
-    make_event, path_template
+    make_event, path_template, 고정_점이_나온다
 ):
     category = Category.objects.create(slug="zz_new_slot", label="새슬롯카테고리")
     category.refresh_from_db()
@@ -59,4 +64,5 @@ def test_새_카테고리_행사가_있는_공개_화면을_열면_새_카테고
     assert [el.get("data-palette-slot") for el in new_dots] == [str(category.palette_slot)] * len(
         new_dots
     )
+    assert bool(fixed_dots) is 고정_점이_나온다
     assert all("data-palette-slot" not in el for el in fixed_dots)

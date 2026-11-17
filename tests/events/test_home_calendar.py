@@ -303,9 +303,10 @@ def test_범례는_표시_달의_새_카테고리를_고정_카테고리_뒤에_
     make_event,
 ):
     today = date(2026, 9, 16)
-    # 카테고리 순서(sort_order, id)는 새1 -> 새2, 행사 날짜는 새1이 더 늦다.
-    first = Category.objects.create(slug="zz_legend_first", label="범례첫째", sort_order=900)
-    second = Category.objects.create(slug="zz_legend_second", label="범례둘째", sort_order=901)
+    # id·행사 날짜 순서는 정렬_뒤 -> 정렬_앞(9/10, 9/25)이고 sort_order는 반대(901, 900)라서,
+    # 범례가 id·날짜 순서가 아니라 sort_order를 따르는지 구별된다.
+    정렬_뒤 = Category.objects.create(slug="zz_legend_back", label="범례뒤", sort_order=901)
+    정렬_앞 = Category.objects.create(slug="zz_legend_front", label="범례앞", sort_order=900)
     make_event(
         title="전시",
         category="exhibition",
@@ -313,16 +314,16 @@ def test_범례는_표시_달의_새_카테고리를_고정_카테고리_뒤에_
         end_date=date(2026, 9, 3),
     )
     make_event(
-        title="첫째 행사",
-        category=first.slug,
-        start_date=date(2026, 9, 25),
-        end_date=date(2026, 9, 25),
-    )
-    make_event(
-        title="둘째 행사",
-        category=second.slug,
+        title="정렬 뒤 행사",
+        category=정렬_뒤.slug,
         start_date=date(2026, 9, 10),
         end_date=date(2026, 9, 10),
+    )
+    make_event(
+        title="정렬 앞 행사",
+        category=정렬_앞.slug,
+        start_date=date(2026, 9, 25),
+        end_date=date(2026, 9, 25),
     )
     with patch("web.views.events.timezone.localdate", return_value=today):
         resp = Client().get("/")
@@ -330,8 +331,8 @@ def test_범례는_표시_달의_새_카테고리를_고정_카테고리_뒤에_
     calendar = resp.context["home_calendar"]
     assert calendar["legend"] == [
         {"slug": "exhibition", "label": "전시"},
-        {"slug": first.slug, "label": first.label},
-        {"slug": second.slug, "label": second.label},
+        {"slug": 정렬_앞.slug, "label": 정렬_앞.label},
+        {"slug": 정렬_뒤.slug, "label": 정렬_뒤.label},
     ]
 
 
