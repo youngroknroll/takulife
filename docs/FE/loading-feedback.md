@@ -37,26 +37,37 @@
 
 ## 스피너는 버튼 폭을 바꾸면 안 된다
 
-소비자: `static/css/objects/interaction.css`(약 64-105, `border-right-color`),
+소비자: `static/css/objects/interaction.css`(58-78, `border-right-color`),
 스태프: `static/css/staff/base.css`(약 177-196, `border-top-color`).
 
 ```css
-button.is-loading, a.is-loading { font-size: 0; }
+button.is-loading, a.is-loading {
+  -webkit-text-fill-color: transparent;
+  text-decoration-color: transparent;
+}
+button.is-loading > *, a.is-loading > * { visibility: hidden; }
 button.is-loading::after {
   position: absolute; top: 50%; left: 50%;
   width: 0.85rem; height: 0.85rem; margin: -0.425rem 0 0 -0.425rem;
-  border: 2px solid currentColor; border-top-color: transparent;
+  border: 2px solid currentColor; border-right-color: transparent;
 }
 ```
 
+스태프 쪽 규칙(`static/css/staff/base.css:175`)은 아직 `font-size: 0`으로 라벨을 접는다.
+아래 설명은 소비자 쪽 규칙을 기준으로 한다.
+
 세 가지가 모두 의도적이다.
 
-**1. 라벨을 `font-size: 0`으로 접는다(`color: transparent`가 아니다).**
+**1. 라벨은 글자 채움색만 투명하게 한다(`color: transparent`가 아니고 `font-size: 0`도 아니다).**
 `color`를 건드리면 `currentColor`까지 투명해져 스피너가 사라진다. 그러면
 버튼 계열마다 색을 따로 지정해야 하는데, 그 목록은 조합 클래스에서 곧바로
 어긋난다 — `.staff-cta-accent`는 `.staff-cta`와 함께 쓰여 흰 글자 파란
-버튼에 검은 스피너가 나왔다 `[실측]`. 그래서 스피너 크기는 `em`이 아니라
-`rem`으로 잡는다(font-size가 0이므로).
+버튼에 검은 스피너가 나왔다 `[실측]`. `-webkit-text-fill-color`는 글자 채움만
+바꾸고 `color`는 그대로 두므로 `currentColor`가 살아 있다. 자식 요소(아이콘
+`span` 등)는 `visibility: hidden`으로, 링크 밑줄은 `text-decoration-color`로
+숨긴다. 예전의 `font-size: 0`은 버튼 폭이 줄었고(예: 탈퇴 버튼 63.7px → 36px
+`[실측 2026-11-17 Playwright]`), 쪽 CSS가 글자 크기를 다시 정하면 글자가 남았다.
+스피너 크기는 `em`이 아니라 `rem`으로 둔다.
 
 **2. 색은 `currentColor`다.** 버튼 8계열의 배경·글자색을 재보니 **정답 색은
 언제나 그 버튼의 글자색**이었다 — 파란 배경엔 흰색, 흰 배경엔 검정, 외곽선
@@ -67,10 +78,19 @@ button.is-loading::after {
 형제를 22px 밀어냈다. 스태프 콘솔의 행 액션 버튼은 `table-layout: fixed`의
 고정폭 셀 안이라 폭이 늘면 셀 경계에서 잘린다.
 
+2026-11-17에 로딩 클래스를 붙이고 폭·높이·글자 크기·글자 채움색·스피너 애니메이션을
+재서 확인했다: 27개 주소(비로그인 3개 포함) × 폭 2개(1280px, 390px)의 버튼 368개에서
+폭·높이 변화 0건, 글자 크기 변화 0건, 채움색 불투명 0건, `btn-spin` 아닌 스피너 0건
+`[실측 2026-11-17 Playwright]`. 같은 스크립트의 `font-size: 0` 방식 측정은
+368개 중 340개가 어긋났다(대부분 글자 크기 0px 판정, 탈퇴 버튼 등은 폭도 줄었다)
+`[실측 2026-11-17 Playwright]`. 🗑 삭제 버튼 2곳, `.status-btn.active`의 `✓ `(`::before`),
+`.photo-preview-remove`의 `×`, ♥ 찜 버튼은 로딩 상태 스크린샷에서 글리프가 남지
+않았다 `[실측 2026-11-17 Playwright]`.
+
 ## ⚠️ 선택자를 `button`·`a`로 좁혀라
 
 `.is-loading`은 버튼만이 아니라 **검색 결과 컨테이너**(`#archive-results`,
-`archive_search.js`가 토글)에도 붙는다. 좁히지 않고 `font-size: 0`을 걸면
+`archive_search.js`가 토글)에도 붙는다. 좁히지 않고 글자 숨김을 걸면
 검색 결과 글자가 통째로 사라진다.
 
 ## 페이지별로 스피너를 다시 보정하지 마라
@@ -92,7 +112,7 @@ button.is-loading::after {
 ## 움직임 감소
 
 `prefers-reduced-motion: reduce`에서 회전을 멈추고 정지된 링만 남긴다
-`[코드 interaction.css:78-83]`. 이력: 예전에는 소비자 쪽 블록이 `hover-lift`와 `glint`만 끄고
+`[코드 interaction.css:86-91]`. 이력: 예전에는 소비자 쪽 블록이 `hover-lift`와 `glint`만 끄고
 스피너는 계속 돌게 두고 있었다. `hover-lift` CSS는 트랙 58에서 삭제됐고 `.glint`는
 `interaction.css:17-21`에서 숨겨 둔다. 새로 스피너를 추가할 때 이 처리를 빠뜨리지 마라.
 

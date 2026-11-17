@@ -42,9 +42,11 @@
 /* 버튼·링크에서는 스피너를 텍스트 뒤에 붙이지 않고 가운데에 겹친다.
  * 뒤에 붙이면 버튼 폭이 늘어 옆 요소를 밀어낸다 — 실측으로 컬렉션·방문·
  * 장소 저장 버튼이 제출 순간 100px에서 122px로 커지며 형제를 22px 밀었다.
- * 라벨은 font-size: 0으로 접는다. color를 건드리지 않아야 currentColor가
- * 살아 있어 버튼마다 색을 따로 지정할 필요가 없다. 그래서 스피너 크기는
- * em이 아니라 rem으로 잡는다.
+ * 라벨은 글자 채움색만 투명하게 해서 숨긴다. 예전의 font-size: 0은 폭이
+ * 줄어들었고, 쪽 규칙이 글자 크기를 다시 주면 글자가 남았다. color는
+ * 건드리지 않아야 currentColor가 살아 있어 버튼마다 색을 따로 지정할
+ * 필요가 없다. 자식 요소(아이콘·span)는 visibility로 숨기고, 링크 밑줄은
+ * 투명하게 만든다.
  *
  * 컨테이너(#archive-results)에도 .is-loading이 붙으므로 선택자를 버튼·
  * 링크로 좁힌다. 좁히지 않으면 검색 결과 영역의 글자가 통째로 사라진다.
@@ -55,7 +57,13 @@
  */
 button.is-loading,
 a.is-loading {
-  font-size: 0;
+  -webkit-text-fill-color: transparent;
+  text-decoration-color: transparent;
+}
+
+button.is-loading > *,
+a.is-loading > * {
+  visibility: hidden;
 }
 
 button.is-loading::after,
