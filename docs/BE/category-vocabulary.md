@@ -37,8 +37,8 @@
 | `all_category_choices()` | 전체 | 필터 칩 |
 | `palette_slot_by_slug()` | 슬롯이 배정된 전체(비활성 포함) | 공개 화면 점 색 |
 | `category_labels_for(slugs)` | 전체, 행이 없는 슬러그는 결과에 없음 | `category_display_labels` 내부 조회, 홈 범례(`web/views/events.py:155`) |
-| `category_display_labels(slugs)` | 고정 7종은 번역되는 상수 라벨, 그 밖은 DB 라벨, 행이 없으면 슬러그. 빈 슬러그는 결과에 없음. 조회는 고정이 아닌 슬러그가 있을 때만 1건 | 공개 화면 목록 행·적용 필터 칩·필터 체크박스 선택지·상세·내 활동 행·방문 목록 칩, 스태프 행사·드래프트 목록과 드래프트 상세 |
-| `category_label_lang(label)` | 비한국어 화면이고 라벨에 한글 음절이 있으면 `"ko"`, 아니면 빈 문자열 | 템플릿 태그 `category_lang_attr`, 적용 칩·방문 목록 칩·홈 타일의 `lang` 값 |
+| `category_display_labels(slugs)` | 고정 7종은 번역되는 상수 라벨, 그 밖은 DB 라벨, 행이 없으면 슬러그. 빈 슬러그는 결과에 없음. 조회는 고정이 아닌 슬러그가 있을 때만 1건 | 공개 화면 목록 행·적용 필터 칩·상세·내 활동 행·방문 목록 칩, 스태프 행사·드래프트 목록과 드래프트 상세 |
+| `category_label_lang(label)` | 비한국어 화면이고 라벨에 한글 음절이 있으면 `"ko"`, 아니면 빈 문자열 | 템플릿 태그 `category_lang_attr`, 적용 칩·방문 목록 칩·홈 타일·필터 체크박스 선택지(`web/views/events.py`의 `_translate_category_label`)의 `lang` 값 |
 
 `category_label`의 `.get(slug, slug)` 폴백은 필수다(선례 `archive_status_label`).
 카테고리 행이 사라져도 그 슬러그를 쓰던 이벤트 렌더가 깨지지 않아야 한다.
@@ -129,11 +129,11 @@ atomic의 마지막 문장)는 예외 없이 이벤트만 되돌아가고 EVENT_
 
 | 화면 | 추가 쿼리 상한 |
 |---|---|
-| 행사 목록·행사 달력·행사 상세 | 3건(슬롯 1 + 라벨 2) `[코드 DAR 사후 확인이 호출 횟수를 셈, 2026-11-17]` |
-| 로그인 홈 | 5건(슬롯 1 + 라벨 4, 기록 대기 행 라벨 1건 포함) `[계산 호출 횟수, web/views/_helpers.py:232-234·events.py:155·events.py:168·events.py:234]` |
-| 내 활동 기록장·나의 일정·방문 목록·찜 목록 | 각 1건 `[계산 호출 횟수, web/views/archive.py:72·archive.py:250·archive.py:663-666]` |
+| 행사 목록·행사 달력·행사 상세 | 3건(슬롯 1 + 라벨 2) `[계산 호출 횟수, web/views/events.py:331·354(목록), 533·543(달력), 647·653(상세), web/views/_helpers.py:42]` |
+| 로그인 홈 | 5건(슬롯 1 + 라벨 4, 기록 대기 행 라벨 1건 포함) `[계산 호출 횟수, web/views/events.py:155·168·209·234, web/views/_helpers.py:42·97·232-234]` |
+| 내 활동 기록장·나의 일정·방문 목록·찜 목록 | 각 1건 `[계산 호출 횟수, web/views/archive.py:72·250·659, web/views/_helpers.py:42]` |
 | 방문 상세·방문 수정 | 최대 1건 `[계산 호출 횟수, web/views/archive.py:458·archive.py:485]` |
-| 컬렉션 작성 폼(`?visit_record=` 미리 선택) | 최대 1건, 그 라벨은 화면에 쓰이지 않음 `[코드 web/views/collection.py:272, _helpers.py:253]` |
+| 컬렉션 작성 폼(`?visit_record=` 미리 선택) | 최대 1건, 그 라벨은 화면에 쓰이지 않음 `[코드 web/views/collection.py:272, web/views/_helpers.py:254-255]` |
 | 스태프 행사 목록 | 행 1건 + 새 카테고리 필터를 걸고 결과가 없을 때 요약 1건 `[계산 호출 횟수, staff/views/events.py:95·staff/views/events.py:229]` |
 | 스태프 드래프트 목록·상세 | 각 1건 `[계산 호출 횟수, staff/views/drafts.py:77·staff/views/drafts.py:174]` |
 

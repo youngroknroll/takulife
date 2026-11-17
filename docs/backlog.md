@@ -35,7 +35,7 @@ main `e3d3448` 분기)는 머지됐다.
 | OAuth 활성화 | **활성화 완료**(B2 코드 해소=트랙 11, GCP 클라이언트·env 설정 및 실 OAuth 왕복 검증=사용자, 2026-08-26) |
 | e2e 여정 스위트 | `[코드] [실측 2026-09-09]` 트랙 27로 재도입, `tests/e2e/` 8파일·10건, 명령 `uv run pytest -q -m e2e tests/e2e`. 기본 `uv run pytest -q`는 `addopts`의 `-m "not e2e"`로 e2e 제외. CI `e2e` 잡은 `continue-on-error: true`(관측 기간) |
 | 요청 중 피드백(전역) | `[실측 gh]` PR #366 머지 완료(2026-09-15, merge commit `568a6192`) — POST 폼 34/34 제출 가드, 스피너 공용 규칙(`currentColor`), 페이지별 우회 6곳 제거, 말줄임 제목 `title` 84곳. 가드레일 정본 `docs/FE/loading-feedback.md` |
-| 카테고리 어휘 스태프 CRUD | `[실측 gh]` PR #365 머지 완료(2026-09-15, merge commit `ec8deaca`) — 어휘가 상수에서 `core.models.Category`로 이동, 팔레트 12슬롯 자동 배정·반납, 슈퍼유저 전용 관리 화면 4개, 감사 로그 액션 4종. 가드레일 정본 `docs/BE/category-vocabulary.md`. **남은 간극**: 공개 화면의 점 색과 행사 목록·상세·홈 범례 라벨은 트랙 59에서 닫혔다(브랜치 `fix/dos-ui-residuals`, PR 머지 전). 내 활동·컬렉션 행과 스태프 화면의 새 카테고리 라벨, 비한국어 화면의 `lang="ko"`도 트랙 59에서 닫혔다(브랜치 `fix/dos-ui-residuals`, PR 머지 전). 현재 사실은 `docs/BE/category-vocabulary.md` |
+| 카테고리 어휘 스태프 CRUD | `[실측 gh]` PR #365 머지 완료(2026-09-15, merge commit `ec8deaca`) — 어휘가 상수에서 `core.models.Category`로 이동, 팔레트 12슬롯 자동 배정·반납, 슈퍼유저 전용 관리 화면 4개, 감사 로그 액션 4종. 가드레일 정본 `docs/BE/category-vocabulary.md`. **남은 간극 없음**: 공개 화면의 점 색, 행사 목록·상세·홈 범례 라벨, 내 활동·컬렉션 행과 스태프 화면의 새 카테고리 라벨, 비한국어 화면의 `lang="ko"`는 트랙 59에서 모두 닫혔다(브랜치 `fix/dos-ui-residuals`, PR 머지 전). 현재 사실은 `docs/BE/category-vocabulary.md` |
 | 스태프 이벤트 목록 필터(트랙 26) | `[실측 gh]` PR #364 머지 완료(2026-09-15, merge commit `cda6e127`) — 정렬·기간·카테고리 단일 선택 링크 필터 3축, `q` 소실 결함(F-A)·0건 복구 링크(F-B) 동반 수정 |
 | 회원 닉네임(트랙 29) | `[실측 gh]` PR #358 머지 완료(2026-09-10, merge commit `3ca5d184`, 커밋 10개) — 가입 필수 입력·헤더/마이페이지 표시·기존 회원 백필(`회원<pk>`)·변경 화면(`/accounts/settings/nickname/`, 5회/3600초 빈도 제한). 가드레일 정본 `docs/BE/account-identity.md` |
 | DB 락·트랜잭션 검수(트랙 32) | `[실측 gh]` PR #367 머지 완료(2026-09-15 `4c8ab746` → #366 `568a6192`로 main 도달) — 결함 7건(팔레트 슬롯 세이브포인트·삭제 뷰 잠금 순서·상태 PATCH 원자성·탐색 감사로그 원자성·러너 중복 정규화·HomeConfig 잠금·컬렉션 PATCH 스로틀) 수정, 신규 테스트 10건. 이연: 락 안 이미지 저장 근본 해법(트리거 S3 지연 실측)·타임아웃 설정·교착 관측 지표 |
@@ -690,6 +690,7 @@ F10 MFA(2026-07-01 `auth-hardening` 결정).
 - 스태프 로딩 스피너의 중심이 2px 어긋나 있던 것.
 - 결과 영역 밖 링크(상태·분류 칩, 컬렉션 탭·보기 전환·유형·작품 필터)가 실시간 검색어를 따라가지 않던 것: 정렬 메뉴와 `data-search-links` 표식이 붙은 묶음의 `q`를 매 교체 뒤 맞춘다(활동 쪽 보기 전환·구역 탭은 서버가 `q`를 빼므로 제외). 이미 보이는 검색어로 Enter를 눌러도 같은 주소가 방문 기록에 쌓이던 것: 같은 주소면 `pushState`를 하지 않는다.
 - 활동 쪽 필터 칩 중 "전체" 칩만 현재 정렬을 잃던 것(`/archive/`·`/archive/statuses/`·`/archive/visits/`, 다른 칩은 정렬을 실었다 `[실측 2026-11-17 Playwright]`): "전체" 칩도 다른 칩과 같은 꼬리(`search_suffix`)를 써서 검색어와 정렬을 유지한다. 테스트 `tests/archive/test_archive_search.py`의 `test_전체_칩은_필터만_풀고_현재_검색어와_정렬을_유지한다`.
+- 실시간 검색에서 Enter가 인코딩만 다른 같은 주소(칩의 `filter=cat:…`, 공백이 든 작품 필터)를 방문 기록에 또 쌓던 것: 쿼리를 정규화해 비교한다. 뒤로가기로 `?page=N` 주소에 돌아왔을 때 1쪽 결과가 뜨던 것: 뒤로·앞으로가기는 주소의 `page`를 유지해 다시 받는다 `[실측 2026-11-17 Playwright Chromium·WebKit·Firefox, 수정 전 재현·수정 후 해소]`.
 
 ## 착수하지 않는 것
 
