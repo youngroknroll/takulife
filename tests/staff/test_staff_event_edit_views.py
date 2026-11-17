@@ -69,14 +69,22 @@ def test_이벤트_수정_페이지_GET은_현재_필드_값을_렌더링한다(
     [
         pytest.param(
             Event.PublishStatus.PUBLISHED,
-            ('events-status-badge--published">게시</span>', "현재 게시 중입니다", "게시 내리기"),
-            ("현재 비공개(초안)입니다", "다시 게시"),
+            (
+                'events-status-badge--published">게시</span>',
+                "현재 게시 중입니다",
+                ">게시 내리기</button>",
+            ),
+            ("현재 비공개(초안)입니다", ">다시 게시</button>"),
             id="게시_행사",
         ),
         pytest.param(
             Event.PublishStatus.DRAFT,
-            ('events-status-badge--draft">비공개</span>', "현재 비공개(초안)입니다", "다시 게시"),
-            ("현재 게시 중입니다", "게시 내리기"),
+            (
+                'events-status-badge--draft">비공개</span>',
+                "현재 비공개(초안)입니다",
+                ">다시 게시</button>",
+            ),
+            ("현재 게시 중입니다", ">게시 내리기</button>"),
             id="초안_행사",
         ),
     ],
