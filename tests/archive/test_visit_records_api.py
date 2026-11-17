@@ -64,21 +64,21 @@ def test_방문_기록을_생성하면_요청한_사용자_소유로만_저장�
     assert VisitRecord.objects.filter(user=other_user, event=event).count() == 0
 
 
-def _post_rejected_visit_record(client, event_id, **extra):
-    """방문 기록 생성이 400으로 거부되는지 확인하고, 메시지 속 행사 id를
-    "<id>"로 바꾼 오류 딕셔너리와 원문 본문을 돌려준다."""
-    response = client.post(
+def _post_visit_record(client, event_id, **extra):
+    return client.post(
         "/api/visit-records/",
         {"event": event_id, "visited_on": "2026-05-26"},
         content_type="application/json",
         **extra,
     )
-    assert response.status_code == 400
-    normalized = {
+
+
+def _normalized_errors(response, event_id):
+    """오류 메시지 속 행사 id를 "<id>"로 바꿔 서로 비교할 수 있게 한다."""
+    return {
         field: [message.replace(f'"{event_id}"', '"<id>"') for message in messages]
         for field, messages in response.json().items()
     }
-    return normalized, response.content.decode()
 
 
 @pytest.mark.django_db
@@ -129,11 +129,15 @@ def test_방문_완료_표시가_없는_비공개_행사의_기록_요청은_존
     status_count = UserEventStatus.objects.count()
 
     client.force_login(user)
-    draft_errors, draft_text = _post_rejected_visit_record(client, draft_event.id)
-    missing_errors, _ = _post_rejected_visit_record(client, missing_id)
+    draft_response = _post_visit_record(client, draft_event.id)
+    missing_response = _post_visit_record(client, missing_id)
+    assert draft_response.status_code == 400
+    assert missing_response.status_code == 400
+    draft_errors = _normalized_errors(draft_response, draft_event.id)
+    missing_errors = _normalized_errors(missing_response, missing_id)
 
     assert draft_errors == missing_errors
-    assert "숨겨야 하는 비공개 제목" not in draft_text
+    assert "숨겨야 하는 비공개 제목" not in draft_response.content.decode()
     assert VisitRecord.objects.count() == 0
     assert UserEventStatus.objects.count() == status_count
 
@@ -160,12 +164,12 @@ def test_검증_뒤_저장_전에_방문_완료_표시가_지워지면_존재하
     )
 
     client.force_login(user)
-    raced_errors, _ = _post_rejected_visit_record(
-        client, draft_event.id, HTTP_ACCEPT_LANGUAGE=language
-    )
-    missing_errors, _ = _post_rejected_visit_record(
-        client, 987654321, HTTP_ACCEPT_LANGUAGE=language
-    )
+    raced_response = _post_visit_record(client, draft_event.id, HTTP_ACCEPT_LANGUAGE=language)
+    missing_response = _post_visit_record(client, 987654321, HTTP_ACCEPT_LANGUAGE=language)
+    assert raced_response.status_code == 400
+    assert missing_response.status_code == 400
+    raced_errors = _normalized_errors(raced_response, draft_event.id)
+    missing_errors = _normalized_errors(missing_response, 987654321)
 
     assert raced_errors == missing_errors
     assert VisitRecord.objects.count() == 0

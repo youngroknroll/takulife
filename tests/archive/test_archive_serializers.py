@@ -5,9 +5,8 @@ import pytest
 
 from archive.serializers import PersonalEntrySerializer, VisitRecordSerializer
 
-pytestmark = pytest.mark.unit
 
-
+@pytest.mark.unit
 class TestSerializerGuard:
     def test_이미지_값이_비어있으면_검증을_그대로_통과시킨다(self):
         # 이미지가 비어 있으면(업로드 없음) 검증을 그대로 통과시킨다.
@@ -15,6 +14,7 @@ class TestSerializerGuard:
         assert PersonalEntrySerializer().validate_image(None) is None
 
 
+@pytest.mark.domain
 @pytest.mark.django_db
 @pytest.mark.parametrize(
     ("is_published", "expected_valid"),
