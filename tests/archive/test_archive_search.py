@@ -17,7 +17,7 @@ from datetime import date
 import html
 from html.parser import HTMLParser
 import re
-from urllib.parse import parse_qs, quote, urljoin, urlsplit
+from urllib.parse import parse_qs, quote, urlsplit
 
 import pytest
 
@@ -49,6 +49,45 @@ class _ChipCollector(HTMLParser):
         if tag == "a" and self._href is not None:
             self.chips.append((" ".join("".join(self._text).split()), self._href))
             self._href = None
+
+
+_VOID_TAGS = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source"}
+
+
+class _SearchLinkMarkCollector(HTMLParser):
+    """`a`마다 (class 목록, 공백 정리한 텍스트, 조상 중 data-search-links 유무)를 모은다."""
+
+    def __init__(self):
+        super().__init__()
+        self.links = []
+        self._stack = []  # (태그, data-search-links 보유 여부)
+        self._current = None
+        self._text = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag in _VOID_TAGS:
+            return
+        attr_map = dict(attrs)
+        if tag == "a":
+            marked = any(has_mark for _, has_mark in self._stack)
+            self._current = ((attr_map.get("class") or "").split(), marked)
+            self._text = []
+        self._stack.append((tag, "data-search-links" in attr_map))
+
+    def handle_data(self, data):
+        if self._current is not None:
+            self._text.append(data)
+
+    def handle_endtag(self, tag):
+        if tag in _VOID_TAGS:
+            return
+        tags = [name for name, _ in self._stack]
+        if tag in tags:
+            del self._stack[len(tags) - 1 - tags[::-1].index(tag) :]
+        if tag == "a" and self._current is not None:
+            classes, marked = self._current
+            self.links.append((classes, " ".join("".join(self._text).split()), marked))
+            self._current = None
 
 
 # ---------------------------------------------------------------------------
@@ -232,7 +271,7 @@ class TestStatusPagesQFilter:
         parser.feed(resp.content.decode())
         전체_칩들 = [href for text, href in parser.chips if text == "전체"]
         assert len(전체_칩들) == 1
-        쿼리 = parse_qs(urlsplit(urljoin(요청_주소, html.unescape(전체_칩들[0]))).query)
+        쿼리 = parse_qs(urlsplit(html.unescape(전체_칩들[0])).query)
         assert 쿼리 == {"q": ["가"], "sort": [정렬]}
 
     @pytest.mark.parametrize(
@@ -258,8 +297,59 @@ class TestStatusPagesQFilter:
         parser.feed(resp.content.decode())
         전체_칩들 = [href for text, href in parser.chips if text == "전체"]
         assert len(전체_칩들) == 1
-        쿼리 = parse_qs(urlsplit(urljoin(요청_주소, html.unescape(전체_칩들[0]))).query)
+        쿼리 = parse_qs(urlsplit(html.unescape(전체_칩들[0])).query)
         assert 쿼리 == {"sort": [정렬]}
+
+    @pytest.mark.parametrize(
+        ("경로", "필터"),
+        [
+            pytest.param("/archive/", "status=planned", id="기록장"),
+            pytest.param("/archive/statuses/", "status=planned", id="나의_일정"),
+            pytest.param("/archive/visits/", "filter=unofficial", id="방문_목록"),
+        ],
+    )
+    def test_전체_칩은_검색어도_정렬도_없으면_필터만_풀고_쿼리를_싣지_않는다(
+        self, user_client, make_event, make_status, make_entry, make_visit, 경로, 필터
+    ):
+        user, client = user_client()
+        make_status(user, event=make_event(title="가나다 행사"), status="planned")
+        entry = make_entry(user, title="가나다 장소")
+        make_visit(user, personal_entry=entry, visited_on=date(2026, 11, 1))
+
+        resp = client.get(f"{경로}?{필터}")
+
+        parser = _ChipCollector()
+        parser.feed(resp.content.decode())
+        전체_칩들 = [href for text, href in parser.chips if text == "전체"]
+        assert len(전체_칩들) == 1
+        쿼리 = parse_qs(urlsplit(html.unescape(전체_칩들[0])).query)
+        assert 쿼리 == {}
+
+    @pytest.mark.parametrize(
+        ("경로", "필터"),
+        [
+            pytest.param("/archive/", "status=planned", id="기록장"),
+            pytest.param("/archive/statuses/", "status=planned", id="나의_일정"),
+            pytest.param("/archive/visits/", "filter=unofficial", id="방문_목록"),
+        ],
+    )
+    def test_상태_칩_묶음은_실시간_검색이_검색어를_갱신할_수_있게_표식을_가진다(
+        self, user_client, make_event, make_status, make_entry, make_visit, 경로, 필터
+    ):
+        user, client = user_client()
+        make_status(user, event=make_event(title="가나다 행사"), status="planned")
+        entry = make_entry(user, title="가나다 장소")
+        make_visit(user, personal_entry=entry, visited_on=date(2026, 11, 1))
+
+        resp = client.get(f"{경로}?{필터}")
+
+        parser = _SearchLinkMarkCollector()
+        parser.feed(resp.content.decode())
+        전체_칩들 = [
+            marked for classes, text, marked in parser.links if "chip" in classes and text == "전체"
+        ]
+        assert len(전체_칩들) == 1
+        assert 전체_칩들[0] is True
 
 
 # ---------------------------------------------------------------------------
@@ -606,3 +696,32 @@ class TestQNormalisation:
         for special_q in ("a%b", "x&y=z", "<script>"):
             resp = client.get(f"/archive/visits/?q={special_q}")
             assert resp.status_code == 200, f"500 on q={special_q!r}"
+
+
+@pytest.mark.django_db
+class TestCollectionSearchLinkMarks:
+    """컬렉션의 q를 싣는 링크 묶음 4곳은 라이브 검색 JS가 고르는 표식을 가진다."""
+
+    @pytest.mark.parametrize(
+        "링크_class",
+        [
+            pytest.param("collection-view-btn", id="보기_전환"),
+            pytest.param("collection-tab", id="탭"),
+            pytest.param("collection-type-chip", id="유형_칩"),
+            pytest.param("collection-work-link", id="작품_목록"),
+        ],
+    )
+    def test_컬렉션의_검색어를_싣는_링크_묶음은_표식을_가진다(
+        self, user_client, make_collection_item, 링크_class
+    ):
+        # 보기 전환·탭은 항목이 있어야, 유형 칩은 유형 값이, 작품 목록은 작품명이 있어야 그려진다.
+        user, client = user_client()
+        make_collection_item(user, work_title="작품A", item_type="keyring")
+
+        resp = client.get("/collection/")
+
+        parser = _SearchLinkMarkCollector()
+        parser.feed(resp.content.decode())
+        대상_링크들 = [marked for classes, _, marked in parser.links if 링크_class in classes]
+        assert 대상_링크들
+        assert all(대상_링크들)
