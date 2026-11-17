@@ -84,7 +84,7 @@
             </button>
           </div>
           {% if event.official_url %}
-            <a class="event-detail-pill event-detail-pill-official" href="{{ event.official_url }}" rel="noopener" target="_blank"{% if user_status != 'visited' %} data-cta-watch{% endif %}>{% translate "공식 페이지로 ↗" %}</a>
+            <a class="event-detail-pill event-detail-pill-official" href="{{ event.official_url }}" rel="noopener" target="_blank"{% if user_status != 'visited' %} data-cta-watch{% endif %}>{% translate "공식 페이지로" %}</a>
           {% endif %}
         </div>
 
@@ -151,7 +151,7 @@
         <h2>{% translate "위치" %}</h2>
         <p class="event-detail-location-name" lang="ko">{{ event.location_name }}</p>
         {% if region_label %}<p class="event-detail-location-region">{{ region_label }}</p>{% endif %}
-        <a class="event-detail-location-link" href="https://map.naver.com/p/search/{{ event.location_name|urlencode }}" target="_blank" rel="noopener">{% translate "지도 앱에서 열기" %} <span aria-hidden="true">↗</span></a>
+        <a class="event-detail-location-link" href="https://map.naver.com/p/search/{{ event.location_name|urlencode }}" target="_blank" rel="noopener">{% translate "지도 앱에서 열기" %}</a>
         {# TODO(backend): 좌표/지오코딩/지도 임베드 삽입 지점 #}
         <div class="event-detail-map" data-map-embed-slot></div>
       </section>
@@ -184,7 +184,7 @@
       </div>
     {% elif event.official_url %}
       <div class="mobile-cta" data-cta-fixed hidden>
-        <a class="action-link primary" href="{{ event.official_url }}" rel="noopener" target="_blank">{% translate "공식 페이지에서 보기 ↗" %}</a>
+        <a class="action-link primary" href="{{ event.official_url }}" rel="noopener" target="_blank">{% translate "공식 페이지에서 보기" %}</a>
       </div>
     {% endif %}
   </main>

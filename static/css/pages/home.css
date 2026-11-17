@@ -73,38 +73,24 @@
     margin-top: var(--space-4);
     margin-bottom: 0;
   }
-  /* 창 제목(h1)은 창 위 테두리에 얹힌다. 굵기는 base.css의 h1 규칙(700)이
-     맡는다. 위치 기준이 창이 되도록 .hero-ticket에 position을 두지 않는다. */
-  .hero h1 {
-    margin: 0;
-    font-size: var(--fs-5);
-    line-height: var(--lh-tight);
-    word-break: keep-all;
-  }
-  /* 강조 문구는 선택색 반전 블록. 굵기는 h1을 그대로 따른다. */
-  .hero .emphasis {
-    padding: 0 var(--space-1);
-    background: var(--select);
-    color: var(--on-select);
-    font-weight: inherit;
-    -webkit-box-decoration-break: clone;
-    box-decoration-break: clone;
+  /* 화면에는 안 보이고 스크린리더·문서 개요에만 쪽 제목을 준다. */
+  .home-page-title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
   .hero-ticket-main {
     min-width: 0;
   }
-  /* cards.css의 `.hero p`(0,1,1)가 단일 클래스 p 규칙(0,1,0)을 이겨
-     색·margin을 눌러버린다 — .hero-ticket 하위로 스코프해 특이도를
-     (0,2,0)으로 올린다. */
-  .hero-ticket .hero-ticket-eyebrow {
-    margin: 0;
-    font-size: var(--fs-1);
-    font-weight: var(--fw-regular);
-    color: var(--ink-2);
-  }
   .hero .search {
     max-width: 33.75rem;
-    margin: var(--space-3) 0 0;
+    margin: 0;
   }
   .quick-filters {
     display: flex;
@@ -564,9 +550,5 @@
     }
     .hscroll-track li {
       scroll-snap-align: start;
-    }
-    /* 제목(h1)은 창 안 첫 줄로 내려온다. */
-    .hero .window-title {
-      margin: var(--space-1) 0 0;
     }
   }
