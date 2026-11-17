@@ -1,6 +1,6 @@
 /* ── interaction feedback: 반전 hover + loading spinner ──────── */
 /* .is-loading은 요청이 진행 중일 때 TakuAPI.setLoading이 붙였다 떼는 클래스로,
-   버튼을 비활성 스피너로 바꾼다. 아래 hover 표시는 이동·확대 없이 반전
+   버튼에 스피너를 얹는다. 비활성 모양은 입지 않는다. 아래 hover 표시는 이동·확대 없이 반전
    (배경 --select + 글자 --on-select)만 쓴다. */
 @media (hover: hover) {
   .chip:not(.active):hover,

@@ -39,7 +39,7 @@
 
 ## 스피너는 버튼 폭을 바꾸면 안 된다
 
-소비자: `static/css/objects/interaction.css`(`border-right-color`는 `:38`, 스피너 블록 `:30-41`, 겹침 규칙 `:88-98`),
+소비자: `static/css/objects/interaction.css`(`border-right-color`는 `:38`, 스피너 블록 `:30-41`, 겹침 규칙 `:89-99`),
 스태프: `static/css/staff/base.css`(`.is-loading`·`::after` 블록 `:173-193`, `border-top-color`는 `:190`).
 
 ```css
@@ -57,12 +57,12 @@ button.is-loading::after {
 ```
 
 이 조각은 요약본이다. `border`·`border-right-color`는 실제로 `.is-loading::after`(`interaction.css:30-41`)에,
-나머지는 `button.is-loading::after`(`:88-98`)에 있고 조각은 둘을 합쳤다. `box-sizing: border-box`가 없으면
+나머지는 `button.is-loading::after`(`:89-99`)에 있고 조각은 둘을 합쳤다. `box-sizing: border-box`가 없으면
 테두리(2px×2)가 0.85rem 바깥에 더해져 스피너 상자 중심이 버튼 중심에서 2px 오른쪽·아래로 어긋난다
-(스피너 상자 17.6px → 13.6px, 버튼 중심과의 차 2px → 0px `[실측 2026-11-17 Playwright, 1280px·390px, 컬렉션 등록·방문 목록 삭제·방문 수정·개인 기록 등록의 저장·삭제 버튼]`).
+(스피너 상자 17.59px → 13.59px, 버튼 중심과의 차 2px → 0px `[실측 2026-11-17 Playwright, 1280px·390px, 컬렉션 등록·방문 목록 삭제·방문 수정·개인 기록 등록의 저장·삭제 버튼]`).
 
 스태프 쪽 규칙(`static/css/staff/base.css:175`)은 아직 `font-size: 0`으로 라벨을 접는다.
-스태프 `.is-loading::after`에도 `box-sizing: border-box`를 두어 스피너 상자를 소비자 쪽과 같게 맞췄다(스태프 `*{box-sizing}`은 `::after`에 닿지 않는다).
+스태프 `.is-loading::after`에도 `box-sizing: border-box`를 두어 스피너 상자를 소비자 쪽과 같게 맞췄다(스태프 `*{box-sizing}`은 `::after`에 닿지 않는다) `[실측 2026-11-17 Playwright, 스태프 3쪽, 상자 17.59px → 13.59px, 중심 차 2px → 0px, 버튼 크기 변화 0px]`.
 아래 설명은 소비자 쪽 규칙을 기준으로 한다.
 
 세 가지가 모두 의도적이다.
@@ -84,7 +84,7 @@ button.is-loading::after {
 제출 중 버튼은 비활성 모양을 입지 않고 자기 평상시 색·테두리·배경을 유지한다. 스피너는 그 글자색이다.
 새 비활성 모양 규칙(`:disabled`)을 쓰면 선택자에 `:not(.is-loading)`을 단다.
 고대비(`forced-colors: active`)에서는 강제 색이 글자 채움색을 덮어 라벨이 보이므로, 로딩 중인 버튼·링크만
-`forced-color-adjust: none`으로 빼고 시스템 색 키워드를 `!important`로 준다(쪽 규칙의 명시도가 더 높다) `[코드 interaction.css:68-83]`.
+`forced-color-adjust: none`으로 뺀다. 버튼은 `color`·`background-color`·`border-color`를 `ButtonText`·`ButtonFace`·`ButtonBorder`로 `!important` 지정한다(쪽 규칙의 명시도가 더 높다). 링크는 `color: LinkText`만 둔다(공개 화면에 로딩 링크 없음) `[코드 interaction.css:65-82]` `[실측 2026-11-17 Playwright forced_colors=active, 밝은·어두운, 15쪽, 버튼 137개씩, 스피너 대비 21:1]`.
 
 **3. `::after`를 절대 위치로 겹친다.** 텍스트 뒤에 이어붙이면 버튼이 커진다.
 실측으로 컬렉션·방문·장소 저장 버튼이 제출 순간 100px → 122px로 커지며
@@ -93,9 +93,9 @@ button.is-loading::after {
 
 2026-11-17에 로딩 클래스를 붙이고 폭·높이·글자 크기·글자 채움색·스피너 애니메이션을
 재서 확인했다: 27개 주소(비로그인 3개 포함) × 폭 2개(1280px, 390px)에서
-변경 전(`font-size: 0` 방식)은 버튼 368개 중 340개가 어긋났고(대부분 글자 크기 0px 판정, 탈퇴 버튼 등은 폭도 줄었다),
+변경 전(`font-size: 0` 방식, main `e586a661`)은 버튼 392개 중 364개가 규칙을 벗어났고(크기가 바뀐 것 120개, 글자가 스피너 옆에 그대로 남은 것 244개; 탈퇴 버튼 등은 폭도 줄었다),
 변경 뒤(현재 규칙)는 392개 중 0개다: 폭·높이 변화 0건, 글자 크기 변화 0건, 채움색 불투명 0건,
-`btn-spin` 아닌 스피너 0건 `[실측 2026-11-17 Playwright, 로그인 24쪽 + 비로그인 3쪽 × 1280px·390px — 뒤 측정은 로컬 확인용 행사 4건이 더해져 버튼 수가 늘었다]`. 🗑 삭제 버튼 2곳, `.status-btn.active`의 `✓ `(`::before`),
+`btn-spin` 아닌 스피너 0건 `[실측 2026-11-17 Playwright, 로그인 24쪽 + 비로그인 3쪽 × 1280px·390px — 뒤 측정은 로컬 확인용 행사 4건이 더해져 버튼 수가 늘었다. 앞서 적었던 368개·340개는 확인용 행사를 넣기 전 표본이었다]`. 🗑 삭제 버튼 2곳, `.status-btn.active`의 `✓ `(`::before`),
 `.photo-preview-remove`의 `×`, ♥ 찜 버튼은 로딩 상태 스크린샷에서 글리프가 남지
 않았다 `[실측 2026-11-17 Playwright]`.
 
@@ -104,6 +104,8 @@ button.is-loading::after {
 `.is-loading`은 버튼만이 아니라 **검색 결과 컨테이너**(`#archive-results`,
 `archive_search.js`가 토글)에도 붙는다. 좁히지 않고 글자 숨김을 걸면
 검색 결과 글자가 통째로 사라진다.
+
+보관함 실시간 검색(`archive_search.js`)은 한글 조합 확정 뒤 `compositionend`에서 검색을 건다. 마지막으로 요청한 검색어와 같으면 다시 요청하지 않고(요청이 실패하면 이 기억을 지워 재시도된다), 뒤로가기는 대기 중인 검색을 취소한다 `[코드 archive_search.js]`.
 
 ## 페이지별로 스피너를 다시 보정하지 마라
 
@@ -124,7 +126,7 @@ button.is-loading::after {
 ## 움직임 감소
 
 `prefers-reduced-motion: reduce`에서 회전을 멈추고 정지된 링만 남긴다
-`[코드 interaction.css:106-111]`. 이력: 예전에는 소비자 쪽 블록이 `hover-lift`와 `glint`만 끄고
+`[코드 interaction.css:107-112]`. 이력: 예전에는 소비자 쪽 블록이 `hover-lift`와 `glint`만 끄고
 스피너는 계속 돌게 두고 있었다. `hover-lift` CSS는 트랙 58에서 삭제됐고 `.glint`는
 `interaction.css:17-21`에서 숨겨 둔다. 새로 스피너를 추가할 때 이 처리를 빠뜨리지 마라.
 

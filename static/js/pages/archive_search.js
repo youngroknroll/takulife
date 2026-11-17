@@ -29,6 +29,8 @@
   var path = window.location.pathname;
   var controller = null;
   var timer = null;
+  // 마지막으로 요청한 검색어. 같은 검색어의 중복 요청·히스토리 쌓임을 막는다.
+  var lastTerm = (new URLSearchParams(window.location.search).get("q") || "").trim();
 
   // 현재 URL에서 쿼리 파라미터를 만들어 활성 필터를 유지한다. 새 검색어는
   // 페이지를 1로 되돌린다.
@@ -143,6 +145,7 @@
   // 만들지 여부(popstate 재실행 시에는 false).
   function runSearch(term, push) {
     var params = buildParams(term);
+    lastTerm = term;
 
     if (controller) { controller.abort(); }
     controller = new AbortController();
@@ -166,6 +169,7 @@
         }
         if (!response.ok) {
           setSearchError(gettext("검색 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."));
+          lastTerm = null; // 같은 검색어를 다시 입력하면 재시도되게 한다
           return null;
         }
         return response.text();
@@ -191,6 +195,7 @@
         // 네트워크 실패 시 로딩 상태만 해제하고 기존 결과는 그대로 둔다.
         setLoading(false);
         setSearchError(gettext("검색 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."));
+        lastTerm = null;
       });
   }
 
@@ -199,11 +204,14 @@
     var term = input.value.trim();
     syncClearLink(term);
     timer = window.setTimeout(function () {
+      if (term === lastTerm) { return; }
       runSearch(term, true);
     }, DEBOUNCE_MS);
   }
 
   input.addEventListener("input", function (evt) {
+    // 조합 중에도 입력창에 글자가 보이므로 지우기 링크는 바로 맞춘다.
+    syncClearLink(input.value.trim());
     // 한글 등 조합 입력 중에는 글자가 완성되기 전에도 input 이벤트가
     // 계속 발생한다. 그 중간 상태로 검색하면 요청이 낭비되고 화면이 깜빡인다.
     if (evt.isComposing) { return; }
@@ -225,6 +233,8 @@
 
   // 뒤로/앞으로가기: URL에서 입력값을 다시 맞추고 새 히스토리 없이 검색을 재실행한다.
   window.addEventListener("popstate", function () {
+    // 대기 중이던 입력 검색이 뒤로가기 결과를 덮어쓰지 않게 취소한다.
+    if (timer) { window.clearTimeout(timer); timer = null; }
     var term = new URLSearchParams(window.location.search).get("q") || "";
     input.value = term;
     syncClearLink(term);
