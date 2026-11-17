@@ -12,7 +12,7 @@ from django.test.utils import CaptureQueriesContext
 import pytest
 
 from archive.models import ActivityLogEntry, PersonalEntry, UserEventStatus, VisitRecord
-from archive.services import complete_visit_with_record
+from archive.services import VisitTargetUnavailableError, complete_visit_with_record
 from core.models import AnalyticsEvent
 
 pytestmark = pytest.mark.domain
@@ -319,6 +319,80 @@ def test_같은_클라이언트_토큰으로_방문_완료_처리를_두_번_요
         ).count()
         == 1
     )
+
+
+@pytest.mark.django_db
+def test_방문_완료로_표시한_비공개_행사에서_같은_클라이언트_토큰을_재전송하면_기록과_활동과_분석이_하나씩만_남는다(
+    make_user, make_draft_event, make_status
+):
+    user = make_user()
+    event = make_draft_event()
+    status_row = make_status(user, event=event, status=UserEventStatus.Status.VISITED)
+    original_updated_at = status_row.updated_at
+    token = uuid.uuid4()
+
+    complete_visit_with_record(user=user, event=event, visited_on="2026-07-15", client_token=token)
+    complete_visit_with_record(user=user, event=event, visited_on="2026-07-16", client_token=token)
+
+    assert VisitRecord.objects.filter(user=user, event=event).count() == 1
+    assert (
+        ActivityLogEntry.objects.filter(kind=ActivityLogEntry.Kind.VISIT_RECORD_CREATED).count()
+        == 1
+    )
+    assert (
+        AnalyticsEvent.objects.filter(
+            event_name=AnalyticsEvent.EventName.VISIT_RECORD_CREATED
+        ).count()
+        == 1
+    )
+    assert (
+        AnalyticsEvent.objects.filter(
+            event_name=AnalyticsEvent.EventName.EVENT_MARKED_VISITED
+        ).count()
+        == 0
+    )
+    after = UserEventStatus.objects.get(user=user, event=event)
+    assert after.pk == status_row.pk
+    assert after.updated_at == original_updated_at
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "initial_status",
+    [
+        pytest.param(UserEventStatus.Status.PLANNED, id="예정"),
+        pytest.param(UserEventStatus.Status.MISSED, id="불참"),
+    ],
+)
+def test_비공개_행사에_예정이나_불참_상태가_있으면_방문_완료_처리가_평소처럼_상태를_방문_완료로_바꾼다(
+    make_user, make_draft_event, make_status, initial_status
+):
+    user = make_user()
+    event = make_draft_event()
+    status_row = make_status(user, event=event, status=initial_status)
+
+    complete_visit_with_record(user=user, event=event, visited_on="2026-07-15")
+
+    after = UserEventStatus.objects.get(user=user, event=event)
+    assert after.pk == status_row.pk
+    assert after.status == UserEventStatus.Status.VISITED
+    assert VisitRecord.objects.filter(user=user, event=event).count() == 1
+
+
+@pytest.mark.django_db
+def test_상태_행이_없는_비공개_행사를_방문_완료_처리하면_예외가_나고_아무_행도_남지_않는다(
+    make_user, make_draft_event
+):
+    user = make_user()
+    event = make_draft_event()
+
+    with pytest.raises(VisitTargetUnavailableError):
+        complete_visit_with_record(user=user, event=event, visited_on="2026-07-15")
+
+    assert UserEventStatus.objects.count() == 0
+    assert VisitRecord.objects.count() == 0
+    assert ActivityLogEntry.objects.count() == 0
+    assert AnalyticsEvent.objects.count() == 0
 
 
 # ---------------------------------------------------------------------------

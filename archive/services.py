@@ -17,6 +17,7 @@ from archive.models import (
 from archive.signals import _delete_file_best_effort
 from core.analytics import record_event
 from core.models import AnalyticsEvent
+from events.models import Event
 
 MAX_PHOTOS_PER_RECORD = 5
 
@@ -244,6 +245,11 @@ class VisitRecordExistsError(Exception):
     """이미 VisitRecord가 있는 대상을 상태만 PATCH하거나 새로 생성해서
     예정/놓침으로 만들려고 할 때 발생시킨다. VisitRecord가 있으면 그
     이후로는 상태 행이 아니라 VisitRecord가 진실의 원천이다."""
+
+
+class VisitTargetUnavailableError(Exception):
+    """방문 기록을 남길 수 없는 행사를 대상으로 했을 때 발생시킨다.
+    게시되지 않았고 본인의 방문 완료 표시도 없는 행사가 여기에 해당한다."""
 
 
 def _has_visit_record(*, user, event, personal_entry):
@@ -636,6 +642,10 @@ def _ensure_visited_status(*, user, event, personal_entry, existing):
     status_row = existing.select_for_update().first()
 
     if status_row is None:
+        # 게시되지 않은 행사에는 새 상태를 만들지 않는다. 검증과 저장 사이에
+        # 본인이 방문 완료 표시를 지운 경우가 여기로 온다.
+        if event is not None and event.publish_status != Event.PublishStatus.PUBLISHED:
+            raise VisitTargetUnavailableError
         try:
             create_user_event_status(
                 user=user,

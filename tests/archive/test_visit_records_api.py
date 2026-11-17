@@ -15,6 +15,7 @@ import pytest
 
 from archive.models import UserEventStatus, VisitRecord, VisitRecordPhoto
 from archive.services import MAX_PHOTOS_PER_RECORD
+from events.models import Event
 
 pytestmark = pytest.mark.web
 
@@ -61,6 +62,23 @@ def test_방문_기록을_생성하면_요청한_사용자_소유로만_저장�
 
     assert VisitRecord.objects.filter(user=user, event=event).count() == 1
     assert VisitRecord.objects.filter(user=other_user, event=event).count() == 0
+
+
+def _post_rejected_visit_record(client, event_id, **extra):
+    """방문 기록 생성이 400으로 거부되는지 확인하고, 메시지 속 행사 id를
+    "<id>"로 바꾼 오류 딕셔너리와 원문 본문을 돌려준다."""
+    response = client.post(
+        "/api/visit-records/",
+        {"event": event_id, "visited_on": "2026-05-26"},
+        content_type="application/json",
+        **extra,
+    )
+    assert response.status_code == 400
+    normalized = {
+        field: [message.replace(f'"{event_id}"', '"<id>"') for message in messages]
+        for field, messages in response.json().items()
+    }
+    return normalized, response.content.decode()
 
 
 @pytest.mark.django_db
@@ -110,27 +128,48 @@ def test_방문_완료_표시가_없는_비공개_행사의_기록_요청은_존
         make_status(other, event=draft_event, status=other_status)
     status_count = UserEventStatus.objects.count()
 
-    def post_and_normalize(event_id):
-        response = client.post(
-            "/api/visit-records/",
-            {"event": event_id, "visited_on": "2026-05-26"},
-            content_type="application/json",
-        )
-        assert response.status_code == 400
-        normalized = {
-            field: [message.replace(f'"{event_id}"', '"<id>"') for message in messages]
-            for field, messages in response.json().items()
-        }
-        return normalized, response.content.decode()
-
     client.force_login(user)
-    draft_errors, draft_text = post_and_normalize(draft_event.id)
-    missing_errors, _ = post_and_normalize(missing_id)
+    draft_errors, draft_text = _post_rejected_visit_record(client, draft_event.id)
+    missing_errors, _ = _post_rejected_visit_record(client, missing_id)
 
     assert draft_errors == missing_errors
     assert "숨겨야 하는 비공개 제목" not in draft_text
     assert VisitRecord.objects.count() == 0
     assert UserEventStatus.objects.count() == status_count
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("language", ["ko", "en"])
+def test_검증_뒤_저장_전에_방문_완료_표시가_지워지면_존재하지_않는_행사와_같은_400_응답이_나온다(
+    client, make_user, make_draft_event, make_status, monkeypatch, language
+):
+    # 계층 규약 유지를 위해 서비스 모듈을 직접 임포트하지 않고 뷰 네임스페이스로 우회한다.
+    from archive import views as archive_views
+
+    user = make_user()
+    draft_event = make_draft_event()
+    make_status(user, event=draft_event, status="visited")
+    original_complete_visit_with_record = archive_views.complete_visit_with_record
+
+    def status_removing_complete_visit_with_record(**kwargs):
+        UserEventStatus.objects.filter(user=user, event=draft_event).delete()
+        return original_complete_visit_with_record(**kwargs)
+
+    monkeypatch.setattr(
+        archive_views, "complete_visit_with_record", status_removing_complete_visit_with_record
+    )
+
+    client.force_login(user)
+    raced_errors, _ = _post_rejected_visit_record(
+        client, draft_event.id, HTTP_ACCEPT_LANGUAGE=language
+    )
+    missing_errors, _ = _post_rejected_visit_record(
+        client, 987654321, HTTP_ACCEPT_LANGUAGE=language
+    )
+
+    assert raced_errors == missing_errors
+    assert VisitRecord.objects.count() == 0
+    assert UserEventStatus.objects.count() == 0
 
 
 @pytest.mark.django_db
@@ -244,6 +283,29 @@ def test_같은_클라이언트_토큰으로_방문_기록_생성_POST를_두_�
     assert VisitRecord.objects.filter(user=user, client_token=client_token).count() == 1
     record = VisitRecord.objects.get(user=user, client_token=client_token)
     assert record.short_review == "first"
+
+
+@pytest.mark.django_db
+def test_공개_중에_생성한_방문_기록을_비공개로_바꾼_뒤_같은_토큰으로_재전송하면_201과_같은_id가_반환된다(
+    client, make_user, make_event
+):
+    user = make_user()
+    event = make_event()
+    payload = {
+        "event": event.id,
+        "visited_on": "2026-05-26",
+        "client_token": str(uuid.uuid4()),
+    }
+
+    client.force_login(user)
+    first_response = client.post("/api/visit-records/", payload, content_type="application/json")
+    Event.objects.filter(pk=event.pk).update(publish_status=Event.PublishStatus.DRAFT)
+    second_response = client.post("/api/visit-records/", payload, content_type="application/json")
+
+    assert first_response.status_code == 201
+    assert second_response.status_code == 201
+    assert first_response.json()["id"] == second_response.json()["id"]
+    assert VisitRecord.objects.filter(user=user, event=event).count() == 1
 
 
 # ---------------------------------------------------------------------------
