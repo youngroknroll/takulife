@@ -48,3 +48,10 @@ def test_한국어_화면에서는_한글_라벨이어도_ko_언어_속성이_�
         html = Template(_템플릿).render(Context({"label": "나이트 마켓"}))
 
     assert html == "<span></span>"
+
+
+def test_활성_언어가_없으면_한글_라벨이어도_ko_언어_속성이_붙지_않는다():
+    with translation.override(None):
+        html = Template(_템플릿).render(Context({"label": "나이트 마켓"}))
+
+    assert html == "<span></span>"

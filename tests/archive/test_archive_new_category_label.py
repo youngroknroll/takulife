@@ -137,6 +137,7 @@ def test_방문_목록은_새_카테고리_칩의_필터를_걸면_그_카테고
 
     assert resp.context["selected_filter"] == "cat:나이트 마켓"
     assert resp.context["page_obj"].paginator.count == 1
+    assert [row["subject"]["title"] for row in resp.context["visit_rows"]] == ["새 카테고리 행사"]
 
 
 def test_새_카테고리_행이_많아져도_방문_목록의_쿼리_수는_행_수에_비례하지_않는다(

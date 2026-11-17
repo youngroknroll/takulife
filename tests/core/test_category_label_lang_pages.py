@@ -75,7 +75,7 @@ def _get_english(path):
     return Client().get(path, HTTP_ACCEPT_LANGUAGE="en")
 
 
-def _new_category_event(make_event):
+def _new_category_event(make_event, start_date=date(2026, 3, 1), end_date=date(2026, 3, 6)):
     Category.objects.create(slug="night_market", label=_LABEL)
     return make_event(
         title="Sample Show",
@@ -84,8 +84,8 @@ def _new_category_event(make_event):
         location_name="Sample Hall",
         summary="Sample summary",
         source_name="Source Site",
-        start_date=date(2026, 3, 1),
-        end_date=date(2026, 3, 6),
+        start_date=start_date,
+        end_date=end_date,
     )
 
 
@@ -105,9 +105,12 @@ def test_영어_행사_목록은_새_카테고리_라벨을_ko_언어_범위로_
 
 
 def test_영어_행사_달력의_일정_목록은_새_카테고리_라벨을_ko_언어_범위로_표시한다(make_event):
-    _new_category_event(make_event)
+    today = timezone.localdate()
+    _new_category_event(make_event, start_date=today, end_date=today)
 
-    nodes = _text_nodes(_get_english("/events/calendar/?month=2026-03&date=2026-03-05"))
+    nodes = _text_nodes(
+        _get_english(f"/events/calendar/?month={today:%Y-%m}&date={today.isoformat()}")
+    )
 
     agenda_label_nodes = [
         (text, chain)
@@ -118,7 +121,10 @@ def test_영어_행사_달력의_일정_목록은_새_카테고리_라벨을_ko_
     assert [text for text, chain in agenda_label_nodes if not _is_ko_scoped(chain)] == []
 
 
-def test_영어_홈_달력의_범례와_일정은_새_카테고리_라벨을_ko_언어_범위로_표시한다(make_event):
+@pytest.mark.parametrize("클래스", ["legend-label", "agenda-cat"])
+def test_영어_홈_달력의_범례와_일정은_새_카테고리_라벨을_ko_언어_범위로_표시한다(
+    make_event, 클래스
+):
     today = timezone.localdate()
     _new_category_event(make_event)
     make_event(
@@ -134,17 +140,25 @@ def test_영어_홈_달력의_범례와_일정은_새_카테고리_라벨을_ko_
 
     nodes = _text_nodes(_get_english("/"))
 
-    for class_name in ("legend-label", "agenda-cat"):
-        label_nodes = [
-            (text, chain)
-            for text, chain in nodes
-            if text == _LABEL and any(class_name in classes for _tag, classes, _lang in chain)
-        ]
-        assert label_nodes, class_name
-        assert [text for text, chain in label_nodes if not _is_ko_scoped(chain)] == []
+    label_nodes = [
+        (text, chain)
+        for text, chain in nodes
+        if text == _LABEL and any(클래스 in classes for _tag, classes, _lang in chain)
+    ]
+    assert label_nodes
+    assert [text for text, chain in label_nodes if not _is_ko_scoped(chain)] == []
 
 
-def test_영어_행사_상세는_새_카테고리_라벨을_ko_언어_범위로_표시한다(make_event):
+_상세_위치 = {
+    "이동 경로 링크": lambda text, chain: _in_class(chain, "event-detail-breadcrumb"),
+    "카테고리 줄": lambda text, chain: _in_class(chain, "event-detail-cat-label"),
+    "정보 표": lambda text, chain: chain and chain[-1][0] == "dd",
+    "관련 행사 줄": lambda text, chain: _in_class(chain, "event-detail-related-meta"),
+}
+
+
+@pytest.mark.parametrize("위치", list(_상세_위치), ids=list(_상세_위치))
+def test_영어_행사_상세는_새_카테고리_라벨을_ko_언어_범위로_표시한다(make_event, 위치):
     event = _new_category_event(make_event)
     make_event(
         title="Other Show",
@@ -159,18 +173,12 @@ def test_영어_행사_상세는_새_카테고리_라벨을_ko_언어_범위로_
 
     nodes = _text_nodes(_get_english(f"/events/{event.id}/"))
 
-    positions = {
-        "이동 경로 링크": lambda text, chain: _in_class(chain, "event-detail-breadcrumb"),
-        "카테고리 줄": lambda text, chain: _in_class(chain, "event-detail-cat-label"),
-        "정보 표": lambda text, chain: chain and chain[-1][0] == "dd",
-        "관련 행사 줄": lambda text, chain: _in_class(chain, "event-detail-related-meta"),
-    }
-    for name, is_position in positions.items():
-        label_nodes = [
-            (text, chain) for text, chain in nodes if _LABEL in text and is_position(text, chain)
-        ]
-        assert label_nodes, name
-        assert [text for text, chain in label_nodes if not _is_ko_scoped(chain)] == []
+    is_position = _상세_위치[위치]
+    label_nodes = [
+        (text, chain) for text, chain in nodes if _LABEL in text and is_position(text, chain)
+    ]
+    assert label_nodes
+    assert [text for text, chain in label_nodes if not _is_ko_scoped(chain)] == []
 
 
 @pytest.mark.parametrize(
@@ -178,13 +186,13 @@ def test_영어_행사_상세는_새_카테고리_라벨을_ko_언어_범위로_
     [
         pytest.param("/events/?category=night_market&status=all", id="목록_결과있음"),
         pytest.param("/events/?category=night_market&q=zzz", id="목록_결과없음"),
-        pytest.param("/events/calendar/?category=night_market&month=2026-03", id="달력"),
+        pytest.param("/events/calendar/?category=night_market&month={month}", id="달력"),
     ],
 )
 def test_영어_적용_필터_칩은_새_카테고리_라벨만_ko_언어_범위로_표시한다(make_event, 경로):
     _new_category_event(make_event)
 
-    nodes = _text_nodes(_get_english(경로))
+    nodes = _text_nodes(_get_english(경로.format(month=f"{timezone.localdate():%Y-%m}")))
 
     chip_nodes = [(text, chain) for text, chain in nodes if _in_class(chain, "applied-chip")]
     label_chips = [(text, chain) for text, chain in chip_nodes if text == _LABEL]
@@ -266,6 +274,41 @@ def test_영어_활동_화면은_새_카테고리_공식_행사_라벨을_ko_언
     ]
     assert label_nodes
     assert [text for text, chain in label_nodes if not _is_ko_scoped(chain)] == []
+
+
+@pytest.mark.parametrize(
+    ("경로", "개인_클래스"),
+    [
+        pytest.param("/archive/interests/", ("record-row-cat",), id="찜_목록"),
+        pytest.param("/archive/visits/{visit_id}/edit/", ("visit-chip",), id="방문_수정"),
+        pytest.param("/archive/visits/{visit_id}/", ("visit-detail-cat", "dd"), id="방문_상세"),
+    ],
+)
+def test_영어_활동_화면은_개인_항목_카테고리에_ko_언어_범위를_붙이지_않는다(
+    user_client, 경로, 개인_클래스
+):
+    user, client = user_client()
+    entry = PersonalEntry.objects.create(
+        user=user, kind=PersonalEntry.Kind.PLACE, title="Own Place", category="내 분류"
+    )
+    visit = VisitRecord.objects.create(
+        user=user, personal_entry=entry, visited_on=timezone.localdate()
+    )
+    EventInterest.objects.create(user=user, personal_entry=entry)
+
+    response = client.get(경로.format(visit_id=visit.id), HTTP_ACCEPT_LANGUAGE="en")
+
+    label_nodes = [
+        (text, chain)
+        for text, chain in _text_nodes(response)
+        if text == "내 분류"
+        and (
+            any(_in_class(chain, name) for name in 개인_클래스)
+            or (chain and chain[-1][0] in 개인_클래스)
+        )
+    ]
+    assert label_nodes
+    assert [text for text, chain in label_nodes if _is_ko_scoped(chain)] == []
 
 
 @pytest.mark.parametrize(
