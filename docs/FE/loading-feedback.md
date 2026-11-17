@@ -129,7 +129,7 @@ button.is-loading::after {
 
 `prefers-reduced-motion: reduce`에서 회전을 멈추고 정지된 링만 남긴다
 `[코드 interaction.css:107-112]`. 이력: 예전에는 소비자 쪽 블록이 `hover-lift`와 `glint`만 끄고
-스피너는 계속 돌게 두고 있었다. `hover-lift` CSS는 트랙 58에서 삭제됐고 `.glint`는
+스피너는 계속 돌게 두고 있었다. `hover-lift` CSS는 트랙 58에서, 홈 스냅샷 템플릿의 클래스는 2026-11-18에 삭제됐고 `.glint`는
 `interaction.css:17-21`에서 숨겨 둔다. 새로 스피너를 추가할 때 이 처리를 빠뜨리지 마라.
 
 스피너는 `.is-loading::after`를 쓴다 `[코드 interaction.css:30-41]`. 그래서 작은 단추의 누름 영역을
