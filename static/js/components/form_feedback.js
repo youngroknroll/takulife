@@ -11,6 +11,8 @@
 
   var DESC_ATTR = "data-feedback-desc";
   var BOUND_ATTR = "data-feedback-bound";
+  // 짝 컨트롤 때문에 표시된 입력에만 붙는다. 짝 해제는 이 속성이 있는 입력만 푼다.
+  var PAIR_ATTR = "data-feedback-pair";
   var idSeed = 0;
 
   function tokensOf(el) {
@@ -29,6 +31,7 @@
   // 이 헬퍼가 붙인 표시만 걷는다. 원래 있던 힌트 연결은 그대로 둔다.
   function clearControl(el) {
     el.removeAttribute("aria-invalid");
+    el.removeAttribute(PAIR_ATTR);
     var added = el.getAttribute(DESC_ATTR);
     if (added) {
       writeTokens(el, tokensOf(el).filter(function (token) { return token !== added; }));
@@ -75,7 +78,11 @@
     }
     var list = targets.slice();
     partnerTargets.set(partner, list);
-    var release = function () { list.forEach(clearControl); };
+    var release = function () {
+      list.forEach(function (el) {
+        if (el.hasAttribute(PAIR_ATTR)) { clearControl(el); }
+      });
+    };
     partner.addEventListener("input", release);
     partner.addEventListener("change", release);
   }
@@ -116,19 +123,50 @@
       bindRelease(el);
     });
 
-    Array.prototype.slice.call(releaseWith || []).filter(isUsable).forEach(function (partner) {
+    var partners = Array.prototype.slice.call(releaseWith || []).filter(isUsable);
+    list.forEach(function (el) {
+      if (partners.length) {
+        el.setAttribute(PAIR_ATTR, "1");
+      } else {
+        el.removeAttribute(PAIR_ATTR);
+      }
+    });
+    partners.forEach(function (partner) {
       bindPartnerRelease(partner, list);
     });
 
     openAncestorDetails(list[0]);
+    var alreadyFocused = document.activeElement === list[0];
     list[0].focus();
+    if (alreadyFocused) { reannounce(errorEl); }
+  }
+
+  // 같은 문장을 연달아 쓰면 스크린리더가 변화를 못 느껴 다시 읽지 않는다.
+  // 문장을 잠깐 aria-hidden 자식으로 감쌌다 되돌려 접근성 트리에 변화를 만든다.
+  // 상자는 비지 않아 화면 모양은 같다. 복원은 멱등이며 그 사이 새 문장이 쓰였으면 덮지 않는다.
+  function reannounce(errorEl) {
+    if (!errorEl || errorEl.children.length || !errorEl.textContent) { return; }
+    var text = errorEl.textContent;
+    var hidden = document.createElement("span");
+    hidden.setAttribute("aria-hidden", "true");
+    hidden.textContent = text;
+    errorEl.replaceChildren(hidden);
+    var restore = function () {
+      if (errorEl.firstChild === hidden && errorEl.childNodes.length === 1) {
+        errorEl.textContent = text;
+      }
+    };
+    requestAnimationFrame(function () { requestAnimationFrame(restore); });
+    window.setTimeout(restore, 300);
   }
 
   // 입력에 속하지 않는 오류: 오류 문장에 포커스를 줘 화면 안으로 가져온다.
   function focusError(errorEl) {
     if (!errorEl) { return; }
     if (!errorEl.hasAttribute("tabindex")) { errorEl.setAttribute("tabindex", "-1"); }
+    var alreadyFocused = document.activeElement === errorEl;
     errorEl.focus();
+    if (alreadyFocused) { reannounce(errorEl); }
   }
 
   // 서버 400 본문의 키가 폼 컨트롤 name과 같으면 그 컨트롤을 모은다.
