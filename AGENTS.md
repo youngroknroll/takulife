@@ -974,16 +974,15 @@ Django templates, CSS, browser JavaScript, SSR binding, and status-button fetch
 wiring are exempt from the backend TDD cycle.
 
 - Do not create automated tests for purely presentational layout, spacing,
-  sizing, visual state, transition, animation, or markup rearrangement.
+  sizing, visual state, transition, animation, or markup rearrangement; browser
+  tests are limited to the journey e2e layer (see Test Authoring Policy).
 - Verify frontend work with HTTP render checks, browser screenshots at agreed
   viewports, interaction click-through, and console inspection appropriate to
-  scope. Drive the browser with Playwright or the Chrome DevTools MCP tools and
-  report the measurements as evidence; its measurements are never committed
-  as a test.
-- Browser tests are limited to the journey e2e layer (see Test Authoring
-  Policy); overflow budgets, touch-target sizes, line-clamp heights, and
-  focus targets are still measured on demand, never enforced by a gate or
-  encoded as a test.
+  scope, driving the browser with Playwright or the Chrome DevTools MCP tools.
+  Overflow budgets, touch-target sizes, line-clamp heights, and focus targets
+  are measured the same way on demand, never enforced by a gate or encoded as
+  a test. Report all of these measurements as evidence; they are never
+  committed as a test.
 - Any backend endpoint, validation, persistence, or business rule introduced for
   frontend work still follows the Backend TDD Cycle.
 - Every frontend review includes both the Web Experience Designer and Browser
@@ -991,27 +990,27 @@ wiring are exempt from the backend TDD cycle.
 - `docs/FE/design-principles.md` is the canonical design-direction record
   (track 50: approved token set, flat geometry, zero border-radius). Read it
   before any new frontend visual decision.
-- The shared design-rule protocol is abolished (2026-07-22 user decision; the
-  former `.docs/design-rules.md` §1-§3, since deleted). Brand contrast ratios,
-  the 44px touch-target
-  duty layer, and the motion pause contract are no longer compliance gates, and
-  no reviewer may require a documented "user-approved exception" to build what
-  the design intent specifies. Design intent - `docs/FE/design-principles.md`
-  and the user's instruction - is the standard. Local design sample files used
-  during that track were deleted afterward (2026-11-05 user decision); do not
-  recreate them as the design reference. Reviewers may still note abolished
-  topics as information, and functional defects such as broken layout,
-  overflow, keyboard-unreachable controls, focus traps, and unreadable text
-  remain defects.
+- There is no shared design-rule protocol. Brand contrast ratios, the 44px
+  touch-target duty layer, and the motion pause contract are not compliance
+  gates, and no reviewer may require a documented "user-approved exception" to
+  build what the design intent specifies. Design intent -
+  `docs/FE/design-principles.md` and the user's instruction - is the standard.
+  Reviewers may still note abolished topics as information, and functional
+  defects such as broken layout, overflow, keyboard-unreachable controls,
+  focus traps, and unreadable text remain defects.
 - Frontend implementation requires an approved plan and a technical record
   under `docs/FE/` when it states a guardrail (working notes may stay in
   `.docs/FE/`), unless the user explicitly approves a different document
-  location. The former `.docs/frontend-integration-changelog.md` was deleted;
-  do not recreate it.
-- The design-review queue and every backlog derived from the superseded mocks
-  are abolished (2026-07-29 user decision) together with the mock rework. Do not
-  recreate `.docs/design-review-queue.md`, and do not schedule work from a
-  mock-derived backlog without first confirming the item against current code.
+  location.
+- Do not schedule work from a mock-derived backlog without first confirming
+  the item against current code.
+- Deleted; do not recreate: the former `.docs/design-rules.md` §1-§3 (shared
+  design-rule protocol, 2026-07-22 abolished),
+  `.docs/frontend-integration-changelog.md` (deleted), and
+  `.docs/design-review-queue.md` together with every backlog derived from the
+  superseded mocks (2026-07-29 abolished with the mock rework). Do not recreate
+  the local design sample files deleted by the 2026-11-05 user decision as the
+  design reference.
 
 ### Frontend Dual Review Gate
 
@@ -1104,14 +1103,14 @@ variable substitution) is a known, accepted gap.
 
 | File | Matcher | Enforces | Known gaps |
 |---|---|---|---|
-| `.claude/hooks/uv-only-guard.sh` | `Bash` | bare `pytest`, `pip`/`pip3`, `python -m pip`, `python(3) manage.py`, `python -m pytest` go through `uv`; an interpreter option in front of `manage.py`/`-m pytest`/`-m pip` (`-u`, `-B`, `-X <opt>`, `-W <arg>`, combined single-dash flags) no longer hides the real program word; a version-suffixed interpreter (`python3.13`), a relative-path direct execution (`./manage.py`), and the same forms wrapped in `env [VAR=...] ...` or `time ...` are also caught | segment splitting treats `&&`, `;`, `\|` inside quotes or heredoc bodies as separators too, which can false-block a later `pytest`, `pip`, or `python manage.py` word (e.g. inside a quoted `rg` pattern); a program name hidden in a variable or string, or an option-taking `env` (`-i`, `-u NAME`) or external `time` (`/usr/bin/time -p`) wrapper, is not detected |
+| `.claude/hooks/uv-only-guard.sh` | `Bash` | bare `pytest`, `pip`/`pip3`, `python -m pip`, `python(3) manage.py`, `python -m pytest` go through `uv`; an interpreter option in front of `manage.py`/`-m pytest`/`-m pip` (`-u`, `-B`, `-X <opt>`, `-W <arg>`, combined single-dash flags) does not hide the real program word; a version-suffixed interpreter (`python3.13`), a relative-path direct execution (`./manage.py`), and the same forms wrapped in `env [VAR=...] ...` or `time ...` are also caught | segment splitting treats `&&`, `;`, `\|` inside quotes or heredoc bodies as separators too, which can false-block a later `pytest`, `pip`, or `python manage.py` word (e.g. inside a quoted `rg` pattern); a program name hidden in a variable or string, or an option-taking `env` (`-i`, `-u NAME`) or external `time` (`/usr/bin/time -p`) wrapper, is not detected |
 | `.claude/hooks/git-destructive-guard.sh` | `Bash` | on a dirty tree: blocks `git reset --hard`, `git clean -f/-d/-x/--force` (not `-n`/`--dry-run`), `git checkout <path>` (with or without a leading `--`; a positional with no `--` counts as a path only when it names something that exists on disk at the process's cwd — an unknown name is treated as a branch), and `git restore <path>` (not `git restore --staged`); blocks always: `git stash clear`, and `git clean` with `-x`/`-X` (plain or combined, e.g. `-fdx`, `-fX`; not with `-n`/`--dry-run`), because ignored files such as `prompt_plan.md` and `.env` do not count toward the dirty check and `git stash -u` does not save them — the block message says so; a global option before the subcommand (`-C <dir>`, `-c <k=v>`, `--git-dir`, …) does not hide the subcommand from these checks | a global option outside the recognized list still hides the subcommand (shared by all three `git` hooks below); the disk-exists path judgment over-blocks when a branch and a file share a name; dry-run recognition is limited to `-n`/`--dry-run` (plain or combined, e.g. `-nd`); does not inspect a nested `bash -c`; string concatenation and variable substitution are not detected |
 | `.claude/hooks/plan-overwrite-guard.sh` | `Write` | blocks overwriting `prompt_plan.md` via the Write tool | Bash-tool overwrites are closed by the Bash write guard instead |
 | `.claude/hooks/plan-number-tag-guard.sh` | `Edit\|Write` | a paragraph added to `prompt_plan.md` that carries a count with a unit (value 2 or more) must also carry a source tag (`[실측]`, `[코드]`, `[계산]`, `[문서]`, `[대시보드]`) — the Numbers In Documents rule | only fires on the Edit/Write tools (Bash writes are closed by the Bash write guard); `docs/**` coverage is deferred |
-| `.claude/hooks/plan-bash-write-guard.sh` | `Bash` | blocks Bash-tool writes to `prompt_plan.md`: redirection, `tee`, `cp`/`mv` (`mv` also on the source side), `sed -i`/`perl -i` (including a combined flag with `i`, e.g. `-pi`)/`awk -i inplace`, `dd of=`, `install`, a `python`/`python3`/`uv -c` write, a heredoc body handed to a shell or interpreter, `rm`/`unlink`/`git rm` (global `git` options included), and a `<<<` here-string no longer mistaken for a heredoc start that swallows the next line | string concatenation, a write hidden inside `bash -c "..."`, variable-hidden filenames, `cp -t`/`--target-directory` argument order, and a perl combined flag whose value happens to contain `i` (e.g. `-I<path>`) can over- or under-match when it also names the plan file |
-| `.claude/hooks/git-stage-all-guard.sh` | `Bash` | blocks `git add -A`/`--all`/`.`/`-u`/`--update`, staging `prompt_plan.md` by any positional argument, `git commit -a`/`-am`/`--all`, `git commit` naming `prompt_plan.md` as a positional pathspec (with or without `--`), a global option before the subcommand no longer hiding `add`/`commit`, and the same `<<<` here-string fix as the plan-bash-write guard | a global option outside the recognized list still hides the subcommand (shared with the other `git` hooks); `git commit --amend` and other command shapes are out of scope; string concatenation and variable substitution are not detected |
+| `.claude/hooks/plan-bash-write-guard.sh` | `Bash` | blocks Bash-tool writes to `prompt_plan.md`: redirection, `tee`, `cp`/`mv` (`mv` also on the source side), `sed -i`/`perl -i` (including a combined flag with `i`, e.g. `-pi`)/`awk -i inplace`, `dd of=`, `install`, a `python`/`python3`/`uv -c` write, a heredoc body handed to a shell or interpreter, `rm`/`unlink`/`git rm` (global `git` options included), and a `<<<` here-string, which is not mistaken for a heredoc start that would swallow the next line | string concatenation, a write hidden inside `bash -c "..."`, variable-hidden filenames, `cp -t`/`--target-directory` argument order, and a perl combined flag whose value happens to contain `i` (e.g. `-I<path>`) can over- or under-match when it also names the plan file |
+| `.claude/hooks/git-stage-all-guard.sh` | `Bash` | blocks `git add -A`/`--all`/`.`/`-u`/`--update`, staging `prompt_plan.md` by any positional argument, `git commit -a`/`-am`/`--all`, `git commit` naming `prompt_plan.md` as a positional pathspec (with or without `--`), a global option before the subcommand not hiding `add`/`commit`, and the same `<<<` here-string handling as the plan-bash-write guard | a global option outside the recognized list still hides the subcommand (shared with the other `git` hooks); `git commit --amend` and other command shapes are out of scope; string concatenation and variable substitution are not detected |
 | `.claude/hooks/python-style-guard.sh` | `Edit\|Write` (PostToolUse) | right after a `.py` file inside the repository is edited, runs `ruff check` and `ruff format --check` on that file and feeds violations back to the model (exit 2 = feedback, the file is not modified) | passes when ruff is missing; git-ignored, `migrations/`, and out-of-repository files are not checked |
-| `.claude/hooks/git-commit-style-guard.sh` | `Bash` | blocks a `git commit` segment when a staged `.py` file, or a `.py` named by a `git add`/`git commit <path>` in the same command, has ruff violations | checks the working-tree file (may differ from the staged content); a `.py` created and committed in the same command does not exist yet at PreToolUse time and is not checked; `bash -c` nesting and variable substitution are not detected; passes when ruff is missing; a global `git` option in front of `commit` is not recognized here the way the other three `git` hooks now recognize it |
+| `.claude/hooks/git-commit-style-guard.sh` | `Bash` | blocks a `git commit` segment when a staged `.py` file, or a `.py` named by a `git add`/`git commit <path>` in the same command, has ruff violations | checks the working-tree file (may differ from the staged content); a `.py` created and committed in the same command does not exist yet at PreToolUse time and is not checked; `bash -c` nesting and variable substitution are not detected; passes when ruff is missing; only `-C <dir>` and `-c <k=v>` in front of `commit` are skipped here, so the other global options the three `git` hooks above recognize (`--git-dir`, `--work-tree`, `--no-pager`, …) still hide `commit` from this hook |
 
 - PostToolUse hooks give feedback after the tool ran; only PreToolUse hooks block.
 - A new hook ships only after it is proven with a crafted payload set (at
@@ -1390,9 +1389,10 @@ Convention source: https://nohack.tistory.com/17
 - Standing approval covers commit, push, and opening the PR after fresh planned
   verification. Merging still requires per-PR user approval unless the user has
   expressly granted and recorded standing automatic-merge approval.
-- `prompt_plan.md` and other pre-existing uncommitted changes not produced by
-  the current task stay unstaged; stage files explicitly, never `git add -A`
-  (enforced by `.claude/hooks/git-stage-all-guard.sh`).
+- `prompt_plan.md` is git-ignored and untracked (2026-11-19); other
+  pre-existing uncommitted changes not produced by the current task stay
+  unstaged. Stage files explicitly, never `git add -A` (enforced by
+  `.claude/hooks/git-stage-all-guard.sh`).
 - A defect found after a pull request has merged is fixed with a direct
   commit to `main`, not a new pull request (standing user decision,
   2026-10-21). Rolling documentation updates use the same direct-commit path:
