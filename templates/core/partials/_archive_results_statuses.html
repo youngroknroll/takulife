@@ -1,4 +1,4 @@
-{% load i18n %}
+{% load i18n category_lang %}
 {% comment %}
 나의 일정(archive_statuses) 결과 영역 — 라이브 검색 swap 대상. 풀 페이지
 (statuses.html)와 ?partial=1 fragment 뷰가 동일 출처로 렌더한다.
@@ -19,6 +19,7 @@ CTA 순서는 [기록 CTA] → [예정으로] → [삭제]를 유지해야 한�
 margin-right:auto가 첫 자식에만 걸리기 때문이다.
 {% endcomment %}
 <p hidden data-result-count="{{ page_obj.paginator.count }}"></p>
+<template data-results-title>{% include "core/partials/_archive_results_title_record.html" %}</template>
 {% if has_statuses %}
   <div class="record-rows">
     {% for row in status_rows %}
@@ -38,7 +39,7 @@ margin-right:auto가 첫 자식에만 걸리기 때문이다.
           <div class="record-row-body">
             <p class="record-row-meta">
               {% if row.subject.category_slug %}
-                <span class="record-row-cat" data-category="{{ row.subject.category_slug|slugify }}">{{ row.subject.category_label }}</span>
+                <span class="record-row-cat" data-category="{{ row.subject.category_slug|slugify }}"{% category_lang_attr row.subject.category_label %}>{{ row.subject.category_label }}</span>
               {% elif not row.subject.is_official %}
                 <span class="event-category unofficial">{% translate "직접 등록" %}</span>
               {% endif %}
@@ -51,7 +52,7 @@ margin-right:auto가 첫 자식에만 걸리기 때문이다.
               {% if row.subject.detail_url %}
                 <a href="{{ row.subject.detail_url }}" lang="ko">{{ row.subject.title }}</a>
               {% else %}
-                {{ row.subject.title }}
+                {% if row.subject.is_official %}<span lang="ko">{{ row.subject.title }}</span>{% else %}{{ row.subject.title }}{% endif %}
               {% endif %}
             </h3>
             {% if row.review_text %}
@@ -77,10 +78,8 @@ margin-right:auto가 첫 자식에만 걸리기 때문이다.
                   data-status="planned"
                   data-status-id="{{ row.status_id }}" data-reload-on-success>{% blocktranslate trimmed with label=row.label_planned %}{{ label }}으로{% endblocktranslate %}</button>
               {% elif row.status_slug == 'visited' %}
-                {% if row.review_text %}
-                  {% if row.visit_record_id %}
-                    <a class="record-row-edit-link" href="/archive/visits/{{ row.visit_record_id }}/edit/">{% translate "수정" %}</a>
-                  {% endif %}
+                {% if row.visit_record_id %}
+                  <a class="record-row-edit-link" href="/archive/visits/{{ row.visit_record_id }}/edit/">{% translate "수정" %}</a>
                 {% else %}
                   <a class="record-row-add-link" href="/archive/visits/new/?subject={{ row.subject.subject_type }}:{{ row.subject.subject_id }}">{% translate "＋ 기록" %}</a>
                 {% endif %}

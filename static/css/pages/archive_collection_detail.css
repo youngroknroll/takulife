@@ -184,7 +184,7 @@
 }
 /* 이미 삭제된 굿즈: 수정 링크는 눌려도 이동하지 않고 비활성 모양이다. */
 .collection-detail-page .collection-detail-edit-btn.is-item-gone-locked,
-.collection-detail-page .collection-detail-delete-btn:disabled {
+.collection-detail-page .collection-detail-delete-btn:disabled:not(.is-loading) {
   border-color: var(--off);
   background: transparent;
   color: var(--off);
@@ -344,22 +344,6 @@
 .collection-detail-page .collection-detail-trade-hint {
   font-size: var(--fs-1);
 }
-
-/* ── 시리즈 색 연결: .gi-N이 --series-ink를 시리즈 토큰에 묶는다 ───── */
-/* 쓰는 곳은 작품 줄의 점 하나뿐이다. */
-.collection-detail-page .gi-0 { --series-ink: var(--ink-2); }
-.collection-detail-page .gi-1 { --series-ink: var(--series-1-ink); }
-.collection-detail-page .gi-2 { --series-ink: var(--series-2-ink); }
-.collection-detail-page .gi-3 { --series-ink: var(--series-3-ink); }
-.collection-detail-page .gi-4 { --series-ink: var(--series-4-ink); }
-.collection-detail-page .gi-5 { --series-ink: var(--series-5-ink); }
-.collection-detail-page .gi-6 { --series-ink: var(--series-6-ink); }
-.collection-detail-page .gi-7 { --series-ink: var(--series-7-ink); }
-.collection-detail-page .gi-8 { --series-ink: var(--series-8-ink); }
-.collection-detail-page .gi-9 { --series-ink: var(--series-9-ink); }
-.collection-detail-page .gi-10 { --series-ink: var(--series-10-ink); }
-.collection-detail-page .gi-11 { --series-ink: var(--series-11-ink); }
-.collection-detail-page .gi-12 { --series-ink: var(--series-12-ink); }
 
 /* ── 좁은 화면(≤45rem): 1열, 하단 고정 동작 바 ───────────────────── */
 @media (max-width: 45rem) {

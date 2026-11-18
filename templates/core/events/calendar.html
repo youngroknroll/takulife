@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n static %}
+{% load i18n static category_dots category_lang %}
 {% block title %}{% translate "이벤트 달력" %} — {{ project_name }}{% endblock %}
 {% block og_title %}{% translate "이벤트 달력" %} — {{ project_name }}{% endblock %}
 {% block description %}{% translate "날짜별로 팝업스토어, 콜라보 카페, 전시 등 서브컬처 행사 일정을 달력에서 한눈에 확인하세요." %}{% endblock %}
@@ -83,7 +83,7 @@
                 <li>
                   <label class="filter-check"{% if lang %} lang="{{ lang }}"{% endif %}>
                     <input type="checkbox" name="category" value="{{ slug }}"{% if slug in selected_category %} checked{% endif %}>
-                    <span class="dot" data-category="{{ slug }}" aria-hidden="true"></span>
+                    <span class="dot" data-category="{{ slug }}"{% palette_slot_attr slug %} aria-hidden="true"></span>
                     {{ label }}
                   </label>
                 </li>
@@ -123,7 +123,7 @@
         {% if active_filter_chips %}
           <div class="applied-filters">
             {% for chip in active_filter_chips %}
-              <span class="applied-chip">{{ chip }}</span>
+              <span class="applied-chip"{% if chip in active_filter_ko_chips %} lang="ko"{% endif %}>{{ chip }}</span>
             {% endfor %}
             <a class="applied-clear" href="/events/calendar/">{% translate "전체 해제" %}</a>
           </div>
@@ -133,20 +133,20 @@
         {% translate "이전 달" as prev_month_label %}
         {% translate "다음 달" as next_month_label %}
         <nav class="calendar-month-nav window-head" aria-label="{{ month_nav_label }}">
-          <h2 class="calendar-month-label window-title">
+          <h2 class="calendar-month-label window-title" id="calendar-month" tabindex="-1">
             <span aria-hidden="true">[</span>
             <span class="calendar-month-year">{{ selected_date|date:"Y" }}</span><span class="calendar-month-sep">·</span><span class="calendar-month-name">{{ selected_date|date:"F" }}</span>
             <span aria-hidden="true">]</span>
           </h2>
           <div class="calendar-month-controls">
             {% if prev_month %}
-              <a class="calendar-month-glyph" href="?month={{ prev_month }}{{ extra_query }}" rel="nofollow" aria-label="{{ prev_month_label }}">‹</a>
+              <a class="calendar-month-glyph" href="?month={{ prev_month }}{{ extra_query }}#calendar-month" rel="nofollow" aria-label="{{ prev_month_label }}">‹</a>
             {% else %}
               <a class="calendar-month-glyph is-off" role="link" aria-disabled="true" aria-label="{{ prev_month_label }}">‹</a>
             {% endif %}
-            <a class="calendar-month-today" href="?{{ extra_query }}">{% translate "이번 달" %}</a>
+            <a class="calendar-month-today" href="?{{ extra_query }}#calendar-month">{% translate "이번 달" %}</a>
             {% if next_month %}
-              <a class="calendar-month-glyph" href="?month={{ next_month }}{{ extra_query }}" rel="nofollow" aria-label="{{ next_month_label }}">›</a>
+              <a class="calendar-month-glyph" href="?month={{ next_month }}{{ extra_query }}#calendar-month" rel="nofollow" aria-label="{{ next_month_label }}">›</a>
             {% else %}
               <a class="calendar-month-glyph is-off" role="link" aria-disabled="true" aria-label="{{ next_month_label }}">›</a>
             {% endif %}
@@ -157,7 +157,7 @@
           <div class="empty-state calendar-error-panel">
             <p class="empty-title">{% translate "요청한 날짜를 확인할 수 없어요" %}</p>
             <p class="empty-note">{% translate "주소의 월 또는 날짜 값이 올바르지 않습니다." %}</p>
-            <a class="empty-action" href="?{{ extra_query }}">{% translate "이번 달 보기" %}</a>
+            <a class="empty-action" href="?{{ extra_query }}#calendar-month">{% translate "이번 달 보기" %}</a>
           </div>
         {% elif calendar_error == "query_failed" %}
           <div class="empty-state calendar-error-panel">
@@ -182,7 +182,7 @@
                   <div class="agenda-body">
                     <p class="agenda-meta">
                       {% if row.category_label %}
-                        <span class="agenda-cat">{{ row.category_label }}</span>
+                        <span class="agenda-cat"{% category_lang_attr row.category_label %}>{{ row.category_label }}</span>
                       {% endif %}
                       {% if row.category_label and row.status_label %}
                         <span class="agenda-dot" aria-hidden="true"></span>

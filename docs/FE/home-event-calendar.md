@@ -13,7 +13,7 @@
 
 - 위치: 히어로 다음, 로그인 사용자는 `_home_collection_snapshot.html` 다음
   (스냅샷이 먼저), 비로그인은 스냅샷이 렌더되지 않아 히어로 바로 다음
-  [코드 `templates/core/home.html:112,114`].
+  [코드 `templates/core/home.html:111,113`].
 - 파일: 파셜 1개(`_home_event_calendar.html`), CSS 1개(`home_calendar.css`),
   뷰 헬퍼(`_home_calendar_context`·`_events_by_date`·`_dedupe_category_slugs`,
   `web/views/events.py` 모듈-비공개).
@@ -55,7 +55,7 @@
 ## Guardrail
 
 **G1** 홈은 `event_calendar.css`를 로드하지 않는다
-[코드 `templates/core/home.html:8-14` extra_css에 없음]. 그리드·요일·아젠다
+[코드 `templates/core/home.html:8-13` extra_css에 없음]. 그리드·요일·아젠다
 재정의가 `home_calendar.css`에 그대로 복제돼 있고 전부 `.home-cal`/
 `.home-cal-agenda`로 스코프돼 있다. 한쪽 파일만 고치면 홈과
 `/events/calendar/`가 어긋난다 — 달력 스킨을 바꿀 때는 두 파일을 함께

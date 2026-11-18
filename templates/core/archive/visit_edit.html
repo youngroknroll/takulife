@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n category_lang %}
 {% load static %}
 {% block title %}{{ project_name }} | {% translate "다녀온 기록 수정" %}{% endblock %}
 
@@ -46,7 +46,7 @@
           <p class="visit-edit-field-label">{% translate "대상" %}</p>
           <div class="subject-readonly">
             {% if not subject.is_official %}<span class="visit-chip unofficial">{% translate "직접 등록" %}</span>{% endif %}
-            {% if subject.category_label %}<span class="visit-chip category">{{ subject.category_label }}</span>{% endif %}
+            {% if subject.category_label %}<span class="visit-chip category"{% if subject.is_official %}{% category_lang_attr subject.category_label %}{% endif %}>{{ subject.category_label }}</span>{% endif %}
             <span class="subject-title"{% if subject.is_official %} lang="ko"{% endif %}>{{ subject.title }}</span>
             <span class="subject-lock" aria-hidden="true">{% translate "🔒 변경 불가" %}</span>
           </div>
@@ -82,5 +82,6 @@
 {% endblock %}
 
 {% block extra_js %}
+  <script defer src="{% static 'js/components/form_feedback.js' %}"></script>
   <script defer src="{% static 'js/pages/visit_edit.js' %}"></script>
 {% endblock %}

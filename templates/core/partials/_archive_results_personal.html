@@ -10,6 +10,7 @@
 status.js/personal_entries.js 바인딩을 그대로 쓰도록 수정 없이 이식했다.
 {% endcomment %}
 <p hidden data-result-count="{{ page_obj.paginator.count }}"></p>
+<template data-results-title>{% include "core/partials/_archive_results_title_personal.html" %}</template>
 {% if entry_rows %}
   <div class="record-rows">
     {% for row in entry_rows %}

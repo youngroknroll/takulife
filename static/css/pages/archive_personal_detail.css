@@ -269,7 +269,7 @@
   background: var(--error);
   color: var(--surface);
 }
-.personal-detail-page .personal-detail-delete-btn:disabled {
+.personal-detail-page .personal-detail-delete-btn:disabled:not(.is-loading) {
   background: transparent;
   border-color: var(--off);
   color: var(--off);
@@ -416,15 +416,11 @@
   background: var(--select);
   color: var(--on-select);
 }
-.personal-detail-page .form-submit-btn:disabled {
+.personal-detail-page .form-submit-btn:disabled:not(.is-loading) {
   background: transparent;
   border-color: var(--off);
   color: var(--off);
   cursor: not-allowed;
-}
-.personal-detail-page .form-submit-btn.is-loading:disabled {
-  border-color: var(--ink-2);
-  color: var(--ink-2);
 }
 
 /* ── 이 장소의 방문 기록 — 행 전체가 링크라 hover·포커스에서 반전 ───── */
@@ -488,20 +484,6 @@
   padding: var(--space-2) 0;
   color: var(--ink-2);
   font-size: var(--fs-2);
-}
-
-/* ── sr-only (페이지 스코프 복제본 — 저장소 전역 유틸 없음, 형제 페이지
-   동일 관례) ─────────────────────────────────────────────────────────── */
-.personal-detail-page .sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
 }
 
 /* ── 모바일 고정 CTA 바 — cta_visibility.js가 [data-cta-fixed]의 hidden을

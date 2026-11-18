@@ -5,6 +5,7 @@ import pytest
 
 from core.categories import PALETTE
 from core.models import Category
+from core.vocab import CATEGORY_SOURCE_LABELS
 
 pytestmark = pytest.mark.contract
 
@@ -24,10 +25,9 @@ def test_tokens_css는_팔레트_풀의_모든_슬롯에_대해_soft_ink_토큰�
     스태프가 만드는 카테고리는 고정 슬러그가 없어 "슬러그 = CSS 이름"
     원칙(G10)이 성립하지 않는다. 대신 카테고리는 팔레트 슬롯 번호를
     참조하고, 이 토큰이 실제 색을 낸다. 슬러그 기반 --cat-{slug}-* 토큰은
-    트랙 58에서 삭제됐고, 소비자 화면은 --dot-{slug} 점 색만 쓴다. 슬롯
-    토큰은 지금 공개 CSS가 읽지 않지만, 소비처가 다시 슬롯 참조로 바뀔 때
-    폴백 없이 var()를 보간하는 지점에서 토큰이 하나라도 비면 스와치 배경이
-    조용히 사라지므로 이 계약은 유지한다.
+    트랙 58에서 삭제됐고, 고정 카테고리 점은 --dot-{slug} 색을 쓴다. 슬롯
+    잉크 토큰은 공개 화면이 새 카테고리 점 색으로 읽는다(트랙 59). 토큰이
+    하나라도 비면 점 색이 조용히 사라지므로 이 계약은 유지한다.
     """
     defined = _defined_custom_properties(TOKENS_CSS.read_text())
 
@@ -39,6 +39,22 @@ def test_tokens_css는_팔레트_풀의_모든_슬롯에_대해_soft_ink_토큰�
                 missing.append(f"--{name}")
 
     assert not missing, f"tokens.css missing palette slot tokens: {missing}"
+
+
+def test_tokens_css의_점_색_토큰_이름은_고정_카테고리_슬러그_집합과_같다():
+    """계약 가드: tokens.css의 --dot-{slug} 토큰 이름 집합은 고정 카테고리
+    슬러그 집합(core.vocab.CATEGORY_SOURCE_LABELS)과 같아야 한다. 값(hex)은
+    보지 않는다. 한쪽만 늘거나 줄면 점 색이 비거나 쓰이지 않는 토큰이 남는다.
+    """
+    defined = _defined_custom_properties(TOKENS_CSS.read_text())
+
+    css_slugs = {name.removeprefix("dot-") for name in defined if name.startswith("dot-")}
+    vocab_slugs = set(CATEGORY_SOURCE_LABELS)
+
+    assert css_slugs == vocab_slugs, (
+        f"CSS에만 있음: {sorted(css_slugs - vocab_slugs)}, "
+        f"어휘에만 있음: {sorted(vocab_slugs - css_slugs)}"
+    )
 
 
 def _all_property_values(css_text, property_name):

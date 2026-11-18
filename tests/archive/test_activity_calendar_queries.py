@@ -30,11 +30,13 @@ ImportError로 실패하는 것이 정상이다 (test_activity_log_entry.py와 �
 from datetime import date, datetime, timedelta
 from datetime import timezone as _dt_timezone
 
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 import pytest
 
-from archive.activity_calendar_queries import list_user_activity_for_month
-from archive.models import ActivityLogEntry, CollectionItem, EventInterest
+from archive.activity_calendar_queries import SCHEDULE_KIND, list_user_activity_for_month
+from archive.models import ActivityLogEntry, CollectionItem, EventInterest, UserEventStatus
 
 
 def _kind_dates(items):
@@ -319,3 +321,172 @@ def test_활동_이력이_없는_기존_데이터도_각자의_사실_날짜_규
         (ActivityLogEntry.Kind.INTEREST_ADDED, date(2026, 7, 11)),
     }
     assert ActivityLogEntry.objects.filter(user=user).count() == 0
+
+
+# ---------------------------------------------------------------------------
+# 행사 링크 — 게시된 행사의 활동 항목은 행사 상세로 연결된다
+# ---------------------------------------------------------------------------
+
+
+def _add_status_change_log(user, event):
+    ActivityLogEntry.objects.create(
+        user=user,
+        kind=ActivityLogEntry.Kind.STATUS_CHANGED,
+        event=event,
+        occurred_at=_aware(2026, 7, 14, 10, 30),
+        subject_label=event.title,
+    )
+
+
+def _add_planned_status(user, event):
+    UserEventStatus.objects.create(user=user, event=event, status=UserEventStatus.Status.PLANNED)
+
+
+def _add_interest_without_log(user, event):
+    interest = EventInterest.objects.create(user=user, event=event)
+    EventInterest.objects.filter(pk=interest.pk).update(created_at=_aware(2026, 7, 11, 8, 0))
+
+
+# (달력 항목 kind, 행사에 그 항목이 2026-07에 나오게 하는 함수)
+_EVENT_ACTIVITY_SOURCES = [
+    pytest.param(ActivityLogEntry.Kind.STATUS_CHANGED, _add_status_change_log, id="행동_로그"),
+    pytest.param(SCHEDULE_KIND, _add_planned_status, id="예정_일정"),
+    pytest.param(ActivityLogEntry.Kind.INTEREST_ADDED, _add_interest_without_log, id="찜_대체"),
+]
+
+
+@pytest.mark.domain
+@pytest.mark.django_db
+@pytest.mark.parametrize(("item_kind", "add_activity"), _EVENT_ACTIVITY_SOURCES)
+def test_게시된_행사의_활동_항목은_행사_상세로_연결된다(
+    make_user, make_event, item_kind, add_activity
+):
+    user = make_user()
+    event = make_event(title="게시된 행사", start_date=date(2026, 7, 5), end_date=date(2026, 7, 6))
+    add_activity(user, event)
+
+    items = list(list_user_activity_for_month(user, year=2026, month=7))
+
+    urls = [item.url for item in items if item.kind == item_kind]
+    assert urls == [f"/events/{event.id}/"]
+
+
+@pytest.mark.domain
+@pytest.mark.django_db
+@pytest.mark.parametrize(("item_kind", "add_activity"), _EVENT_ACTIVITY_SOURCES)
+def test_비공개_행사의_활동_항목은_대신_연결할_곳이_없으면_링크가_없다(
+    make_user, make_draft_event, item_kind, add_activity
+):
+    user = make_user()
+    draft_event = make_draft_event(
+        title="비공개 행사", start_date=date(2026, 7, 5), end_date=date(2026, 7, 6)
+    )
+    add_activity(user, draft_event)
+
+    items = list(list_user_activity_for_month(user, year=2026, month=7))
+
+    urls = [item.url for item in items if item.kind == item_kind]
+    assert urls == [None]
+
+
+@pytest.mark.contract
+@pytest.mark.django_db
+def test_활동_월_조회의_쿼리_수는_로그_항목이_늘어도_늘지_않는다(
+    make_user, make_event, make_draft_event
+):
+    user = make_user()
+
+    def add_log_entries(count, *, offset):
+        for number in range(offset, offset + count):
+            make_row_event = make_event if number % 2 == 0 else make_draft_event
+            event = make_row_event(title=f"쿼리 수 행사 {number}")
+            ActivityLogEntry.objects.create(
+                user=user,
+                kind=ActivityLogEntry.Kind.STATUS_CHANGED,
+                event=event,
+                occurred_at=_aware(2026, 7, 14, 10, 30),
+                subject_label=event.title,
+            )
+
+    add_log_entries(2, offset=0)
+    with CaptureQueriesContext(connection) as few_queries:
+        list(list_user_activity_for_month(user, year=2026, month=7))
+
+    add_log_entries(3, offset=2)
+    with CaptureQueriesContext(connection) as many_queries:
+        list(list_user_activity_for_month(user, year=2026, month=7))
+
+    assert len(many_queries) == len(few_queries)
+
+
+@pytest.mark.domain
+@pytest.mark.django_db
+def test_비공개_행사의_행동_활동은_방문_기록이_있으면_행사_상세_대신_방문_기록_수정으로_연결된다(
+    make_user, make_draft_event, make_visit
+):
+    user = make_user()
+    draft_event = make_draft_event(title="비공개 방문 행사")
+    record = make_visit(user, event=draft_event, visited_on=date(2026, 7, 14))
+    ActivityLogEntry.objects.create(
+        user=user,
+        kind=ActivityLogEntry.Kind.VISIT_RECORD_CREATED,
+        event=draft_event,
+        visit_record=record,
+        occurred_at=_aware(2026, 7, 14, 10, 30),
+        subject_label=draft_event.title,
+    )
+
+    items = list(list_user_activity_for_month(user, year=2026, month=7))
+
+    urls = [item.url for item in items if item.kind == ActivityLogEntry.Kind.VISIT_RECORD_CREATED]
+    assert urls == [f"/archive/visits/{record.id}/edit/"]
+
+
+@pytest.mark.domain
+@pytest.mark.django_db
+def test_게시된_행사의_행동_활동은_방문_기록이_있어도_행사_상세로_연결된다(
+    make_user, make_event, make_visit
+):
+    user = make_user()
+    event = make_event(title="게시된 방문 행사")
+    record = make_visit(user, event=event, visited_on=date(2026, 7, 14))
+    ActivityLogEntry.objects.create(
+        user=user,
+        kind=ActivityLogEntry.Kind.VISIT_RECORD_CREATED,
+        event=event,
+        visit_record=record,
+        occurred_at=_aware(2026, 7, 14, 10, 30),
+        subject_label=event.title,
+    )
+
+    items = list(list_user_activity_for_month(user, year=2026, month=7))
+
+    urls = [item.url for item in items if item.kind == ActivityLogEntry.Kind.VISIT_RECORD_CREATED]
+    assert urls == [f"/events/{event.id}/"]
+
+
+@pytest.mark.domain
+@pytest.mark.django_db
+def test_비공개_행사의_행동_활동은_방문_기록이_없고_컬렉션_항목이_있으면_컬렉션_수정으로_연결된다(
+    make_user, make_draft_event, make_collection_item
+):
+    user = make_user()
+    draft_event = make_draft_event(title="비공개 행사")
+    collection_item = make_collection_item(user, name="비공개 행사 굿즈")
+    ActivityLogEntry.objects.create(
+        user=user,
+        kind=ActivityLogEntry.Kind.COLLECTION_ITEM_CREATED,
+        event=draft_event,
+        collection_item=collection_item,
+        occurred_at=_aware(2026, 7, 14, 10, 30),
+        subject_label=collection_item.name,
+    )
+
+    activity_items = list(list_user_activity_for_month(user, year=2026, month=7))
+
+    urls = [
+        activity.url
+        for activity in activity_items
+        if activity.kind == ActivityLogEntry.Kind.COLLECTION_ITEM_CREATED
+    ]
+    assert urls == [f"/collection/{collection_item.id}/edit/"]

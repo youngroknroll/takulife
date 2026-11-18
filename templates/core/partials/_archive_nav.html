@@ -19,10 +19,10 @@
 <div class="sub-nav">
   <nav class="archive-nav-wrap" aria-label="{{ archive_nav_label }}">
     <div class="archive-nav-tabs">
-      <a href="/archive/"{% if active == "record" %} class="active"{% endif %}><span class="tab-label-full">{% translate "전체 보기" %}</span><span class="tab-label-short">{% translate "전체" %}</span></a>
-      <a href="/archive/statuses/"{% if active == "statuses" %} class="active"{% endif %}><span class="tab-label-full">{% translate "나의 일정" %}</span><span class="tab-label-short">{% translate "일정" context "탭 약칭" %}</span></a>
-      <a href="/archive/visits/"{% if active == "visits" %} class="active"{% endif %}><span class="tab-label-full">{% translate "다녀온 기록" %}</span><span class="tab-label-short">{% translate "기록" context "탭 약칭" %}</span></a>
-      <a href="/archive/personal/"{% if active == "items" %} class="active"{% endif %}><span class="tab-label-full">{% translate "직접 등록" %}</span><span class="tab-label-short">{% translate "직접" context "탭 약칭" %}</span></a>
+      <a{% if active == "record" %} aria-current="page"{% endif %} href="/archive/"{% if active == "record" %} class="active"{% endif %}><span class="tab-label-full">{% translate "전체 보기" %}</span><span class="tab-label-short">{% translate "전체" %}</span></a>
+      <a{% if active == "statuses" %} aria-current="page"{% endif %} href="/archive/statuses/"{% if active == "statuses" %} class="active"{% endif %}><span class="tab-label-full">{% translate "나의 일정" %}</span><span class="tab-label-short">{% translate "일정" context "탭 약칭" %}</span></a>
+      <a{% if active == "visits" %} aria-current="page"{% endif %} href="/archive/visits/"{% if active == "visits" %} class="active"{% endif %}><span class="tab-label-full">{% translate "다녀온 기록" %}</span><span class="tab-label-short">{% translate "기록" context "탭 약칭" %}</span></a>
+      <a{% if active == "items" %} aria-current="page"{% endif %} href="/archive/personal/"{% if active == "items" %} class="active"{% endif %}><span class="tab-label-full">{% translate "직접 등록" %}</span><span class="tab-label-short">{% translate "직접" context "탭 약칭" %}</span></a>
     </div>
 
     {% if not hide_interest %}

@@ -10,7 +10,7 @@ H2를 세 트랙으로 나눈 것 중 일괄(트랙 24)·단건(트랙 25) 목�
 행사를 주 1회 스태프 콘솔에서 정리하라고만 정하고 수단은 정하지 않았다.
 재측정 [실측 2026-09-09 shell]: 이벤트 171건 전부 게시 상태, 그중 종료
 (`end_date < today`) 148건. 트랙 24 이전에는 단건 토글 뷰
-`staff_event_toggle_publish`(`staff/views/events.py:599`)만 있어 148건을
+`staff_event_toggle_publish`(`staff/views/events.py:603`)만 있어 148건을
 목록 → 수정 → 토글 3화면으로 하나씩 내려야 했다. 이 토글은 **읽은 상태를
 반전**하므로, 비공개 처리가 성공한 뒤 응답만 유실되면 재시도가 그 행사를
 다시 게시해 버린다. 이번 엔드포인트는 반전이 아니라 "비공개로 설정"이라는
@@ -47,10 +47,10 @@ H2를 세 트랙으로 나눈 것 중 일괄(트랙 24)·단건(트랙 25) 목�
 ## (c) 상한 20건과 구조 검증 공용화
 
 `MAX_BULK_EVENT_IDS = 20`(`staff/views/events_actions.py:116` [코드]) — 드래프트
-일괄 승인 상한 `MAX_BULK_APPROVE_DRAFT_IDS`(`staff/views/drafts.py:233`)와
+일괄 승인 상한 `MAX_BULK_APPROVE_DRAFT_IDS`(`staff/views/drafts.py:237`)와
 값은 같지만 우연이며 상수는 분리 유지한다. 구조 검사는
 `staff/views/_helpers.py:52` `_validate_bulk_ids(ids, *, field_name,
-max_items)`로 일반화했고, `staff/views/drafts.py:236`의
+max_items)`로 일반화했고, `staff/views/drafts.py:240`의
 `_validate_bulk_draft_ids`는 이 함수에 위임한다(호출부 2곳·시그니처·오류
 메시지 문자열 불변 — 기존 드래프트 일괄 승인·반려 테스트가 회귀를
 보증한다). 400은 이 구조 검사에서만 나온다 — 상한 초과도 항목을 하나도
@@ -240,7 +240,7 @@ grep])도 그 행의 검증·비공개 버튼을 `hidden`으로, 다시 게시 �
 ## (n) `category`는 3상태다 — `is not None`으로만 판정한다
 
 `?category=`는 필터 없음(`None`)·미분류(`""`)·유효 슬러그 세 값을 가진다
-(`_selected_event_filters`, `staff/views/events.py:133`). `""`는 falsy라
+(`_selected_event_filters`, `staff/views/events.py:135`). `""`는 falsy라
 `if category:`로 쓰면 **미분류 선택이 조용히 "전체"가 된다**.
 `list_staff_events`(`events/queries.py`)의 카테고리 필터 분기와
 `_event_filter_query_pairs`의 querystring 왕복 분기 모두
@@ -252,7 +252,7 @@ grep])도 그 행의 검증·비공개 버튼을 `hidden`으로, 다시 게시 �
 `core/vocab.py`의 `EVENT_STATUS_LABELS`는 소비자 목록 표시용으로 `"all"`
 키가 나중에 추가돼 있다(`core/vocab.py:203`). 이 dict로 `?period=`
 멤버십을 검사하면 `"all"`이 유효 값으로 통과한다.
-`_STAFF_EVENT_PERIOD_VALUES = {slug for slug, _ in EVENT_STATUS}`(`staff/views/events.py:111`)처럼
+`_STAFF_EVENT_PERIOD_VALUES = {slug for slug, _ in EVENT_STATUS}`(`staff/views/events.py:113`)처럼
 튜플 자체에서 만든 집합으로 검사해야 한다.
 
 ## (p) `today` 기본값은 `_resolve_staff_today` 한 곳에서만 해석한다
@@ -267,7 +267,7 @@ as a query value`로 500이 났다(구현 중 두 번 재발).
 
 ## (q) 카테고리 칩 합계와 표 하단 건수는 기준이 다른 숫자다
 
-카테고리 "전체" 칩의 `category_chip_total`(`staff/views/events.py:295`)은
+카테고리 "전체" 칩의 `category_chip_total`(`staff/views/events.py:299`)은
 **category를 뺀** 나머지 필터 기준 합계(`count_staff_events_by_category`가
 `_filtered_staff_events`를 category 없이 공유해서 만든 값)다. 표 하단
 "N–M / total"은 `page_obj.paginator.count`로 **category를 포함한** 현재

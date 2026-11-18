@@ -19,8 +19,6 @@
       <p class="visit-create-subtitle">{% translate "대상과 방문 날짜는 필수, 메모와 사진은 선택입니다" %}</p>
     </section>
 
-    <div id="visit-global-error" class="visit-create-error"></div>
-
     <form id="visit-create-form" class="visit-create-grid" novalidate>
       <input type="hidden" name="client_token" value="{{ client_token }}">
 
@@ -106,5 +104,6 @@
 {% endblock %}
 
 {% block extra_js %}
+  <script defer src="{% static 'js/components/form_feedback.js' %}"></script>
   <script defer src="{% static 'js/pages/visit_create.js' %}"></script>
 {% endblock %}

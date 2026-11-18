@@ -280,6 +280,23 @@ def list_user_planned_events(user):
     )
 
 
+def list_user_visit_target_events(user):
+    """방문 기록을 남길 수 있는 행사를 반환한다.
+
+    게시된 행사와, 본인이 방문 완료로 표시해 둔 행사(비공개가 됐어도)다.
+    사용자 조건은 서브쿼리 안에 둔다. 밖에서 조인하면 다른 사람의 방문
+    완료 표시로 통과하거나 같은 행사가 여러 번 나오기 때문이다.
+    """
+    visited_by_user = UserEventStatus.objects.filter(
+        user=user,
+        status=UserEventStatus.Status.VISITED,
+        event=OuterRef("pk"),
+    )
+    return Event.objects.filter(
+        Q(publish_status=Event.PublishStatus.PUBLISHED) | Exists(visited_by_user)
+    )
+
+
 def list_user_upcoming_planned_events(user, *, today=None):
     """사용자가 방문 예정으로 등록했지만 아직 시작하지 않은 게시 행사를
     가까운 순으로 반환한다.

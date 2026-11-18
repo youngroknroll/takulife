@@ -14,10 +14,24 @@
 계속한다. 재조회에도 행이 없으면(예측 밖 상태) 두 번째 생성 시도의 예외를
 그대로 전파한다 — 재시도는 정확히 1회로 제한된다.
 
-`VisitRecordListCreateView.create`(`archive/views.py:460-472`)와
-`UserEventStatusListCreateView.create`(`archive/views.py:323-333`)가
+`VisitRecordListCreateView.create`(`archive/views.py:465-497` [코드])와
+`UserEventStatusListCreateView.create`(`archive/views.py:324-347` [코드])가
 이 `DuplicateUserEventStatusError`를 잡아 500이 아니라
 `409`(`code: duplicate_user_event_status`)로 응답한다.
+
+## Current fact — 비공개 행사 방문 기록 (사용자 결정 2026-11-18 "비공개 행사도 기록 허용")
+
+방문 기록을 남길 수 있는 행사는 게시된 행사이거나, 요청 사용자가 방문 완료로
+표시해 둔 행사다. 이 규칙은 `archive/queries.py`의
+`list_user_visit_target_events`(`:283` [코드]) 한 곳이 갖고,
+`VisitRecordSerializer.__init__`(`archive/serializers.py:159` [코드])과
+`web/views/archive.py`의 `_parse_visit_preselect`(`:381` [코드])가 쓴다.
+
+검증 뒤 저장 전에 사용자가 방문 완료 표시를 지우는 경합은 서비스가 막는다.
+`_ensure_visited_status`는 상태 행이 없고 행사가 게시되지 않았으면
+`VisitTargetUnavailableError`(`archive/services.py:249` [코드])를 내고,
+`VisitRecordListCreateView.create`가 이를 시리얼라이저의 "없는 행사"와 같은
+문구의 400으로 바꾼다. 비공개 행사의 존재를 드러내지 않기 위해서다.
 
 ## Decision
 
@@ -45,6 +59,16 @@
   재현되지 않는다. `tests/archive/test_visit_record_status_orchestration.py`의
   RACE-02가 별도 스레드 + 별도 DB 커넥션 + `transaction=True`를 쓰는 이유가
   이것이다. 동시성 회귀 테스트를 단일 커넥션 픽스처로 옮기지 마라.
+- `VisitTargetUnavailableError` 검사(`archive/services.py:649` [코드])는
+  `select_for_update()` 조회(`:643` [코드]) 뒤, 행 생성 앞에 둔다. 앞으로
+  옮기면 검증 뒤 방문 완료 표시가 지워지는 경합을 놓친다. 회귀:
+  `tests/archive/test_visit_record_status_orchestration.py`의
+  `test_상태_행이_없는_비공개_행사를_방문_완료_처리하면_예외가_나고_아무_행도_남지_않는다`,
+  `test_비공개_행사에_예정이나_불참_상태가_있으면_방문_완료_처리가_평소처럼_상태를_방문_완료로_바꾼다`,
+  `test_방문_완료로_표시한_비공개_행사에서_같은_클라이언트_토큰을_재전송하면_기록과_활동과_분석이_하나씩만_남는다`,
+  `tests/archive/test_visit_records_api.py`의
+  `test_검증_뒤_저장_전에_방문_완료_표시가_지워지면_존재하지_않는_행사와_같은_400_응답이_나온다`,
+  `test_공개_중에_생성한_방문_기록을_비공개로_바꾼_뒤_같은_토큰으로_재전송하면_201과_같은_id가_반환된다`.
 - `mark_visited`·`mark_missed`·`revert_to_planned`는 상태 저장(`save`)부터
   `_record_activity` 호출까지를 `transaction.atomic()`으로 감싼다
   (2026-09-14). 활동 기록 삽입이 실패하면 상태 변경도 함께 롤백된다. 위

@@ -1,4 +1,4 @@
-{% load i18n %}{% comment %}
+{% load i18n category_dots category_lang %}{% comment %}
 홈 히어로 아래 이벤트 달력 섹션. 뷰가 context["home_calendar"]로 전달하는
 계약: year, month, month_start(해당 월 1일의 date, 로케일별 월 이름 서식용),
 month_param("YYYY-MM"), weeks(주 목록, 칸={date,
@@ -73,7 +73,7 @@ tabindex="-1" + CSS scroll-margin-top으로 sticky 헤더에 안 가린다. "이
                 <span class="day-num">{{ day.date|date:"j" }}</span>
                 {% if day.categories %}
                   <span class="home-cal-dots" aria-hidden="true">
-                    {% for slug in day.categories %}<span class="home-cal-dot" data-category="{{ slug }}"></span>{% endfor %}
+                    {% for slug in day.categories %}<span class="home-cal-dot" data-category="{{ slug }}"{% palette_slot_attr slug %}></span>{% endfor %}
                   </span>
                 {% endif %}
               </a>
@@ -88,7 +88,7 @@ tabindex="-1" + CSS scroll-margin-top으로 sticky 헤더에 안 가린다. "이
                 <span class="day-num">{{ day.date|date:"j" }}</span>
                 {% if day.categories %}
                   <span class="home-cal-dots" aria-hidden="true">
-                    {% for slug in day.categories %}<span class="home-cal-dot" data-category="{{ slug }}"></span>{% endfor %}
+                    {% for slug in day.categories %}<span class="home-cal-dot" data-category="{{ slug }}"{% palette_slot_attr slug %}></span>{% endfor %}
                   </span>
                 {% endif %}
               </span>
@@ -104,8 +104,8 @@ tabindex="-1" + CSS scroll-margin-top으로 sticky 헤더에 안 가린다. "이
         <div class="calendar-legend">
           {% for item in cal.legend %}
             <span class="legend-item">
-              <span class="home-cal-dot" data-category="{{ item.slug }}" aria-hidden="true"></span>
-              <span class="legend-label">{{ item.label }}</span>
+              <span class="home-cal-dot" data-category="{{ item.slug }}"{% palette_slot_attr item.slug %} aria-hidden="true"></span>
+              <span class="legend-label"{% category_lang_attr item.label %}>{{ item.label }}</span>
             </span>
           {% endfor %}
         </div>
@@ -125,7 +125,7 @@ tabindex="-1" + CSS scroll-margin-top으로 sticky 헤더에 안 가린다. "이
               <div class="agenda-body">
                 <p class="agenda-meta">
                   {% if row.category_label %}
-                    <span class="agenda-cat">{{ row.category_label }}</span>
+                    <span class="agenda-cat"{% category_lang_attr row.category_label %}>{{ row.category_label }}</span>
                   {% endif %}
                   {% if row.category_label and row.status_label %}
                     <span class="agenda-dot" aria-hidden="true"></span>

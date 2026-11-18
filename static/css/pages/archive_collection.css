@@ -264,7 +264,7 @@
   display: none;
 }
 
-@media (max-width: 56.25rem) {
+@media (max-width: 56.24rem) {
   .collection-page .layout {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto;
@@ -832,22 +832,6 @@
   }
 }
 
-/* ── 시리즈 색 연결: .gi-0..gi-12가 --series-ink를 시리즈 토큰에 묶는다 ── */
-/* 작품 구분 전용 12색이고, 쓰는 곳은 작품별 목록의 점 하나뿐이다. */
-.collection-page .gi-0 { --series-ink: var(--ink-2); }
-.collection-page .gi-1 { --series-ink: var(--series-1-ink); }
-.collection-page .gi-2 { --series-ink: var(--series-2-ink); }
-.collection-page .gi-3 { --series-ink: var(--series-3-ink); }
-.collection-page .gi-4 { --series-ink: var(--series-4-ink); }
-.collection-page .gi-5 { --series-ink: var(--series-5-ink); }
-.collection-page .gi-6 { --series-ink: var(--series-6-ink); }
-.collection-page .gi-7 { --series-ink: var(--series-7-ink); }
-.collection-page .gi-8 { --series-ink: var(--series-8-ink); }
-.collection-page .gi-9 { --series-ink: var(--series-9-ink); }
-.collection-page .gi-10 { --series-ink: var(--series-10-ink); }
-.collection-page .gi-11 { --series-ink: var(--series-11-ink); }
-.collection-page .gi-12 { --series-ink: var(--series-12-ink); }
-
 /* ── /collection/new/·수정 폼 ──────────────────────────────────── */
 /* 이 폼은 archive_visits.css의 공유 클래스를 이 파일로 완전히 옮겼다 —
    절반만 옮기면 폼 스타일이 조용히 빠지므로 전부 `.collection-page` 스코프다.
@@ -979,6 +963,10 @@
   background: var(--off);
   cursor: pointer;
 }
+/* 파일 입력은 투명이라 오류 표시가 안 보이므로 드롭존 테두리를 2px로 알린다. */
+.collection-page .collection-form-dropzone:has(input[aria-invalid="true"]) {
+  border-width: var(--bw-2);
+}
 .collection-page .collection-form-dropzone:has(input:focus-visible) {
   outline: var(--bw-2) solid var(--select);
   outline-offset: -2px;
@@ -1025,7 +1013,8 @@
 }
 /* 오류 입력은 2px --ink 테두리로 알린다(글자색은 그대로). 오류 문구는 오류 상자가 맡는다. */
 .collection-page .collection-form input[aria-invalid="true"],
-.collection-page .collection-form select[aria-invalid="true"] {
+.collection-page .collection-form select[aria-invalid="true"],
+.collection-page .collection-form textarea[aria-invalid="true"] {
   border-width: var(--bw-2);
   border-color: var(--ink);
 }
@@ -1035,19 +1024,6 @@
   min-height: 0;
   margin: 0;
   accent-color: var(--select);
-}
-
-/* 스크린리더 전용 보조 텍스트(이 페이지 복제본 — 전역 유틸리티가 없다). */
-.collection-page .sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
 }
 
 /* ── 구분선 + 상세 본문 ────────────────────────────────────────── */

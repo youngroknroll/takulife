@@ -18,6 +18,10 @@
   font-size: var(--fs-4);
 }
 
+.events-page .calendar-month-label:focus {
+  outline: none; /* 월 이동 뒤 포커스가 오는 지점일 뿐, 직접 탭하는 컨트롤이 아니다. */
+}
+
 .calendar-month-sep {
   margin: 0 0.2em;
 }

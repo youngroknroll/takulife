@@ -1,4 +1,4 @@
-"""Event 모델 테스트 — 필드 기본값과 던더 동작, HTTP는 다루지 않는다."""
+"""Event 모델 테스트 — 필드 기본값, 던더 동작, 게시 여부 판정, HTTP는 다루지 않는다."""
 
 import pytest
 
@@ -21,3 +21,28 @@ def test_모델_기본값으로_생성한_행사의_게시_상태는_초안이�
     event = Event.objects.create(title="기본값 확인용")
 
     assert event.publish_status == Event.PublishStatus.DRAFT
+
+
+@pytest.mark.parametrize(
+    ("publish_status", "expected"),
+    [
+        pytest.param(Event.PublishStatus.PUBLISHED, True, id="게시"),
+        pytest.param(Event.PublishStatus.DRAFT, False, id="초안"),
+    ],
+)
+def test_행사의_게시_여부는_게시_상태일_때만_참이다(publish_status, expected):
+    event = Event(title="행사", publish_status=publish_status)
+
+    assert event.is_published is expected
+
+
+@pytest.mark.django_db
+def test_행사의_게시_여부는_게시된_행사_조회와_같은_행사를_가리킨다(make_event, make_draft_event):
+    make_event(title="게시 1")
+    make_event(title="게시 2")
+    make_draft_event(title="초안 1")
+    make_draft_event(title="초안 2")
+
+    published_by_property = {event.pk for event in Event.objects.all() if event.is_published}
+
+    assert published_by_property == set(Event.objects.published().values_list("pk", flat=True))

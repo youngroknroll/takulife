@@ -246,6 +246,24 @@ def test_게시_행에는_비공개와_검증_버튼이_노출되고_비공개_�
 
 
 @pytest.mark.django_db
+def test_행사_목록은_행의_게시_상태에_맞는_상태_배지를_보여준다(
+    staff_client, make_event, make_draft_event
+):
+    staff, client = staff_client()
+    published = make_event(official_url="https://example.com/status-badge-published")
+    draft = make_draft_event(official_url="https://example.com/status-badge-draft")
+
+    resp = client.get("/staff/events/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    published_row = _row_slice(content, published.id)
+    draft_row = _row_slice(content, draft.id)
+    assert 'events-status-badge--published">게시</span>' in published_row
+    assert 'events-status-badge--draft">비공개</span>' in draft_row
+
+
+@pytest.mark.django_db
 @pytest.mark.parametrize(
     "verified,expected_label",
     [(False, "검증 완료"), (True, "다시 검증")],

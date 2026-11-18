@@ -11,6 +11,8 @@ from unittest.mock import patch
 from django.test import Client
 import pytest
 
+from core.models import Category
+
 pytestmark = pytest.mark.web
 
 
@@ -293,6 +295,44 @@ def test_범례는_표시_달에_실제로_있는_카테고리만_어휘_순서�
     assert calendar["legend"] == [
         {"slug": "popup_store", "label": "팝업스토어"},
         {"slug": "exhibition", "label": "전시"},
+    ]
+
+
+@pytest.mark.django_db
+def test_범례는_표시_달의_새_카테고리를_고정_카테고리_뒤에_카테고리_순서로_카테고리_라벨과_함께_담는다(
+    make_event,
+):
+    today = date(2026, 9, 16)
+    # id·행사 날짜 순서는 정렬_뒤 -> 정렬_앞(9/10, 9/25)이고 sort_order는 반대(901, 900)라서,
+    # 범례가 id·날짜 순서가 아니라 sort_order를 따르는지 구별된다.
+    정렬_뒤 = Category.objects.create(slug="zz_legend_back", label="범례뒤", sort_order=901)
+    정렬_앞 = Category.objects.create(slug="zz_legend_front", label="범례앞", sort_order=900)
+    make_event(
+        title="전시",
+        category="exhibition",
+        start_date=date(2026, 9, 3),
+        end_date=date(2026, 9, 3),
+    )
+    make_event(
+        title="정렬 뒤 행사",
+        category=정렬_뒤.slug,
+        start_date=date(2026, 9, 10),
+        end_date=date(2026, 9, 10),
+    )
+    make_event(
+        title="정렬 앞 행사",
+        category=정렬_앞.slug,
+        start_date=date(2026, 9, 25),
+        end_date=date(2026, 9, 25),
+    )
+    with patch("web.views.events.timezone.localdate", return_value=today):
+        resp = Client().get("/")
+
+    calendar = resp.context["home_calendar"]
+    assert calendar["legend"] == [
+        {"slug": "exhibition", "label": "전시"},
+        {"slug": 정렬_앞.slug, "label": 정렬_앞.label},
+        {"slug": 정렬_뒤.slug, "label": 정렬_뒤.label},
     ]
 
 

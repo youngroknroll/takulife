@@ -386,6 +386,7 @@ TEMPLATES = [
                 "core.context_processors.canonical_url",
                 "core.context_processors.google_site_verification",
                 "core.context_processors.ga_measurement_id",
+                "core.context_processors.category_palette_slots",
                 "staff.context_processors.sidebar_badge_counts",
                 "staff.context_processors.staff_search_box",
                 "django.template.context_processors.i18n",

@@ -101,6 +101,10 @@
   cursor: pointer;
   overflow: hidden;
 }
+/* 파일 입력은 투명이라 오류 표시가 안 보이므로 드롭존 테두리를 2px로 알린다. */
+.personal-create-page .personal-form-dropzone:has(input[aria-invalid="true"]) {
+  border-width: var(--bw-2);
+}
 .personal-create-page .personal-form-dropzone:has(:focus-visible) {
   outline: var(--bw-2) solid var(--select);
   outline-offset: 2px;
@@ -213,6 +217,10 @@
   border-width: var(--bw-2);
   border-color: var(--ink);
 }
+/* 줄 수로 높이가 정해지는 입력이라 테두리가 1px 늘면 높이도 늘므로 안쪽 여백을 그만큼 줄인다. */
+.personal-create-page .personal-form textarea[aria-invalid="true"] {
+  padding: calc(var(--space-2) - 1px);
+}
 
 /* ── 카테고리 칩 — 선택(눌림)은 반전 ───────────────────────────────── */
 .personal-create-page .personal-form-category-chips {
@@ -310,16 +318,12 @@
   background: var(--select);
   color: var(--on-select);
 }
-/* 제출 중에는 비활성이지만 가운데 스피너(글자색을 따른다)는 보여야 한다. */
-.personal-create-page .personal-form-submit:disabled {
+/* 제출 중이 아닌 비활성 모양. 제출 중(.is-loading)은 원래 모양에 스피너만 얹는다. */
+.personal-create-page .personal-form-submit:disabled:not(.is-loading) {
   background: transparent;
   border-color: var(--off);
   color: var(--off);
   cursor: not-allowed;
-}
-.personal-create-page .personal-form-submit.is-loading:disabled {
-  border-color: var(--ink-2);
-  color: var(--ink-2);
 }
 .personal-create-page .personal-form-cancel {
   display: inline-flex;
@@ -335,21 +339,6 @@
   margin: 0 0 0 auto;
   color: var(--ink-2);
   font-size: var(--fs-1);
-}
-
-/* 스크린리더 전용 보조 텍스트(이 페이지 자체 복제본 — 저장소 전역
-   `.sr-only` 유틸리티가 없다; clip 기법은 components/text.css의
-   `.archive-search-status`와 동일). */
-.personal-create-page .sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
 }
 
 /* ── 좁은 화면(≤45rem): 1열, 4:3 드롭존 전폭, 하단 고정 액션 막대 ───── */

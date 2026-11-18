@@ -1,4 +1,4 @@
-{% load i18n %}
+{% load i18n category_lang %}
 {% comment %}
 찜 목록(archive_interests) 결과 영역 — 라이브 검색 swap 대상. 풀 페이지
 (interests.html)와 ?partial=1 fragment 뷰가 동일 출처로 렌더한다.
@@ -17,6 +17,7 @@
 사고를 막는다.
 {% endcomment %}
 <p hidden data-result-count="{{ page_obj.paginator.count }}"></p>
+<template data-results-title>{% include "core/partials/_archive_results_title_interests.html" %}</template>
 {% if interest_rows %}
   <div class="record-rows">
     {% for row in interest_rows %}
@@ -39,7 +40,7 @@
               <span class="event-category unofficial">{% translate "직접 등록" %}</span>
             {% endif %}
             {% if row.subject.category_label %}
-              <span class="record-row-cat"{% if row.subject.category_slug %} data-category="{{ row.subject.category_slug|slugify }}"{% endif %}>{{ row.subject.category_label }}</span>
+              <span class="record-row-cat"{% if row.subject.category_slug %} data-category="{{ row.subject.category_slug|slugify }}"{% endif %}{% if row.subject.is_official %}{% category_lang_attr row.subject.category_label %}{% endif %}>{{ row.subject.category_label }}</span>
             {% endif %}
             {% if row.subject.is_official %}
               {% if row.status == 'upcoming' %}
@@ -56,7 +57,7 @@
             {% if row.subject.detail_url %}
               <a href="{{ row.subject.detail_url }}" lang="ko">{{ row.subject.title }}</a>
             {% else %}
-              {{ row.subject.title }}
+              {% if row.subject.is_official %}<span lang="ko">{{ row.subject.title }}</span>{% else %}{{ row.subject.title }}{% endif %}
             {% endif %}
           </h3>
 

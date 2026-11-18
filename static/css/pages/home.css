@@ -305,7 +305,7 @@
     width: 0.5rem;
     height: 0.5rem;
     border-radius: 50%;
-    background: var(--ink-2);
+    background: var(--dot-slot, var(--ink-2));
   }
   .cat-dot-swatch[data-category="popup_store"] { background: var(--dot-popup_store); }
   .cat-dot-swatch[data-category="collaboration_cafe"] { background: var(--dot-collaboration_cafe); }
@@ -410,6 +410,7 @@
     background: var(--surface);
   }
   .snapshot-record-row {
+    position: relative;
     display: flex;
     align-items: center;
     gap: var(--space-2);
@@ -422,7 +423,7 @@
     flex: none;
     width: var(--bw-2);
     align-self: stretch;
-    background: var(--ink);
+    background: currentColor;
   }
   .snapshot-record-body {
     flex: 1;
@@ -444,6 +445,27 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  /* overflow: hidden이 포커스 링(선 2px + 간격 2px)을 자르지 않게 링 자리만큼
+     안쪽 여백을 주고 같은 크기의 음수 바깥 여백으로 글자 위치를 그대로 둔다.
+     `.snapshot-record-body p { margin: 0 }`를 이기도록 선택자를 높였다. */
+  .snapshot-record-body .snapshot-record-title {
+    padding: var(--space-1);
+    margin: calc(-1 * var(--space-1));
+  }
+  /* 긴 제목의 말줄임을 링크가 직접 맡아 링크 상자가 p 안에 머물게 한다(포커스 링이
+     p의 안쪽 여백 안에 그려진다). 링크 없는 행의 평문 제목은 위 p 규칙이 맡는다. */
+  .snapshot-record-title a {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* 제목 링크의 눌림 영역을 행 전체로 넓힌다. 기준 상자가 li가 되도록 본문·p에는
+     position을 주지 않는다. 아래쪽은 행 아래 1px 구분선까지 덮는다. */
+  .snapshot-record-title a::after {
+    content: "";
+    position: absolute;
+    inset: 0 0 calc(-1 * var(--bw-1)) 0;
+  }
   .snapshot-record-when {
     font-size: var(--fs-1);
     color: var(--ink-2);
@@ -452,11 +474,45 @@
      다시 선언한다 — 배경·테두리·반경·패딩을 모두 명시해야 원본 상자가
      비치지 않는다. 링크 모양은 위 공용 텍스트 링크 규칙이 맡는다. */
   .snapshot-record-row .record-action-link {
+    position: relative;
     flex: none;
-    border: none;
+    border: var(--bw-1) solid transparent;
     border-radius: 0;
     background: transparent;
     padding: 0 var(--space-1);
+  }
+  /* 행이 반전되면 '기록' 링크 글자도 흰색을 따르고 테두리를 드러낸다(청록 글자가
+     짙은 배경에 남지 않게). 위 공용 링크 규칙보다 명시도를 높였다. */
+  .snapshot-record-row.row-invert:has(:focus-visible) .record-action-link,
+  .snapshot-record-row.row-invert:active .record-action-link {
+    color: inherit;
+    border-color: var(--on-select);
+  }
+  .snapshot-record-row.row-invert:has(:focus-visible) .snapshot-record-title a,
+  .snapshot-record-row.row-invert:active .snapshot-record-title a {
+    text-decoration: none;
+  }
+  @media (hover: hover) {
+    .snapshot-record-row.row-invert:hover .record-action-link {
+      color: inherit;
+      border-color: var(--on-select);
+    }
+    .snapshot-record-row.row-invert:hover .snapshot-record-title a {
+      text-decoration: none;
+    }
+  }
+  /* 반전된 행 안에서 '기록' 링크 자신에 올리거나 포커스하면 한 번 더 뒤집어, 행 상세
+     링크와 도착지가 다른 이 링크가 눌릴 대상임을 구분한다. */
+  @media (hover: hover) {
+    .snapshot-record-row.row-invert .record-action-link:hover {
+      background: var(--on-select);
+      color: var(--select);
+    }
+  }
+  .snapshot-record-row.row-invert .record-action-link:focus-visible {
+    background: var(--on-select);
+    color: var(--select);
+    outline-color: var(--select);
   }
 
   /* 스냅샷 모바일 (≤45rem) — 통계는 2열, 칸 사이는 단선. */
@@ -472,73 +528,108 @@
     }
   }
 
-  /* "최근 등록한 굿즈" 타일 — 박스 없이 사진 칸(1px 단선) + 제목. 삭제된
-     archive_visits.css에서 옮겨온 규칙이라 파일과 함께 사라지지 않게 여기에 둔다. */
-  .visit-card {
-    border: none;
-    background: transparent;
+  /* "최근 등록한 굿즈" — 표 모양 격자. 칸 선은 칸마다 오른쪽·아래 border로만
+     긋고(빈 칸 포함), 바깥 테두리는 격자의 위·왼쪽 border가 맡는다. */
+  .snapshot-goods-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    margin: var(--space-2) 0 0;
     padding: 0;
+    list-style: none;
+    background: var(--surface);
+    border-top: var(--bw-1) solid var(--rule);
+    border-left: var(--bw-1) solid var(--rule);
   }
-  .visit-card-media {
-    align-self: stretch;
+  .snapshot-goods-cell {
+    display: flex;
+    min-width: 0;
+    border-right: var(--bw-1) solid var(--rule);
+    border-bottom: var(--bw-1) solid var(--rule);
   }
-  .visit-card h3 {
-    margin: 0 0 0.3125rem;
-    font-size: var(--fs-3);
-    line-height: 1.35;
-    overflow-wrap: anywhere;
+  /* 넓은 화면은 5칸 한 줄이라 여섯 번째 빈 칸은 숨긴다. */
+  .snapshot-goods-cell:nth-child(n+6) {
+    display: none;
   }
-  .snapshot-goods-card .visit-card-media {
+  /* 링크가 칸 전체를 채워 누름·hover·포커스 영역이 칸 전체가 된다. */
+  .snapshot-goods-link {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-2);
+    color: inherit;
+  }
+  .snapshot-goods-link:focus-visible {
+    outline-offset: -2px;
+  }
+  .snapshot-goods-media {
+    display: block;
     width: 100%;
     aspect-ratio: 3 / 4;
     margin-bottom: var(--space-2);
-    background: var(--surface);
-    border: var(--bw-1) solid var(--rule);
   }
-  .snapshot-goods-card .visit-card-media img,
-  .snapshot-goods-card .collection-thumb-placeholder {
+  .snapshot-goods-media img {
+    display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
-    display: block;
   }
-  /* 이미지 없을 때 대체 — 무채색 블록 가운데에 굿즈 이모지. .snapshot-goods-card에만
-     스코프해 컬렉션 페이지의 같은 클래스 사용은 건드리지 않는다. */
-  .snapshot-goods-card .collection-thumb-placeholder {
+  /* 이미지 없을 때 대체 — 무채색 블록 가운데에 굿즈 이모지. 컬렉션 페이지의
+     같은 클래스 사용은 건드리지 않게 이 칸 안으로만 스코프한다. */
+  .snapshot-goods-media .collection-thumb-placeholder {
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 100%;
+    height: 100%;
     background: var(--off);
     font-size: 2rem;
   }
-  .snapshot-goods-card .collection-thumb-placeholder::before {
+  .snapshot-goods-media .collection-thumb-placeholder::before {
     content: "🎁";
+    content: "🎁" / "";
   }
-  .snapshot-goods-card h3 {
-    margin: 0;
-    font-size: var(--fs-2);
-    font-weight: var(--fw-regular);
-    line-height: 1.35;
-    overflow-wrap: anywhere;
+  .snapshot-goods-name {
+    align-self: stretch;
+    min-height: calc(2 * 1.35em);
+    overflow: hidden;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
-    overflow: hidden;
+    font-size: var(--fs-2);
+    line-height: 1.35;
+    text-align: center;
+    overflow-wrap: anywhere;
+    word-break: keep-all;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
   }
-
-  /* ── horizontal scroller — 홈 전용 값. 공통 컴포넌트 규칙은
-     static/css/components/hscroll.css에 있다. 남은 사용처는 "최근 등록한 굿즈"
-     레일 하나뿐이다(발견 레일 3개와 다가오는 일정은 세로 목록이다). */
-  .hscroll-track li {
-    flex: none;
-    width: 8rem;
+  /* 칸이 반전되면 밑줄은 뺀다(다른 반전 행과 같은 규칙). */
+  .snapshot-goods-cell:has(:focus-visible) .snapshot-goods-name,
+  .snapshot-goods-cell:active .snapshot-goods-name {
+    text-decoration: none;
+  }
+  @media (hover: hover) {
+    .snapshot-goods-cell:hover .snapshot-goods-name {
+      text-decoration: none;
+    }
   }
 
   @media (max-width: 45rem) {
     .home-page {
       padding: var(--space-3) var(--page-pad-x) var(--space-6);
     }
-    .hscroll-track li {
-      scroll-snap-align: start;
+    .snapshot-goods-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .snapshot-goods-cell:nth-child(n+6) {
+      display: flex;
+    }
+    /* 굿즈가 3개 이하면 첫 줄만 쓴다. */
+    .snapshot-goods-cell--empty:nth-child(4),
+    .snapshot-goods-cell--empty:nth-child(4) ~ .snapshot-goods-cell {
+      display: none;
     }
   }

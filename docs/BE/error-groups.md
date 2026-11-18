@@ -75,8 +75,8 @@
 ## 핸들러(`core/logging.py`)
 
 - `ErrorGroupHandler`(`core/logging.py:10-43`)는 `django.request` 로거에만
-  붙는다(`LOGGING`, `config/settings.py:654-689`, `"django.request"` 항목은
-  `:683-687`의 `handlers: ["console", "error_groups"]`, `level: "ERROR"`) —
+  붙는다(`LOGGING`, `config/settings.py:693-728`, `"django.request"` 항목은
+  `:722-726`의 `handlers: ["console", "error_groups"]`, `level: "ERROR"`) —
   root에는
   붙이지 않는다. 다른 경로의 의도된 WARNING이 오류 묶음으로 새는 것을
   막기 위해서다.

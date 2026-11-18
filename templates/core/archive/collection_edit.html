@@ -36,7 +36,6 @@
               name="name"
               maxlength="255"
               required
-              aria-describedby="collection-edit-error"
               value="{{ item.name }}"
             >
           </div>
@@ -170,5 +169,6 @@
 {% endblock %}
 
 {% block extra_js %}
+  <script defer src="{% static 'js/components/form_feedback.js' %}"></script>
   <script defer src="{% static 'js/pages/collection.js' %}"></script>
 {% endblock %}

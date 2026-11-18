@@ -3,8 +3,8 @@
  * 머리·도구줄은 pages/archive.css를 그대로 쓴다. 이 파일은 검색 폼, 두 칸 배치,
  * 범례(종류 기호), 월 이동 줄, 선택일 목록만 둔다.
  * 활동 종류는 색이 아니라 기호로 구분한다: 일정 ○, 찜 ♥, 방문 ■, 굿즈 ●.
- * 접힘 경계는 53.75rem(도구줄·두 칸 배치) 하나만 쓰고, 칸 안 점 표시는
- * 공용 달력의 45rem이 맡는다.
+ * 접힘 경계는 둘이다: 두 창의 한 열 접힘은 56.24rem, 도구줄 검색창의 전폭은
+ * 53.75rem이다. 칸 안 점 표시는 공용 달력의 45rem이 맡는다.
  */
 
 /* ── 도구줄의 검색 폼 ─────────────────────────────────────────────── */
@@ -77,7 +77,7 @@
   min-width: 0;
 }
 
-/* archive.css의 도구줄은 이 지점에서 한 열로 접힌다 — 검색창은 둘째 줄 전폭이다. */
+/* archive.css의 도구줄은 이 지점에서 둘째 줄 전폭 검색창으로 바뀐다. */
 @media (max-width: 53.75rem) {
   .activity-toolbar .calendar-search {
     grid-area: search;
@@ -85,7 +85,10 @@
     max-width: none;
     justify-self: stretch;
   }
+}
 
+/* 범례 창과 달력 창은 56.24rem 이하에서 한 열로 접는다 (행사 목록과 같은 짝). */
+@media (max-width: 56.24rem) {
   .activity-layout {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--space-3);
@@ -271,6 +274,10 @@
 .calendar-month-label::after {
   content: " ]";
   content: " ]" / "";
+}
+
+.calendar-month-label:focus {
+  outline: none; /* 월 이동 뒤 포커스가 오는 지점일 뿐, 직접 탭하는 컨트롤이 아니다. */
 }
 
 .calendar-month-nav {

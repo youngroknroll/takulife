@@ -208,8 +208,12 @@
   font: inherit;
 }
 /* 오류 입력은 글자색이 아니라 굵은 테두리로도 알린다. */
-.visit-create-page .visit-create-fields [aria-invalid="true"] {
+.visit-create-page .visit-create-fields input[aria-invalid="true"],
+.visit-create-page .visit-create-fields select[aria-invalid="true"],
+.visit-create-page .visit-create-fields textarea[aria-invalid="true"] {
   border-width: var(--bw-2);
+  /* 테두리가 1px 늘어난 만큼 안쪽 여백을 줄여 바깥 크기를 지킨다. */
+  padding: calc(var(--space-1) - 1px) calc(var(--space-2) - 1px);
 }
 
 /* ── 기록 안내 구획 ───────────────────────────────────────────── */
@@ -297,7 +301,7 @@
   color: var(--on-select);
   border-color: var(--select);
 }
-.visit-create-page .visit-create-submit:disabled {
+.visit-create-page .visit-create-submit:disabled:not(.is-loading) {
   background: transparent;
   color: var(--off);
   border-color: var(--off);
@@ -343,19 +347,6 @@
   background: var(--select);
   color: var(--on-select);
   border-color: var(--select);
-}
-
-/* 스크린리더 전용 보조 텍스트(이 페이지 복제본 — 전역 유틸리티가 없다). */
-.visit-create-page .sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
 }
 
 /* ── 좁은 화면(≤45rem): 1열, 탭 바 위 고정 버튼 막대 ─────────────── */

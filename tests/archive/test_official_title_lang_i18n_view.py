@@ -1,7 +1,8 @@
-"""트랙 43-3 후속: 영어 화면의 잠긴 방문 대상·방문 기록 라벨에서 공식 행사의 한글
-제목은 `lang="ko"` 안에 있고, 사용자가 입력한 개인 항목 제목은 태그하지 않는다
-(docs/BE/i18n.md 가드레일 16). 대상은 세 곳이다: 방문 기록 작성 잠긴 대상,
-컬렉션 작성 잠긴 방문 기록, 컬렉션 수정의 연결된 방문 기록.
+"""트랙 43-3 후속: 영어 화면에서 공식 행사의 한글 제목·장소는 `lang="ko"` 안에 있고,
+사용자가 입력한 개인 항목 제목·장소는 태그하지 않는다(docs/BE/i18n.md 가드레일 16).
+대상은 다섯 곳이다: 방문 기록 작성 잠긴 대상, 컬렉션 작성 잠긴 방문 기록, 컬렉션 수정의
+연결된 방문 기록, 홈 기록 대기 행(제목과 날짜 없는 행의 장소 줄), 링크가 없는 비공개 행사
+제목(내 활동 세 목록과 홈).
 
 `tests`에 `__init__.py`가 없어 파일 간 임포트가 불안정하므로, 요소 트리 파서는
 `tests/core/test_archive_ui_leak_scan.py`에서 필요한 최소분만 복제했다.
@@ -212,3 +213,85 @@ def test_영어_컬렉션_수정의_연결된_방문_기록은_개인_항목_제
 
     assert resp.status_code == 200
     _assert_personal_untagged(_locked(resp, "collection-edit-visit-label"), _PERSONAL)
+
+
+# (4) 홈: 기록 대기 행
+def test_영어_홈_기록_대기는_공식_행사_제목을_lang_ko로_감싼다(
+    user_client, make_event, make_status
+):
+    user, client = user_client()
+    행사 = make_event(title=_OFFICIAL)
+    make_status(user, 행사, status="visited")
+
+    resp = client.get("/", **_EN)
+
+    assert resp.status_code == 200
+    _assert_official_tagged(_locked(resp, "snapshot-record-title"), _OFFICIAL)
+
+
+def test_영어_홈_기록_대기는_개인_항목_제목에_lang을_붙이지_않는다(
+    user_client, make_entry, make_status
+):
+    user, client = user_client()
+    항목 = make_entry(user, title=_PERSONAL)
+    make_status(user, personal_entry=항목, status="visited")
+
+    resp = client.get("/", **_EN)
+
+    assert resp.status_code == 200
+    _assert_personal_untagged(_locked(resp, "snapshot-record-title"), _PERSONAL)
+
+
+def test_영어_홈_기록_대기는_날짜_없는_공식_행사의_장소를_lang_ko로_감싼다(
+    user_client, make_event, make_status
+):
+    user, client = user_client()
+    행사 = make_event(title=_OFFICIAL, start_date=None, end_date=None, location_name="한글 장소명")
+    make_status(user, 행사, status="visited")
+
+    resp = client.get("/", **_EN)
+
+    assert resp.status_code == 200
+    _assert_official_tagged(_locked(resp, "snapshot-record-when"), "한글 장소명")
+
+
+def test_영어_홈_기록_대기는_직접_등록_항목의_장소에_lang을_붙이지_않는다(
+    user_client, make_entry, make_status
+):
+    user, client = user_client()
+    항목 = make_entry(user, title=_PERSONAL, location_name="개인 장소명")
+    make_status(user, personal_entry=항목, status="visited")
+
+    resp = client.get("/", **_EN)
+
+    assert resp.status_code == 200
+    _assert_personal_untagged(_locked(resp, "snapshot-record-when"), "개인 장소명")
+
+
+_비공개_제목 = "비공개 한글 제목"
+
+
+# (5) 링크가 없는 비공개 행사 제목: 내 활동 세 목록과 홈
+@pytest.mark.parametrize(
+    "경로",
+    [
+        pytest.param("/archive/", id="기록장"),
+        pytest.param("/archive/statuses/", id="나의_일정"),
+        pytest.param("/archive/interests/", id="찜_목록"),
+        pytest.param("/", id="로그인_홈_기록_대기"),
+    ],
+)
+def test_영어_화면의_비공개_공식_행사_제목은_링크가_없어도_lang_ko로_감싸진다(
+    user_client, make_draft_event, make_status, make_interest, 경로
+):
+    user, client = user_client()
+    행사 = make_draft_event(title=_비공개_제목)
+    make_status(user, 행사, status="visited")
+    make_interest(user, 행사)
+
+    resp = client.get(경로, **_EN)
+
+    assert resp.status_code == 200
+    소유_요소들 = [owner for text, owner in _parse(resp).iter_text_nodes() if _비공개_제목 in text]
+    assert 소유_요소들
+    assert all(_has_ko_ancestor(owner) for owner in 소유_요소들)

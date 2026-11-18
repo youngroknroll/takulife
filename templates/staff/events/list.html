@@ -103,7 +103,7 @@
             {% for row in event_rows %}
               <tr data-event-row="{{ row.event.id }}" data-verified="{% if row.event.verified_at %}1{% else %}0{% endif %}">
                 <td>
-                  {% if row.event.publish_status == "published" %}
+                  {% if row.event.is_published %}
                     <label class="sr-only" for="event-select-{{ row.event.id }}">{{ row.event.title|default:"(제목 없음)" }} 선택</label>
                     <input type="checkbox" id="event-select-{{ row.event.id }}" class="event-select-checkbox" data-event-select data-event-id="{{ row.event.id }}">
                   {% endif %}
@@ -114,15 +114,15 @@
                 <td class="events-region-cell">{{ row.region_label|default:"-" }}</td>
                 <td class="events-category-cell">{{ row.category_label|default:"-" }}</td>
                 <td>
-                  <span class="events-status-badge events-status-badge--{{ row.event.publish_status }}">{% if row.event.publish_status == "published" %}게시{% else %}비공개{% endif %}</span>
+                  <span class="events-status-badge events-status-badge--{{ row.event.publish_status }}">{% if row.event.is_published %}게시{% else %}비공개{% endif %}</span>
                 </td>
                 <td class="events-tail-cell" data-row-error-host>
                   {% for badge in row.quality_badges %}
                     <span class="events-warn-badge">⚠ {{ badge }}</span>
                   {% endfor %}
-                  <button type="button" class="events-row-btn" data-row-action="verify" data-event-id="{{ row.event.id }}"{% if row.event.publish_status != "published" %} hidden{% endif %}>{% if row.event.verified_at %}다시 검증{% else %}검증 완료{% endif %}</button>
-                  <button type="button" class="events-row-btn" data-row-action="unpublish" data-event-id="{{ row.event.id }}"{% if row.event.publish_status != "published" %} hidden{% endif %}>비공개</button>
-                  <button type="button" class="events-row-btn events-row-btn--accent" data-row-action="republish" data-event-id="{{ row.event.id }}"{% if row.event.publish_status == "published" %} hidden{% endif %}>다시 게시</button>
+                  <button type="button" class="events-row-btn" data-row-action="verify" data-event-id="{{ row.event.id }}"{% if not row.event.is_published %} hidden{% endif %}>{% if row.event.verified_at %}다시 검증{% else %}검증 완료{% endif %}</button>
+                  <button type="button" class="events-row-btn" data-row-action="unpublish" data-event-id="{{ row.event.id }}"{% if not row.event.is_published %} hidden{% endif %}>비공개</button>
+                  <button type="button" class="events-row-btn events-row-btn--accent" data-row-action="republish" data-event-id="{{ row.event.id }}"{% if row.event.is_published %} hidden{% endif %}>다시 게시</button>
                   <a class="events-edit-link" href="/staff/events/{{ row.event.pk }}/edit/{% if pager_query %}?{{ pager_query|slice:'1:' }}{% endif %}">수정</a>
                   <p class="events-inline-error" data-row-error tabindex="-1" hidden></p>
                 </td>

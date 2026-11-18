@@ -1,4 +1,7 @@
 from django.conf import settings
+from django.utils.functional import SimpleLazyObject
+
+from core.categories import palette_slot_by_slug
 
 # 공개 3페이지(홈/행사 목록/행사 상세)가 실제로 쓰는 유니코드 범위의 교집합
 # 청크 13개 — 임의 확장 금지. docs/FE/font-delivery.md F5 참고.
@@ -76,6 +79,13 @@ def canonical_url(request):
 def google_site_verification(request):
     """서치 콘솔 소유 확인 토큰. 비어 있으면 템플릿이 메타태그를 렌더하지 않는다."""
     return {"google_site_verification": settings.GOOGLE_SITE_VERIFICATION}
+
+
+def category_palette_slots(request):
+    """카테고리 슬러그 → 팔레트 슬롯 맵. 지연 객체라 점을 안 그리는 화면에서는
+    조회가 없고, 점을 그리는 화면에서도 한 요청에 한 번만 읽는다.
+    """
+    return {"category_palette_slots": SimpleLazyObject(palette_slot_by_slug)}
 
 
 def ga_measurement_id(request):

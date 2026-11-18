@@ -114,7 +114,7 @@
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 50%;
-  background: var(--ink-2);
+  background: var(--dot-slot, var(--ink-2));
 }
 
 .home-cal-dot[data-category="popup_store"] {

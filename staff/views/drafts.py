@@ -12,9 +12,9 @@ from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.categories import category_choices_for_editing
+from core.categories import category_choices_for_editing, category_display_labels
 from core.errors import error_response, field_error_response
-from core.vocab import CATEGORY_LABELS, REGION, REGION_LABELS
+from core.vocab import REGION, REGION_LABELS
 from drafts.labels import ORIGIN_LABELS, REVIEW_STATUS_LABELS
 from drafts.models import EventDraft
 from drafts.queries import DRAFT_LISTING_PAGE_SIZE, draft_review_stats, list_drafts
@@ -73,12 +73,14 @@ def _draft_preapproval_checks(draft):
 
 def _build_draft_rows(drafts):
     """템플릿이 점 표기법만으로 쓸 수 있도록 카테고리/지역 라벨을 붙인다."""
+    drafts = list(drafts)
+    category_labels = category_display_labels(draft.extracted_category for draft in drafts)
     rows = []
     for draft in drafts:
         rows.append(
             {
                 "draft": draft,
-                "category_label": CATEGORY_LABELS.get(
+                "category_label": category_labels.get(
                     draft.extracted_category, draft.extracted_category
                 ),
                 "region_label": REGION_LABELS.get(draft.extracted_region, draft.extracted_region),
@@ -169,7 +171,9 @@ def event_draft_detail(request, draft_id):
     is_pending = draft.review_status == EventDraft.ReviewStatus.PENDING
     # 재오픈된 드래프트는 검수 판정 칼럼에 이전 반려 기록을 보여준다.
     was_reopened = draft.reopened_at is not None
-    category_label = CATEGORY_LABELS.get(draft.extracted_category, draft.extracted_category)
+    category_label = category_display_labels([draft.extracted_category]).get(
+        draft.extracted_category, draft.extracted_category
+    )
     region_label = REGION_LABELS.get(draft.extracted_region, draft.extracted_region)
     return render(
         request,

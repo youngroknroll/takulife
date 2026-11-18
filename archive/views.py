@@ -50,6 +50,7 @@ from archive.services import (
     DuplicateUserEventStatusError,
     PhotoLimitExceededError,
     VisitRecordExistsError,
+    VisitTargetUnavailableError,
     complete_visit_with_record,
     create_collection_item,
     create_event_interest,
@@ -483,6 +484,15 @@ class VisitRecordListCreateView(ListCreateAPIView):
                 },
                 status=status.HTTP_409_CONFLICT,
             )
+        except VisitTargetUnavailableError:
+            # 검증 뒤 저장 전에 방문 완료 표시가 지워진 경우다. 게시되지 않은
+            # 행사가 있다는 사실을 드러내지 않도록 없는 행사와 같은 응답을 준다.
+            not_found_message = (
+                serializer.fields["event"]
+                .error_messages["does_not_exist"]
+                .format(pk_value=serializer.validated_data["event"].pk)
+            )
+            raise ValidationError({"event": [not_found_message]})
         response_serializer = self.get_serializer(record)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 

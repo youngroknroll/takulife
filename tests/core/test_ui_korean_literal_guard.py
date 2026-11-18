@@ -61,6 +61,10 @@ _FIXED_RELPATHS = [
     "core/partials/_archive_results_personal.html",
     "core/partials/_archive_results_record.html",
     "core/partials/_archive_results_statuses.html",
+    "core/partials/_archive_results_title_interests.html",
+    "core/partials/_archive_results_title_personal.html",
+    "core/partials/_archive_results_title_record.html",
+    "core/partials/_archive_results_title_visits.html",
     "core/partials/_archive_results_visits.html",
     "core/partials/_archive_search.html",
     "core/mypage.html",
@@ -68,8 +72,9 @@ _FIXED_RELPATHS = [
 
 # 5(셸·오류 페이지·홈) + 14(partials) + 3(events/list·calendar·detail)
 # + 16(account/*.html) + 4(account/email/*.txt) + 3(socialaccount/*.html)
-# + 26(43-3: archive 16 + partials 9 + mypage 1) = 71개 — 직접 센 기대 개수 [실측 ls].
-_EXPECTED_FILE_COUNT = 71
+# + 26(43-3: archive 16 + partials 9 + mypage 1)
+# + 4(트랙 59: 결과 창 제목 조각) = 75개 — 직접 센 기대 개수 [실측 ls].
+_EXPECTED_FILE_COUNT = 75
 
 _COMMENT_TAG_RE = re.compile(r"\{#.*?#\}", re.DOTALL)
 _COMMENT_BLOCK_RE = re.compile(r"\{%\s*comment\s*%\}.*?\{%\s*endcomment\s*%\}", re.DOTALL)
@@ -129,7 +134,7 @@ _JS_FIXED_RELPATHS = [
     "shared/submit_guard.js",
     "shared/toast.js",
     "components/confirm-modal.js",
-    "components/hscroll.js",
+    "components/form_feedback.js",
     "pages/home_hero_rotator.js",
     "pages/event_list.js",
     "pages/visit_edit.js",
@@ -143,11 +148,13 @@ _JS_FIXED_RELPATHS = [
     "pages/collection_detail.js",
     "pages/visit_detail.js",
     "pages/archive_search.js",
+    "pages/account_delete_done.js",
+    "pages/account_settings.js",
 ]
 
 # shared(9) + components(2) + home_hero_rotator.js(1) + event_list.js(1)
-# + pages/*.js 11개(43-3) = 24개 — 직접 센 기대 개수 [실측 ls].
-_EXPECTED_JS_FILE_COUNT = 24
+# + 나머지 pages/*.js 13개 = 26개 — 직접 센 기대 개수 [실측 ls].
+_EXPECTED_JS_FILE_COUNT = 26
 
 _BLOCK_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
 _UNESCAPED_QUOTE_RE = re.compile(r"(?<!\\)['\"]")

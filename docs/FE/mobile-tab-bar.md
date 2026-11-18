@@ -17,7 +17,7 @@
 - 요소: `bottom: var(--site-tabbar-h, 0px);`
 - 문서 끝 여백: `body:has(<그 요소>) { padding-bottom: calc(<요소 높이 rem> + var(--site-tabbar-h, 0px)); }` — 빠지면 끝까지 스크롤해도 푸터 마지막 줄이 요소 뒤에 남는다. JS가 `hidden`으로 숨기는 요소는 `:has(<요소>:not([hidden]))`.
 - 스크롤 여백: `html:has(<그 요소>) { scroll-padding-bottom: calc(<요소 높이 rem> + var(--site-tabbar-h, 0px)); }` — 빠지면 키보드 포커스·앵커 이동 대상이 고정 막대 뒤로 들어간다. 예: `event_detail.css:376`(4.5rem).
-기존 11곳 예(`bottom: var(--site-tabbar-h, 0px)` 선언이 있는 파일 11개 `[실측 rg 2026-11-17]`): `static/css/pages/event_detail.css:384`(`.mobile-cta`), `archive_collection_detail.css:410`(`.collection-detail-actions`) 등. 막대가 나타나는 폭은 45rem 이하가 기본이고 예외는 둘이다: 행사 상세는 ≤60rem(`event_detail.css:369`), 활동 쪽은 ≤53.75rem(`archive.css:846`) `[실측 awk로 각 파일의 선행 @media 확인 2026-11-17]`.
+기존 11곳 예(`bottom: var(--site-tabbar-h, 0px)` 선언이 있는 파일 11개 `[실측 rg 2026-11-17]`): `static/css/pages/event_detail.css:384`(`.mobile-cta`), `archive_collection_detail.css:394`(`.collection-detail-actions`) 등. 막대가 나타나는 폭은 45rem 이하가 기본이고 예외는 둘이다: 행사 상세는 ≤60rem(`event_detail.css:369`), 활동 쪽은 ≤53.75rem(`archive.css:854`) `[실측 awk로 각 파일의 선행 @media 확인 2026-11-17]`.
 
 **G3 토스트처럼 화면 아래에 뜨는 알림은 `max(env(safe-area-inset-bottom), var(--site-tabbar-h, 0px))`만큼 올린다.** 헤더가 `position: sticky; z-index: 50`이라 그 안의 탭 바는 페이지 수준 50으로 그려져, z-index 50 미만의 요소를 덮는다(`static/css/components/toast.css`).
 

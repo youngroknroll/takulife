@@ -117,7 +117,7 @@ def _schedule_items(user, month_start, month_end):
             start=status.event.start_date,
             end=status.event.end_date or status.event.start_date,
             label=status.event.title,
-            url=reverse("event-detail-page", args=[status.event_id]),
+            url=_published_event_url(status.event),
         )
         for status in statuses
     ]
@@ -154,27 +154,42 @@ def _goods_acquired_items(user, month_start, month_end):
     return items
 
 
+def _published_event_url(event):
+    """게시된 행사면 상세 주소를, 아니면 None을 돌려준다. 게시되지 않은
+    행사의 상세는 404라 연결하지 않는다."""
+    if event is not None and event.is_published:
+        return reverse("event-detail-page", args=[event.pk])
+    return None
+
+
+def _log_entry_url(entry):
+    """활동 항목이 연결할 화면을 고른다. 행사 상세를 연결할 수 없으면 방문
+    기록 수정, 컬렉션 수정 순으로 대신 연결한다."""
+    event_url = _published_event_url(entry.event)
+    if event_url:
+        return event_url
+    if entry.visit_record_id:
+        return reverse("archive-visit-edit-page", args=[entry.visit_record_id])
+    if entry.collection_item_id:
+        return reverse("collection-edit-page", args=[entry.collection_item_id])
+    return None
+
+
 def _log_entry_items(user, month_start, month_end):
     """ActivityLogEntry는 대상 행이 사라진 뒤에도 이 소스가 라벨을
     유지할 수 있도록 durable한 `subject_label` 스냅샷을 갖고 있다
     (event/visit_record/collection_item은 대상이 삭제되면 모두
     SET_NULL된다, archive/models.py). 그 경우 연결할 대상이 없으므로
-    `url`은 `None`으로 낮아진다."""
+    `url`은 `None`으로 낮아진다. 행사가 게시되지 않았을 때의 연결은
+    `_log_entry_url`이 정한다."""
+    # 게시 여부를 읽느라 로그마다 행사를 다시 조회하지 않게 함께 가져온다.
     entries = ActivityLogEntry.objects.filter(
         user=user,
         occurred_at__date__gte=month_start,
         occurred_at__date__lte=month_end,
-    )
+    ).select_related("event")
     items = []
     for entry in entries:
-        if entry.event_id:
-            url = reverse("event-detail-page", args=[entry.event_id])
-        elif entry.visit_record_id:
-            url = reverse("archive-visit-edit-page", args=[entry.visit_record_id])
-        elif entry.collection_item_id:
-            url = reverse("collection-edit-page", args=[entry.collection_item_id])
-        else:
-            url = None
         # aware datetime에서(여기선 USE_TZ=True)
         # timezone.localdate(entry.occurred_at)는
         # timezone.localtime(entry.occurred_at).date()와 같은 값이다 —
@@ -186,7 +201,7 @@ def _log_entry_items(user, month_start, month_end):
                 kind=entry.kind,
                 date=local_dt.date(),
                 label=entry.subject_label,
-                url=url,
+                url=_log_entry_url(entry),
                 time_text=local_dt.strftime("%H:%M"),
             )
         )
@@ -219,7 +234,7 @@ def _interest_added_fallback_items(user, month_start, month_end):
                     kind=ActivityLogEntry.Kind.INTEREST_ADDED,
                     date=display_date,
                     label=interest.event.title,
-                    url=reverse("event-detail-page", args=[interest.event_id]),
+                    url=_published_event_url(interest.event),
                 )
             )
     return items

@@ -12,6 +12,7 @@ from django.test import Client
 import pytest
 
 from archive.models import EventInterest, UserEventStatus
+from core.models import Category
 
 pytestmark = pytest.mark.web
 
@@ -26,6 +27,15 @@ class TestEventDetailView:
         assert resp.context["event"] == event
         assert resp.context["user_status"] == ""
         assert resp.context["user_interested"] is False
+
+    def test_새_카테고리_행사_상세는_슬러그가_아니라_카테고리_라벨을_보여준다(self, make_event):
+        category = Category.objects.create(slug="night_market", label="나이트 마켓")
+        event = make_event(title="야시장 행사", category=category.slug)
+
+        resp = Client().get(f"/events/{event.id}/")
+
+        assert resp.status_code == 200
+        assert resp.context["category_label"] == category.label
 
     def test_로그인_사용자가_본인이_등록한_상태와_찜이_있는_행사_상세를_보면_본인_값이_반영된다(
         self, make_event, make_user

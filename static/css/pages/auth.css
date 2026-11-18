@@ -36,7 +36,7 @@
   margin: 0 auto;
 }
 
-@media (min-width: 45.0625rem) {
+@media (min-width: 45.01rem) {
   .auth-panel-declare.window,
   .auth-panel-form.window {
     padding-inline: var(--space-4);
@@ -324,17 +324,12 @@
   color: var(--on-select);
 }
 
-/* 제출 중(data-submit-guard)에는 비활성 모양이 된다. */
-.auth-submit:disabled {
+/* 제출 중이 아닌 비활성 모양. 제출 중(.is-loading)은 원래 모양에 스피너만 얹는다. */
+.auth-submit:disabled:not(.is-loading) {
   border-color: var(--off);
   background: transparent;
   color: var(--off);
   cursor: not-allowed;
-}
-
-.auth-submit.is-loading:disabled {
-  border-color: var(--ink-2);
-  color: var(--ink-2);
 }
 
 /* ── 또는 구분선 ────────────────────────────────────────────────────── */
@@ -443,19 +438,6 @@
   .auth-page .auth-title {
     margin-bottom: var(--space-2);
   }
-}
-
-/* 화면에는 안 보이고 화면읽기 프로그램에는 읽히는 글자("(필수)"). */
-.auth-page .sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
 }
 
 .auth-required-legend {

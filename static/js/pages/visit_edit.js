@@ -30,12 +30,32 @@
     return Promise.resolve(window.confirm(message));
   }
 
+  // 폼 오류 표시 헬퍼(form_feedback.js)가 없으면 조용히 건너뛴다.
+  function clearFeedback(form) {
+    if (window.TakuFormFeedback) { window.TakuFormFeedback.clear(form); }
+  }
+
+  function markInvalid(controls, errorEl) {
+    if (window.TakuFormFeedback) { window.TakuFormFeedback.markInvalid(controls, errorEl); }
+  }
+
+  function focusError(errorEl) {
+    if (window.TakuFormFeedback) { window.TakuFormFeedback.focusError(errorEl); }
+  }
+
+  function showServerError(form, result, errorEl) {
+    if (window.TakuFormFeedback) {
+      window.TakuFormFeedback.showServerError(form, result.data, errorEl);
+    }
+  }
+
   function handle403(result, errorEl) {
     var kind = window.TakuAPI.classify(result);
     if (kind === "auth") {
       window.TakuAPI.redirectToLogin();
     } else {
       setText(errorEl, gettext("보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요."));
+      focusError(errorEl);
     }
   }
 
@@ -243,10 +263,13 @@
         handle403(result, errorEl);
       } else if (result.status === 404) {
         setText(errorEl, gettext("사진을 찾을 수 없습니다."));
+        focusError(errorEl);
       } else if (result.status === 0) {
         setText(errorEl, gettext("네트워크 오류가 발생했습니다. 다시 시도해 주세요."));
+        focusError(errorEl);
       } else {
         setText(errorEl, gettext("사진 삭제 중 오류가 발생했습니다."));
+        focusError(errorEl);
       }
     });
   }
@@ -317,6 +340,7 @@
 
     form.addEventListener("submit", async function (evt) {
       evt.preventDefault();
+      clearFeedback(form);
       setText(errorEl, "");
       setText(statusEl, "");
 
@@ -324,6 +348,7 @@
       var shortReview = form.elements["short_review"].value;
       if (!visitedOn) {
         setText(errorEl, gettext("방문 날짜를 입력해 주세요."));
+        markInvalid([form.elements["visited_on"]], errorEl);
         return;
       }
 
@@ -342,8 +367,10 @@
           handle403(result, errorEl);
         } else if (result.status === 0) {
           setText(errorEl, gettext("네트워크 오류가 발생했습니다. 다시 시도해 주세요."));
+          focusError(errorEl);
         } else {
           setText(errorEl, window.TakuAPI.formatError(result));
+          showServerError(form, result, errorEl);
         }
         return;
       }
@@ -373,6 +400,8 @@
         )
       );
       window.TakuAPI.setLoading(submitBtn, false);
+      // 쪽에 머무르므로 부분 실패 안내 문장으로 포커스를 옮긴다.
+      focusError(statusEl);
     });
 
     if (deleteBtn) {
@@ -399,8 +428,10 @@
           handle403(result, globalErrorEl);
         } else if (result.status === 0) {
           setText(globalErrorEl, gettext("네트워크 오류가 발생했습니다. 다시 시도해 주세요."));
+          focusError(globalErrorEl);
         } else {
           setText(globalErrorEl, gettext("기록 삭제 중 오류가 발생했습니다."));
+          focusError(globalErrorEl);
         }
       });
     }

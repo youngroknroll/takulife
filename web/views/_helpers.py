@@ -9,9 +9,9 @@ from django.utils import timezone
 from archive.models import UserEventStatus
 from archive.queries import user_interest_event_ids
 from core.calendar_grid import default_selected_date
+from core.categories import category_display_labels
 from core.vocab import (
     ARCHIVE_STATUS_LABELS,
-    CATEGORY_LABELS,
     EVENT_STATUS_LABELS,
     REGION_LABELS,
     personal_category_label,
@@ -39,6 +39,7 @@ def _attach_display(events, *, today=None, user=None):
     """
     events = list(events)
     event_ids = [event.id for event in events]
+    category_labels = category_display_labels(event.category for event in events)
 
     user_status_map = {}
     user_interest_map = {}
@@ -65,7 +66,7 @@ def _attach_display(events, *, today=None, user=None):
                 "event": event,
                 "status_slug": status_slug,
                 "status_label": EVENT_STATUS_LABELS.get(status_slug, ""),
-                "category_label": CATEGORY_LABELS.get(event.category, event.category),
+                "category_label": category_labels.get(event.category, event.category),
                 "category_slug": event.category,
                 "region_label": REGION_LABELS.get(event.region, "") if event.region else "",
                 "dday": display["dday"],
@@ -228,7 +229,12 @@ def _render_archive_list(request, *, full_template, fragment_template, context):
     return render(request, template, context)
 
 
-def _subject_view(obj):
+def _subject_category_labels(objs):
+    """공식 행사 대상 행들의 카테고리 라벨 맵을 한 번의 조회로 만든다."""
+    return category_display_labels(obj.event.category for obj in objs if obj.event_id is not None)
+
+
+def _subject_view(obj, *, category_labels=None):
     """archive 행의 대상(공식 Event 또는 비공식 PersonalEntry)을 일관되고
     null 안전하게 보여준다.
 
@@ -236,14 +242,22 @@ def _subject_view(obj):
     UserEventStatus)은 전부 ``event``/``event_id``와 ``personal_entry``를
     노출하는데, 이 함수가 둘을 하나의 dict로 합쳐 템플릿과 JS가 어느 FK가
     설정됐는지로 분기하지 않게 한다. ``subject_type``/``subject_id``는
-    API 응답을 이루고, 비공개 항목(공개 페이지 없음)은 ``detail_url``이
-    비어 있으며, 굿즈는 기간 날짜가 None이다.
+    API 응답을 이루고, 공개 페이지가 없는 항목(직접 등록 항목, 게시되지
+    않은 행사)은 ``detail_url``이 비어 있으며, 굿즈는 기간 날짜가 None이다.
+    게시 여부는 ``Event.objects.published()``와 같은 뜻으로 판단한다.
+
+    ``category_labels``는 슬러그 -> 라벨 맵이다. 없으면 이 행 한 건만 푼다.
+    여러 행을 그리는 목록은 ``_subject_category_labels``로 만든 맵을 넘겨야
+    한다. 빼먹으면 새 카테고리 행마다 조회가 나간다.
     """
     if obj.event_id is not None:
         event = obj.event
+        is_published = event.is_published
+        if category_labels is None:
+            category_labels = category_display_labels([event.category])
         return {
             "title": event.title,
-            "category_label": CATEGORY_LABELS.get(event.category, event.category),
+            "category_label": category_labels.get(event.category, event.category),
             "category_slug": event.category,
             "location": event.location_name,
             "start_date": event.start_date,
@@ -252,7 +266,7 @@ def _subject_view(obj):
             "kind": "",
             "subject_type": "event",
             "subject_id": event.id,
-            "detail_url": f"/events/{event.id}/",
+            "detail_url": f"/events/{event.id}/" if is_published else "",
         }
     entry = obj.personal_entry
     return {

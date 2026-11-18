@@ -349,6 +349,17 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
     12개월 `[코드 web/views/_helpers.py]`)은 200인지 확인한다. 배포 뒤 7일
     동안 Render 시간당 아웃바운드와 접근 로그의 경로·User-Agent별 건수를
     기록해 2026-11-07 이후 구간과 비교한다(통과 임계값 없음).
+22. **스태프가 만든 카테고리의 공개 색·라벨(트랙 59) 배포 확인**: 아래 명령으로
+    운영 DB의 카테고리와 배정된 팔레트 슬롯을 확인한다.
+    ```bash
+    uv run python manage.py shell -c "from core.models import Category; print(list(Category.objects.order_by('palette_slot').values_list('slug', 'label', 'palette_slot', 'is_active')))"
+    ```
+    고정 7종 `[코드 core/vocab.py CATEGORY_LABELS]`이 아닌 슬러그가 있으면, 그
+    카테고리의 행사가 보이는 공개 행사 목록에서 점이 배정된 슬롯 색이고 이름이
+    슬러그가 아니라 라벨인지 확인한다. 슬롯 7의 점 색(`#b91c1c`
+    `[코드 core/categories.py]`)은 오류 색과 비슷하다 — 슬롯 7이 배정된 카테고리가
+    있으면 화면에서 보고 수용 여부를 정한다. 로컬에서는 확인용 카테고리 2개로만
+    쟀고 운영 DB는 확인하지 않았다 `[문서 트랙 59, 2026-11-17]`.
 
 ## 4. 백업·복구 (T6)
 
