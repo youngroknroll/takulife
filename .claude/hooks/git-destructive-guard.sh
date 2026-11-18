@@ -7,14 +7,16 @@
 # attempt lost work the same way.
 #
 # Blocks, only when the working tree is dirty (there is something to lose):
-#   git reset --hard | git clean -f/-d/-x (not when -n/--dry-run is present,
-#     since nothing is actually deleted) | git checkout <path> (with or
+#   git reset --hard | git clean -f/-d/-x/--force (not when -n/--dry-run is
+#     present, since nothing is actually deleted) | git checkout <path> (with or
 #     without a leading `--`; a positional with no `--` counts as a path
 #     only when it names something that exists on disk at the process's
 #     cwd — an unknown name is a branch/commit, not a path)
 #   git restore <path>   (but not `git restore --staged`, which only unstages)
 # Blocks always:
 #   git stash clear      (destroys every stash, never a routine step)
+#   git clean -x/-X      (removes ignored files even on a clean tree, not when
+#     -n/--dry-run is present)
 #
 # A clean tree means these commands cannot destroy uncommitted work, so they pass.
 # A global option before the subcommand (`-C <dir>`, `-c <k=v>`, ...) no
@@ -107,17 +109,37 @@ def checkout_targets_path(rest):
     return any(path_exists_at_cwd(t) for t in positionals)
 
 
-def clean_is_destructive(rest):
-    """결합 플래그(`-fd`)까지 포함해 f/d/x로 끝나는 단일 대시 플래그가 있고,
-    `-n`/`--dry-run`(결합 플래그 포함)이 없을 때만 실제로 지운다."""
-    destructive = any(
-        re.fullmatch(r"-[a-zA-Z]*[fdx]", t) for t in rest if t.startswith("-") and not t.startswith("--")
-    )
-    dry_run = any(
+IGNORED_FILES_LABEL = "git clean -x/-X (removes ignored files)"
+
+
+def clean_dry_run(rest):
+    """`--dry-run`이나 결합 플래그 포함 `-n`이 있으면 실제로 지우지 않는다."""
+    return any(
         t == "--dry-run" or (t.startswith("-") and not t.startswith("--") and "n" in t[1:])
         for t in rest
     )
-    return destructive and not dry_run
+
+
+def clean_is_destructive(rest):
+    """결합 플래그(`-fd`)까지 포함해 f/d/x로 끝나는 단일 대시 플래그나
+    `--force`가 있고, `-n`/`--dry-run`(결합 플래그 포함)이 없을 때만 실제로
+    지운다."""
+    destructive = any(
+        re.fullmatch(r"-[a-zA-Z]*[fdx]", t) for t in rest if t.startswith("-") and not t.startswith("--")
+    ) or "--force" in rest
+    return destructive and not clean_dry_run(rest)
+
+
+def clean_removes_ignored(rest):
+    """단일 대시 플래그에 `x`/`X`가 있고 dry-run이 아니면, 더티 여부와
+    무관하게 무시 파일을 지운다."""
+    has_x = any(
+        t.startswith("-")
+        and not t.startswith("--")
+        and ("x" in t[1:] or "X" in t[1:])
+        for t in rest
+    )
+    return has_x and not clean_dry_run(rest)
 
 
 hits = []
@@ -137,7 +159,9 @@ for seg in segments:
             hits.append(("git reset --hard", seg, True))
     elif sub == "clean":
         if clean_is_destructive(rest) and dirty > 0:
-            hits.append(("git clean -f/-d/-x", seg, True))
+            hits.append(("git clean -f/-d/-x/--force", seg, True))
+        if clean_removes_ignored(rest):
+            hits.append((IGNORED_FILES_LABEL, seg, False))
     elif sub == "checkout":
         if checkout_targets_path(rest) and dirty > 0:
             hits.append(("git checkout <path>", seg, True))
@@ -155,8 +179,12 @@ if hits:
     if any(o for _, _, o in hits):
         print(f"  working tree has {dirty} uncommitted change(s) that this would discard",
               file=sys.stderr)
-    print('  stash first: git stash push -u -m "<why>"  — then retry, then restore',
-          file=sys.stderr)
+    if any(label == IGNORED_FILES_LABEL for label, _, _ in hits):
+        print("  ignored files are not saved by git stash -u: drop -x/-X, or preview with -n first",
+              file=sys.stderr)
+    if any(label != IGNORED_FILES_LABEL for label, _, _ in hits):
+        print('  stash first: git stash push -u -m "<why>"  — then retry, then restore',
+              file=sys.stderr)
     sys.exit(2)
 
 sys.exit(0)

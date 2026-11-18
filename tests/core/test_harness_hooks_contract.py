@@ -343,6 +343,15 @@ GIT_DESTRUCTIVE_CASES = [
         False,
         ALLOW,
     ),
+    # 신규: 무시 파일까지 지우는 -x/-X는 깨끗한 트리에서도 막는다.
+    ("clean_git_clean_dash_x는_차단된다", "git clean -x", False, BLOCK),
+    ("clean_git_clean_n_dash_x_dry_run은_허용된다", "git clean -n -x", False, ALLOW),
+    ("clean_git_clean_dash_capital_X는_차단된다", "git clean -X", False, BLOCK),
+    ("dirty_git_clean_combined_dash_fX는_차단된다", "git clean -fX", True, BLOCK),
+    ("dirty_git_clean_dash_dash_force는_차단된다", "git clean --force", True, BLOCK),
+    ("clean_git_clean_dash_dash_force는_허용된다", "git clean --force", False, ALLOW),
+    ("clean_git_clean_fdx는_차단된다", "git clean -fdx", False, BLOCK),
+    ("clean_git_clean_fd는_허용된다", "git clean -fd", False, ALLOW),
     # 항상 차단: 더티 여부와 무관하게 모든 스태시를 지운다.
     ("dirty_git_stash_clear는_항상_차단된다", "git stash clear", True, BLOCK),
     ("clean_git_stash_clear도_항상_차단된다", "git stash clear", False, BLOCK),
@@ -363,3 +372,22 @@ def test_작업트리_상태와_명령_형태에_따라_git_destructive_가드�
     result = _run_hook(GIT_DESTRUCTIVE_GUARD, command, tmp_path)
 
     assert result.returncode == expected
+
+
+def test_clean_git_clean_dash_x_차단_메시지는_stash_u를_권하지_않는다(tmp_path):
+    """무시 파일은 stash -u로 보관되지 않으므로 그 안내를 하지 않는다."""
+    result = _run_hook(GIT_DESTRUCTIVE_GUARD, "git clean -x", tmp_path)
+
+    assert result.returncode == BLOCK
+    assert "git stash push -u" not in result.stderr
+    assert "-n" in result.stderr
+
+
+def test_dirty_git_clean_fdx_차단_메시지는_무시_파일_미보존을_안내한다(tmp_path):
+    """더티 트리에서 stash -u를 권해도 무시 파일은 지워진다는 사실을 함께 알린다."""
+    _make_dirty_repo(tmp_path)
+
+    result = _run_hook(GIT_DESTRUCTIVE_GUARD, "git clean -fdx", tmp_path)
+
+    assert result.returncode == BLOCK
+    assert "ignored files are not saved by git stash -u" in result.stderr
