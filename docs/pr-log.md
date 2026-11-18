@@ -18,46 +18,49 @@ state" 절 참고).
 number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴다 — 제목 앞의
 `feat:`/`fix:`/`docs:` 같은 접두어도 변경 성격을 알려주는 정보이므로 유지한다.
 
-이 문서는 200줄을 넘기지 않는다. 머지된 PR 412건(`gh pr list --state merged --limit 500`,
-2026-11-17 `[실측]`; 2026-08-17에는 289건)이 전부 들어가지 않으므로 최신부터 채우고 줄 수
+이 문서는 200줄을 넘기지 않는다. 머지된 PR 414건(`gh pr list --state merged --limit 500`,
+2026-11-18 `[실측]`; 2026-08-17에는 289건)이 전부 들어가지 않으므로 최신부터 채우고 줄 수
 예산에서 끊는다 — 컷오프는 "재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래
-목록은 PR #419부터 #280까지다(#420은 위 상세 항목). 그보다 오래된 PR은 `gh pr list
+목록은 PR #420부터 #280까지다(#421은 위 상세 항목). 그보다 오래된 PR은 `gh pr list
 --state merged --limit 500 --json number,title` 으로 언제든 다시 조회할 수 있다.
 
 ---
 
 ## 최신 PR
 
-### PR #420 — style: Track 58 — apply the DOS design to all public pages, staff screens excluded
+### PR #421 — fix: Resolve the six front-end residuals left by the DOS UI track (track 59)
 
-**무엇을 바꿨나**: 스태프를 뺀 공개 화면 전체(셸, 공용 컴포넌트, 홈, 행사 목록·달력·상세,
-컬렉션, 내 활동 목록·달력·기록 폼, 마이페이지, 계정 설정, 로그인·가입, 약관, 오류 쪽)를
-DOS 형태로 바꿨다 — 3px 겹선 창, 위 테두리 위의 `[ 제목 ]`, 파란 반전 선택, 반경 0,
-굵기 700은 쪽 h1과 로고뿐, 그림자는 떠 있는 패널의 오프셋 그림자만. 옛 토큰 59개를
-지웠다(`tokens.css` 선언 138 → 79개). 디자인 정본 `docs/FE/design-principles.md`를
-A4에서 DOS로 개정했다. 스태프 경로와 스태프가 함께 쓰는 파일은 변경 0개, 파이썬 변경은
-주석 2줄과 독스트링 1곳, 테스트 추가·삭제 0건. 로컬 검수 1에서 지운 것 4건(홈 히어로
-문구 2개, 푸터 둘째 문장, 외부 링크 `↗`). 커밋 23개, 114 files changed +7,955/−8,324
-`[실측 git diff --shortstat 35dd816f 86d4ef33]`. 머지 완료 2026-11-17T06:56:24Z, merge
-commit `86d4ef33` `[실측 gh]`. 머지한 main 트리는 검증한 브랜치 커밋 `278a26de`와 diff 0
-`[실측 git diff --quiet]`.
+**무엇을 바꿨나**: 트랙 58이 넘긴 공개 화면 잔여 6건(복제 CSS 공용 한 벌, 로딩 중 버튼
+크기 고정, 달력 월 이동 포커스·검색 뒤 제목 건수·하위 탭 `aria-current`, 기록 폼 검증
+실패 표시, 활동 쪽 접힘 폭, 스태프가 만든 카테고리의 공개 점 색·라벨)과 처음 남겼던
+10건을 처리했다. 확장 2(2026-11-18): 홈 '기록 대기' 행 전체 링크, 최근 굿즈 격자(5칸,
+45rem 이하 3칸, 칸 사이 선, 가운데 정렬 — 가로 레일 `hscroll.js`·`hscroll.css` 삭제),
+방문 완료로 표시한 비공개 행사의 방문 기록 허용(`archive.queries.list_user_visit_target_events`).
+같이 고친 것: 비공개 행사를 가리키던 404 링크(홈·활동 목록·활동 달력), 기록장·상태
+목록의 '수정'/'＋ 기록' 판정, 대상 고정 폼의 거절 문구, 게시 판정 `Event.is_published`
+(뷰·서비스 8곳, 스태프 템플릿 7곳), 문서 9개의 파일:줄 인용. 커밋 58개, 147 files
+changed +4,185/−1,058 `[실측 git diff --shortstat e586a661 8fa6a43f]`. 머지 완료
+2026-11-18T09:29:38Z, merge commit `8fa6a43f` `[실측 gh]`. 머지한 main 트리는 브랜치 끝
+`4d746344`와 diff 0 `[실측 git diff --quiet]`.
 
-**왜**: 사용자 지시 2026-11-17 "시안대로 ui 전면 수정. 스태프 화면은 제외." 결정 4건
-"문구는 전부 유지" / "전부 그대로"(움직임) / "시리즈 색 점은 유지" / PR 1개·검수 2회.
-머지 승인 원문 "머지 승인 후 백로그 진행".
+**왜**: 사용자 지시 2026-11-17 "머지 승인 후 백로그 진행", "백로그 남기지 말고 모두 처리",
+2026-11-17 홈 '내 컬렉션' 패널 요청. 결정 7건: "활동 쪽만 900px로" / "지금 위치 유지" /
+"새 카테고리에도 색 점" / "'기록 대기' 목록의 행" / "휴대폰에서는 3개로" / "'기록 대기'
+행만" / "비공개 행사도 기록 허용".
 
-**검증**: `278a26de`에서 `uv run pytest -q -n auto` 4,484 passed / 40.74초, `-m e2e
-tests/e2e` 10 passed / 9.46초, `tests/staff` 581 passed / 30.28초, `ruff check`·`ruff
-format --check`(466파일)·`manage.py check`·`makemigrations --check --dry-run` 실패 0
-`[실측 2026-11-17]`. PR CI 6개 체크 전부 pass `[실측 gh pr checks]`. 브라우저(Playwright,
-커밋 안 함) 147건(로그인 27쪽 × 4폭, 비로그인 7쪽 × 3폭, 일본어 9쪽 × 2폭) 가로 넘침
-0px `[실측 2026-11-17]`. 최종 리뷰 권장 5건 반영 뒤 WED·BIR 재판정은 받지 않았다.
-사용자 로컬 검수 2와 활동 달력 기호(찜 ♥·굿즈 ●)는 명시 답 없이 머지됐다. 넘긴 프런트
-잔여 6건은 `docs/backlog.md` M절.
+**검증**: main `8fa6a43f`에서 `uv run pytest -q -n auto` 4,662 passed / 73.99초, `-m e2e
+tests/e2e` 10 passed / 10.67초 `[실측 2026-11-18]`. 브랜치 `caeedf5e`에서 `ruff check`·
+`ruff format --check`(476파일)·`manage.py check`·`makemigrations --check --dry-run` 실패 0,
+PR CI 6개 체크 pass(`4d746344`) `[실측 2026-11-18]`. 리뷰: WED·BIR Conforms, DAR·SRR·
+Backend TDD Coach 통과, QVL 완료. 스크린리더 낭독·실기기 터치·WebKit 고대비와 운영 DB
+카테고리(런북 §3-22)는 사람 확인 몫으로 남았다. production 반영은 deploy PR #417
+(2026-11-18T09:49:51Z, `0c0ceed8`) `[실측 gh]`.
 
 ## 이전 PR (번호 — 실제 PR 제목)
+- #420 — style: Track 58 — apply the DOS design to all public pages, staff screens excluded
 - #419 — docs: Track 57 — replace the spacing step scale with role tokens, add a definition-location guard
 - #418 — refactor: Track 56 — remove dark mode, keep light only, add mobile bottom tab bar
+- #417 — deploy: main → production
 - #416 — chore(deps): Upgrade soupsieve to 4.1 for two GHSA advisories
 - #415 — perf: Track 17 — DB connection reuse, public calendar range, public cache
 - #414 — deploy: main → production
