@@ -6,9 +6,6 @@
 
 ## 이 문서에 대하여
 
-2026-07-30 전수 검수(11역할 중 7역할 활성) 결과를 근거로 백로그를 처음부터 다시
-작성한 것이다. 이전 백로그는 전부 폐기됐다.
-
 - **폐기**: 시안 기반 백로그 `B1~B29`, 이관 항목 `E1~E8`, 디자인 리뷰 큐
   (`.docs/design-review-queue.md`). 시안을 다시 만들기로 하면서 함께 폐기됐고
   (2026-07-29 사용자 결정), 큐 파일 자체도 존재하지 않는다. **복구하지 마라.**
@@ -16,8 +13,7 @@
   디자인 리뷰 큐가 실제로 그렇게 사라졌다. 살아 있는 백로그는 여기 둔다.
 - **표기**: `[실측]`은 오케스트레이터가 뮤테이션/프로브 왕복으로 직접 잰 항목,
   `[코드]`는 소스 읽기로만 확인한 항목이다. 확신은 증거가 아니므로 구분한다.
-- **2026-08-24 재작성**: 전수 검토(2026-08-24) 및 후속 트랙 1~6 머지를 반영해
-  해결 항목을 압축했다. 시간순 이력은 `docs/pr-log.md`, 교훈 정본은 메모리,
+- **정본 소유**: 시간순 이력은 `docs/pr-log.md`, 교훈 정본은 메모리,
   가드레일 상세는 `docs/BE/`가 소유한다 — 이 문서는 현재 상태 인덱스로만 쓴다.
 
 ## 현재 상태 (신선 실행 기준)
@@ -61,12 +57,12 @@
 | UI 다국어(트랙 43-1·43-2·43-3) | PR #395(2026-10-21)·#396(2026-10-22)·#397(2026-10-23) 머지. 번역 검수는 AI만 했고 원어민 검수는 없다. 이연은 K절 | `docs/BE/i18n.md` · `docs/plan-archive/track-43.md`·`track-43-2.md`·`track-43-3.md` |
 | 행사 콘텐츠 번역(트랙 44-1) | PR #399 머지(2026-10-27). 번역문은 저장만 되고 공개 화면은 바뀌지 않는다. 44-2·44-3·44-4는 **폐기** | `docs/BE/i18n.md` "행사 콘텐츠 번역(트랙 44-1)" 절 · `docs/plan-archive/track-44.md` |
 | 디자인 방향 문서(트랙 50) | PR #408·#409 머지(2026-11-03). 예약 트랙 B~E(51~54)는 **폐기** | `docs/FE/design-principles.md` · `docs/plan-archive/track-50.md` |
-| 상태 문서 검토 잔여(트랙 55) | PR #411 머지(2026-11-12). 남은 공백: `git-commit-style-guard`가 `commit` 앞 전역 `git` 옵션을 인식하지 못함, F5b 일부 성공 일괄 처리의 공지 | `docs/plan-archive/track-55.md` |
+| 상태 문서 검토 잔여(트랙 55) | PR #411 머지(2026-11-12). 남은 공백: `git-commit-style-guard`는 `commit` 앞 `-C`·`-c`는 건너뛰지만 그 밖의 전역 `git` 옵션(예: `--git-dir`)은 인식하지 못함 `[코드 .claude/hooks/git-commit-style-guard.sh:65-68]`, F5b 일부 성공 일괄 처리의 공지 | `docs/plan-archive/track-55.md` |
 | DB 연결 재사용·공개 캐시(트랙 17) | PR #415 머지(2026-11-13). gthread 워커 전환은 사용자 보류 | `docs/operations-runbook.md` §11 · `docs/deploy-runbook.md` §3-20·§3-21 · `docs/plan-archive/track-17.md` |
 | 다크 모드 삭제·모바일 하단 탭 바(트랙 56) | PR #418 머지(2026-11-16) | `docs/FE/design-principles.md` · `docs/FE/mobile-tab-bar.md` · `docs/plan-archive/track-56.md` |
 | 간격 역할 토큰(트랙 57) | PR #419 머지(2026-11-16). 가드 `tests/core/test_role_token_contract.py`. 후속으로 적혀 있던 트랙 B는 폐기 | `docs/FE/design-principles.md` · `docs/plan-archive/track-57.md` |
-| DOS 형태를 공개 화면 전체에 적용(트랙 58) | PR #420 머지(2026-11-17). 스태프 화면 제외. 잔여는 M절 | `docs/FE/design-principles.md` · `docs/plan-archive/track-58.md` |
-| 트랙 58 잔여(트랙 59) | PR #421 머지(2026-11-18). 처리 내역은 M절 | `docs/FE/loading-feedback.md` · `docs/BE/category-vocabulary.md` · `docs/plan-archive/track-59.md` |
+| DOS 형태를 공개 화면 전체에 적용(트랙 58) | PR #420 머지(2026-11-17). 스태프 화면 제외. 잔여는 해결된 항목 표 M행 | `docs/FE/design-principles.md` · `docs/plan-archive/track-58.md` |
+| 트랙 58 잔여(트랙 59) | PR #421 머지(2026-11-18). 처리 내역은 해결된 항목 표 M행 | `docs/FE/loading-feedback.md` · `docs/BE/category-vocabulary.md` · `docs/plan-archive/track-59.md` |
 
 production 반영: deploy PR #417 머지(2026-11-18, production `0c0ceed8`)까지 `[실측 gh]`.
 
@@ -81,82 +77,14 @@ production 반영: deploy PR #417 머지(2026-11-18, production `0c0ceed8`)까�
 - 트랙 37: `prune_operational_data` 스케줄러 실제 등록(`docs/operations-runbook.md` §7.2).
 - 트랙 33: 운영 DB에 남은 해외 소스 수동 확인(로컬 2건은 비활성화 완료).
 - 트랙 50: `docs/FE/design-principles.md` ⑬-14 성격 단어 확인.
+- 트랙 45: `core/client_error_views.py` IP 보조 스로틀 착수는 사용자 결정(미결).
+- 트랙 45: `EmailAddress` 중복 감사의 운영 DB 실행은 사용자 몫(미완,
+  `docs/operations-runbook.md` §10).
+- 트랙 59: 실제 스크린리더 낭독은 사람이 확인해야 한다(사용자 확인 필요).
 
 핵심 루프(발견 → 상태 → 방문 기록 → 굿즈 → 의도)는 URL·뷰·서비스 계층에서
 끊긴 곳 없이 연결되어 있다. 교환(trade) 도메인은 존재하지 않으며, 이는 게이트
 승인 전 착수 금지 원칙이 지켜지고 있다는 뜻이다.
-
----
-
-## A. 안전망 복구
-
-2026-07-30 전수 실측으로 확인한 거짓 초록 5건. 전부 해결됐다.
-
-### A1 [실측] 도메인 경계 가드 — **해결됨(2026-07-31, 브랜치 `test/boundary-guard-glob`·`test/core-guard-glob`)**
-
-손유지 파라미터 목록(사각지대 22건)을 파일시스템 유도 스캔으로 전환하고,
-금지 앱 집합을 Django 앱 레지스트리 파생으로 바꿨다. `core` 가드는 기본 거부 +
-허용 목록 2개로 사각지대 15개를 추가로 닫았다. 뮤테이션 26+10+4종 전부 Red.
-검증: `uv run pytest -q` → 2024 passed. 정본: `docs/BE/contract-guards.md`.
-
-### A2 [실측] 서명 규약 가드가 `core.analytics`를 보지 않는다 — **해결됨(2026-08-01)**
-
-`SERVICE_MODULES`에 편입, 공개 함수 4개를 예외 없이 키워드 전용으로 변경.
-검증: `uv run pytest -q` → 2145 passed, 뮤테이션 4종 전부 Red.
-
-### A3 [실측] 보유/구함/교환 3축 술어 중복 — **해결됨(2026-08-01, PR #277)**
-
-`archive/querysets.py`의 `CollectionItemQuerySet`(owned/not_owned/tradeable/
-not_tradeable) + 모델 프로퍼티로 호출처 11곳 통합, 긍정·부정형 일치 가드 신설.
-검증: `uv run pytest -q` → 2146 passed, 마이그레이션 드리프트 없음, 뮤테이션
-7종 전부 Red.
-
-### A4 [실측] 마크업 리터럴 단언 — **해결됨(2026-07-30)**
-
-전수 실측 결과 실제 회귀 위험은 서술한 41곳이 아니라 컬렉션 빈 상태 1곳뿐이었다
-(`aria-label` 앵커로 보강). 공허 단언 2건 삭제.
-
-### A5 [실측] 500 페이지 테스트 무하중 — **해결됨(커밋 `2db756e` 2026-07-30, 잔여 위험 PR #278)**
-
-몽키패치 대상을 실행 경로가 닿는 지점으로 정정하고, `_boom` 실제 호출 여부를
-단언해 "패치가 실행 경로를 벗어나도 조용히 통과"하는 경로를 차단했다.
-
----
-
-## B. 사용자 데이터 안전
-
-### B1 [코드] 직접 등록 수정 기능 부재 — **해결됨(2026-07-30, 브랜치 `feat/personal-place-detail-edit`)**
-
-`PersonalEntryDetailView`에 PATCH 추가(PUT은 부분 필드 비움 위험으로 제외) +
-`client_token` 구조적 배제, 상세·수정 라우트 신설. 검증: `uv run pytest -q` →
-2045 passed. 정본: `docs/FE/personal-place-detail-edit.md`.
-
-### B2 [실측] 소셜 가입 경로에는 약관 동의 필드가 아예 없다 — **해결됨(트랙 11)**
-
-- 해소: `accounts/forms.py`에 `TermsAgreementFormMixin`(필드·오류 메시지·
-  `custom_signup`의 `terms_agreed_at` 기록 공용화)을 신설하고 `SignupForm`·
-  `SocialSignupForm` 둘 다 이를 물려받는다. `config/settings.py`에
-  `SOCIALACCOUNT_FORMS = {"signup": "accounts.forms.SocialSignupForm"}` +
-  `SOCIALACCOUNT_AUTO_SIGNUP = False`를 등록해 신규 소셜 유저가 동의 폼을
-  건너뛰지 못하게 막았다. `templates/socialaccount/signup.html`에 일반
-  가입과 동일한 동의 체크박스 블록을 추가했다(더는 `{{ form.as_p }}` 단독
-  렌더가 아니다). 계약·도메인 테스트 4개(`tests/auth/
-  test_social_signup_terms_agreement.py` 2개, `tests/auth/
-  test_social_login.py`의 `SOCIALACCOUNT_FORMS`/`AUTO_SIGNUP` 가드,
-  `tests/auth/test_auth_rate_limit.py`의 소셜 가입 429 가드)가 회귀를 지킨다.
-  검증: `[실측]` `uv run pytest -q` → **2308 passed**.
-- 트랙 중 발견·즉시 수정: 소셜 가입 엔드포인트(`/accounts/3rdparty/signup/`)에
-  allauth 기본 레이트리밋이 없었다(로컬 가입 뷰와 달리 `rate_limit`
-  데코레이터 미적용). `accounts/views.py`에 `SocialSignupView`(같은 `signup`
-  한도를 거는 서브클래스)를 신설하고 `config/urls.py`에서 allauth include
-  이전에 선등록(`url name`은 `socialaccount_signup` 유지)했다. Red(302)→
-  Green(429) 왕복으로 검증.
-- 활성화 완료(2026-08-26): 사용자가 Google Cloud Console OAuth 클라이언트
-  생성 + Render 환경변수(`GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`) 설정을
-  마쳤고, 실 OAuth 왕복 수동 검증도 정상 동작을 확인했다(사용자 보고).
-  B2는 코드·운영 모두 종결.
-- 발견 경위: 인증 화면 리스킨(PR #266) 보안 검토 중. 리스킨이 만든 것이
-  아니라 선재 갭이었다.
 
 ---
 
@@ -220,120 +148,17 @@ accounts.User"*) `accounts.User` 속성과의 조인이 불가능하다 — **�
 리텐션** 같은 전통적 코호트 표는 설계상 만들 수 없다. 또 탈퇴로 계정이 삭제돼도
 이벤트 행은 남아 과거 행동이 계속 집계된다. 둘 다 의도된 트레이드오프다.
 
-### C2 [문서] 소개(`/about/`) 페이지 신설 — 트랙 28 후속 — **폐기(2026-11-18 사용자 결정, 트랙 50의 E단계와 함께)**
-
-미착수인 채로 폐기했다(사용자 지시 2026-11-18 "열린 트랙 폐기. 작업 혼동 가능성.").
-아래는 2026-09-10 착수 승인 당시 기록이며 실행 지시가 아니다.
-
-**범위 요약**: 공개 URL·뷰·템플릿 신설, `web/sitemaps.py`의 `StaticPageSitemap`
-화이트리스트에 추가, `robots_meta` 블록의 noindex 해제, 본문 문안에 한글
-브랜드명 '타쿠라이프' 2~3회 자연 노출.
-
-**근거**: 트랙 28(PR #356)은 `<title>`·`<meta description>`·`WebSite` JSON-LD·
-푸터 태그라인까지만 다뤘다. 본문 페이지 텍스트가 브랜드 검색 매칭의 가장 강한
-신호라는 PSO 판정(`[문서] 2026-09-10`)에 따라 별도 트랙으로 분리했다.
-
-**착수 조건**: 계획서(`prompt_plan.md`) 작성 → 6역할 사전 검토 → 프론트 이중
-리뷰 게이트(WED·BIR) 통과.
-
-### C3 사이트 로그 4단계 — 보존 정리 — **해소(트랙 37, PR #378 머지 완료)**
-
-사이트 로그 제안(2026-09-17)의 4단계. `core.ErrorGroup`(트랙 36)은 출처별
-250행 상한으로 절대량은 막지만 오래된 행을 시간 기준으로 지우는 보존 정책은
-없었다. 트랙 37에서 `prune_operational_data` 명령과 대시보드 저장소 패널로
-해소했다 — 상세는 위 표의 "운영 데이터 보존 정리(트랙 37)" 행과
-`docs/BE/data-retention.md` 참고.
-
----
-
-## D. 사용자 흐름
-
-### D1 — **완료**
-
-형제 파셜(`_archive_results_record.html`)이 이미 갖고 있던 CTA 3분기를 그대로
-이식(백엔드 변경 0줄). 브라우저 실측: `?subject=event:90`·`?subject=personal:187`
-둘 다 HTTP 200.
-
-### D2 — **완료(2026-08-01, 스태프 2개는 PR #275)**
-
-필터 칩 8곳 전부 `aria-current="true"` + 가시 텍스트를 포함한 `aria-label`
-(+"적용됨")을 갖는다. Chromium이 `aria-current` 자체는 접근성 트리에 노출하지
-않는 것을 재확인해 `aria-label` 병행이 필수임을 확정했다.
-
-### D3 — **완료**
-
-스태프 콘솔 POST 폼 중 위험도 높은 6개(생성/토글/삭제확정)에 opt-in
-`data-submit-guard` 신설. Slow 3G 900ms 연속 클릭 실측으로 판별력 확보(가드
-있음 1건 vs 없음 3건). 리디자인(PR #275) 통과 후 회귀 가드로 보호됨.
-
-### D4 [실측] 서비스 전체 공식 포스터 제거와 행사 에디토리얼 전환 — **해결됨(2026-08-15, PR #282)**
-
-공식 포스터 운영 전면 종료: `Event.poster_image`·업로드 API·포스터 품질 경고
-제거, 목이미지 2,869개(14M) `[실측]` 영구 삭제(사용자 사진은 무손상). 행사
-탐색을 작품명·행사명 중심 에디토리얼 인덱스로 전환. 검증: 2144 passed, FE
-이중 게이트(WED·BIR) `Conforms`. 정본: `docs/FE/event-typography-editorial.md`.
-
----
-
-## E. 구조
-
-### E1 [코드] `core/views.py` 분할 — **해결됨(PR #251)**
-
-`core/views/` 패키지(7모듈: `_helpers`·`events`·`archive`·`activity`·
-`collection`·`account`·`system`)로 전환. 169라우트 완전 일치 + 옮긴 함수 50개
-AST 문자 단위 대조 + 매 단계 2026 passed 3중 증명. `config/urls.py` 무변경.
-
-### E2 [실측] `archive/queries.py` 분할 — **해결됨(2026-07-31, PR #274)**
-
-1012 → 653줄. 활동 달력 읽기 모델(366줄)을 `archive/activity_calendar_queries.py`로
-분리(재수출 없음), 소비자 3곳 임포트 경로 갱신.
-
-### E3 [코드] 아카이브 쿼리 테스트 분할 — **해결됨(2026-07-31, PR #274)**
-
-1566줄 79개 테스트를 검증 대상 프로덕션 함수 기준 7개 파일로 재편. AST 대조
-79 → 79, 본문 바이트 단위 동일.
-
-### E4 [실측] 주석 언어·길이 규칙 — **해결됨(2026-07-31, PR #269~#271)**
-
-314파일 전면 한국어화(주석 순 −3,757줄, 영어 산문 0). 재발 방지 가드
-`tests/core/test_comment_language_guard.py` 신설(프로덕션 위반 우선 보고).
-
-### E5 [실측] 조건을 대신 설명하는 주석 6곳 — **해결됨(2026-07-31, PR #272)**
-
-6곳 전부 술어에 이름 부여(중복 pk 검사는 `core/query_params.py`의
-`is_safe_pk_string`으로 통합), "왜 이 검사가 있는가" 근거성 주석은 유지.
-뮤테이션 6종 전부 하중 확인.
-
-### E6 [실측] `core/views/` → `web/views/` 프레젠테이션 계층 분리 — **해결됨(2026-08-06, PR #281)**
-
-새 앱 `web` 신설, `core` 팬아웃 21→0·앱 간 순환 임포트 3쌍→0(완전 DAG). 검증:
-2158 passed, 뷰 7파일 R100 바이트 동일, 라우트 175건 순회 순서 무변경, 뮤테이션
-M1~M11 전부 Red. 이관 중 발견한 이연 항목 4건(템플릿 `core→web` 리네임,
-`web/views/` 내부 방향 가드 부재 등)은 착수하지 않았고 정본에 등재돼 있다.
-정본: `docs/BE/web-views-package.md`, `docs/BE/contract-guards.md`.
-
 ---
 
 ## F. 운영·위생
 
 | # | 항목 | 근거 | 비고 |
 |---|---|---|---|
-| F1 | ~~worktree 2개 삭제~~ (해소됨) | `[실측 2026-08-01]` `git worktree list` → 작업 트리 1개뿐. 언젠가 정리됐다 | 해소 |
-| F2 | ~~런북 줄번호 드리프트~~ (해소됨) | 참조를 `core/urls.py`, `core/views/system.py`의 `health()`로 줄번호 없이 재작성 | 해소 |
-| F3 | ~~CI 컨테이너 기동 스모크 부재~~ (**해결됨 2026-08-01**) | `docker` 잡이 postgres 서비스를 붙이고 이미지를 실제로 띄워 `/api/health/` 200 폴링, `migrate` 미스킵 | 실검증은 CI 전용(로컬 Docker 없음) |
-| F4 | ~~`project-status.md` 2334줄 / 사실과 다른 7곳~~ (**해결됨 2026-08-01**) | `docs/pr-log.md`(추적됨)로 이관, `.docs/project-status.md` 삭제, `AGENTS.md`·`CLAUDE.md`에 갱신 의무 명문화 | 해결 |
-| F5 | ~~스로틀 미적용 엔드포인트 4개~~ (**해결됨 2026-08-01**) | 생성 엔드포인트 4개 `ScopedRateThrottle`(목록형 60/min, 폼형 30/min), GET은 무제한. **2026-09-14 추가**: `CollectionItemDetailView`의 PATCH·DELETE(GET 제외)에 `collection_item_update` 30/minute 추가(트랙 32 T1) | 해결 |
-| F6 | ~~SSRF DNS 리바인딩 TOCTOU~~ (**해결됨 2026-08-20**) | `validate_fetch_url`이 검증 IP를 반환하고 `fetch_html`이 그 IP로 직접 연결(IP 핀닝). 실수집 TLS 200 실측 | 해결 |
 | F7 | 실사용 데이터 이후 스키마 변경 가이드 부재 | `archive/migrations/0011~0013,0019` 비-concurrent | 두 번째 배포부터 유효 |
-| F8 | ~~드래프트 상태 라벨 하드코딩~~ (**해결됨 2026-08-01, PR #278**) | 정본 `drafts/labels.py`의 `REVIEW_STATUS_LABELS`, 템플릿/JS 모두 서버값 참조(표시 6곳) | 해결 |
-| F9 | ~~`staff_event_toggle_publish`에 `select_for_update` 없음~~ (**해결됨 2026-08-01**) | `atomic()` 안에서 잠그고 재조회, `CaptureQueriesContext`로 `FOR UPDATE` 단언 | 해결 |
-| F10 | ~~`staff_event_edit`의 lost-update 여지~~ (**해결됨 2026-08-25, 브랜치 `fix/media-overwrite-lowrisk-sweep`**) | POST 저장 경로가 `atomic()` 안에서 `get_object_or_404(Event.objects.select_for_update(), pk=pk)`로 재조회(F9와 동일 패턴), `CaptureQueriesContext`로 `FOR UPDATE` 계약 테스트 + `select_for_update` 제거 뮤테이션 Red 확인 | 해결. lost-update 완전 해법(폼 버전 스탬프)은 이연 — 트리거: 스태프 동시 편집 실관측 |
-| F11 | ~~OpenAPI 스키마·문서 엔드포인트 부재~~ (**해결됨 2026-08-16**) | `/api/schema/`·`/api/docs/`(drf-spectacular + Swagger UI sidecar), 계약 테스트 7건(러너 경계 비노출 `test_공개_스키마에_러너_경계_경로가_노출되지_않는다` 포함 `[실측 rg '^def test_' tests/core/test_openapi_schema.py]`). `extend_schema_view` 키 오기입 28곳 회귀 가드 포함 | 정본 `docs/BE/openapi-schema.md` |
+| F10 | `staff_event_edit`의 lost-update 여지(해결 부분은 "해결된 항목" 표 F10) | — | lost-update 완전 해법(폼 버전 스탬프)은 이연 — 트리거: 스태프 동시 편집 실관측 |
 | F12 | `/api/schema/` 스로틀·캐시 없음 + CI 스모크가 `/api/docs/`를 안 본다 | `docs/BE/openapi-schema.md` "미적용(의도)" | 실트래픽 개시 전 유보. 트리거 시 ①캐시/스로틀 적용 ②CI 도커 스모크(F3)에 `/api/docs/` curl 200 추가 |
-| F13 | ~~대시보드 표 저강조 색 위계 미실현~~ (**해결됨 2026-08-25, 브랜치 `fix/media-overwrite-lowrisk-sweep`**) | `.dash-table`로 색 상속 전환(`static/css/staff/pages/dashboard.css`), 라이트·다크 모두 computed 실측으로 `.dash-cell-dim`·`-faint`·`-wrap` 전부 토큰 일치 확인, WED·BIR `Conforms`×2. BIR 전수 확인이 찾은 동일 패턴 2건(`sources.css` `.src-cell-error` 위험색 소실 포함, `audit_log.css` dim/faint)도 같은 트랙에서 같은 방식으로 즉시 해소 — 라이트·다크 computed 실측 일치. `static/css/staff/` 내 이 패턴은 전수 재확인 결과 소멸(무해 판정: drafts·events·home_categories는 td color 미지정) | 해결 |
 | F14 | 폰트 폴백 메트릭 튜닝(size-adjust 계열) | 트랙 13에서 데스크탑 콜드 CLS 0.02(Good) 수용, 0.01 이하로 낮추려면 폴백 서체 메트릭 오버라이드+시각 회귀 필요(2026-08-29) | 이연 |
 | F15 | og:image 브랜드 카드(1200×630 PNG) 제작·발행 | 트랙 16(2026-08-30)이 og:image를 의도적으로 미발행(래스터 자산 부재, favicon.svg 유용 금지, `test_페이지_응답은_og_image_태그를_포함하지_않는다` 핀) | 이연. 자산 제작 시 M4 핀 교체와 함께 발행 |
-| F16 | `.dockerignore`가 `.claude/`를 제외하지 않아 런타임 이미지에 하네스 파일(훅·에이전트 정의·settings)이 들어간다 | `[코드]` `Dockerfile:22` `COPY . .`, `.dockerignore` 제외 목록에 `.claude` 0건(트랙 18 DOR 발견, 2026-09-03) | 해소 `[실측 gh 2026-10-20]` — 트랙 41 커밋 `92a7cdda`(`.dockerignore`에 `.claude`), PR #389 머지 2026-10-06 |
 | F17 | CI `e2e` 잡의 `continue-on-error: true` 해제 시점 | `[문서]` 트랙 27 DOR 제안 기준 — main 연속 10회 `[문서 DOR 제안]` 비결함 그린 뒤 필수 게이트로 전환 | 미해결 사용자 결정. 롤백은 잡에 `if: false` 한 줄 |
 | F18 | 스태프 셸이 CSRF 쿠키를 새로 발급하지 않는다 | `[실측 2026-09-10 e2e E7]` `templates/staff/base_staff.html`은 `{% csrf_token %}` 0건이라 일반 셸(`templates/core/partials/_topbar.html:37` 로그아웃 폼)과 달리 `csrftoken` 쿠키를 심지 않는다. 로그인 폼을 거친 사용자는 쿠키가 있지만, 쿠키가 지워진 상태로 `/staff/events/`에 바로 들어오면 일괄 비공개·인라인 액션 fetch가 403("세션이 만료되었거나 보안 토큰…") | 후보 수정 = 스태프 목록 뷰에 `ensure_csrf_cookie` 또는 셸에 `{% csrf_token %}`. 트랙 27은 운영 코드 무변경 범위라 테스트 픽스처 `login_as`가 쿠키를 심는 것으로 대응했다 |
 | F19 | 홈 스냅샷이 방문 기록 수를 활성 조건에 넣지 않는다 | `[코드 web/views/events.py:237, e2e E4에서 발견]` 방문 기록만 1건인 사용자에게도 홈 `snapshot_active`가 "아직 기록이 없어요"를 보여준다 | 제품 판단 필요(방문 기록 수를 활성 조건에 넣을지). 트랙 27은 E4의 Then을 방문 기록 목록으로 옮겨 대응했다 |
@@ -346,24 +171,6 @@ M1~M11 전부 Red. 이관 중 발견한 이연 항목 4건(템플릿 `core→web
 ---
 
 ## G. 전수 검토 잔여 (2026-08-24)
-
-### G1 [코드] 미디어 스토리지 저장소 계층 프라이버시 미보증 — **해결됨(2026-08-25, 브랜치 `fix/media-overwrite-lowrisk-sweep`)**
-
-외부 발견 재검증으로 **덮어쓰기 축이 본선이었음을 정정**한다: `file_overwrite`
-기본값 `True` + `upload_to`가 원본 파일명을 보존 = 사용자 간 사진 무단 대체
-`[실측: S3Storage 인스턴스화]`. 조치: `archive/models.py`의 `upload_to`를
-UUID 콜러블 3필드(`personal_entry_image_upload_to`·
-`visit_record_photo_image_upload_to`·`collection_item_image_upload_to`)로
-교체(+ 마이그레이션 0025, DB no-op) + `load_media_storage_config`의
-`OPTIONS`에 `file_overwrite: False`·`default_acl: None`(R2 ACL 미지원 —
-`None`=헤더 미전송)·`querystring_auth: True`를 명시 + 런북 버킷 확인 절차
-추가(`docs/deploy-runbook.md` §3 체크리스트 ⑦-2). 함께 발견된 **캐시 컬링
-결함**(`DatabaseCache` 기본 `MAX_ENTRIES=300`에 allauth 레이트리밋 4종 + DRF
-스로틀 8스코프 + 계정 삭제 잠금 카운터가 공유 `[실측]`)은 `MAX_ENTRIES=10000`
-명시로 해소(`config/settings.py` `CACHES`). 검증: `uv run pytest -q` →
-2294 passed, 뮤테이션 4종(`file_overwrite`·`MAX_ENTRIES`·`select_for_update`·
-스로틀 가드 제거) 전부 표적 Red. 배포 시점 버킷 퍼블릭 액세스 확인은
-`docs/deploy-runbook.md` §3 체크리스트 ⑦-2로 이관됐다.
 
 ### G2 [코드] gunicorn 워커 타임아웃 미설정 — **해결(트랙 46, 2026-10-28)**
 
@@ -389,20 +196,6 @@ UUID 콜러블 3필드(`personal_entry_image_upload_to`·
 
 현재 보증은 코드 경로 부재 + 단위 모킹 2겹뿐. `pytest-socket` 등 신규 dev
 패키지가 필요해 **uv 정책상 사용자 명시 승인 대기.**
-
-### G4 [코드] 스태프 탐색 요청 뷰 스로틀 부재 — **해결됨(2026-08-25, 브랜치 `fix/media-overwrite-lowrisk-sweep`)**
-
-`staff/views/discovery.py`에 사용자당 60초 고정 창 10회 캐시 스로틀을
-추가했다(`_discovery_request_throttled`). `cache.incr()`는 쓰지 않는다 —
-`DatabaseCache`가 `incr()`를 오버라이드하지 않아 창이 계속 연장되는 결함을
-피하려 `accounts/services.py`의 마감 시각-in-레코드 패턴을 그대로 따랐다.
-검증: web 테스트(`test_사용자당_분당_10회를_초과한_탐색_요청은_거부되고_새_실행이_생성되지_않는다`)
-+ 스로틀 가드 제거 뮤테이션 Red 확인.
-
-### G5 [실측 2026-08-24] `templates/core/archive/visit_edit.html` 필수 범례 누락 — **해결됨(2026-08-25, 브랜치 `fix/media-overwrite-lowrisk-sweep`)**
-
-`visit_create` 패턴을 그대로 미러링한 범례를 추가했다. 320px·1120px 실측으로
-겹침 없음을 확인했고, WED·BIR 모두 `Conforms`.
 
 ### G6 트랙 30(키워드 탐색) 이연 항목(2026-09-12)
 
@@ -450,20 +243,17 @@ H6도 같은 규칙으로 PSO P2를 따른다(2026-09-06 정정). 2026-09-06 외
 
 | # | 우선순위 | 항목 | 근거 | 분류·판정 |
 |---|---|---|---|---|
-| H1 | **P0** | 계정 운영 화면(`is_staff` 부여/해제·`is_active` 전환·탈퇴 유예 확인). H14(계정 정지)를 흡수 | `[실측 2026-09-05]` `accounts.User` admin 미등록(`admin.site._registry` 11종, `accounts/admin.py` 없음), `staff/` 내 User 참조 0건(rg). 유일 경로 `manage.py shell`. 런북 §5 정정 완료 | 결함. 권고 = 두 플래그만 다루는 좁은 화면 + 감사 기록. **착수 전 계약 3건 확정 필요(2026-09-06 외부 검토 반영)**: ① 조작 주체 — `staff_console_required`는 `is_staff`만 검사(`staff/permissions.py:22`)라 그대로 재사용하면 검수 권한 스태프도 타 계정의 권한을 바꾸고 정지시킬 수 있다(`templates/staff/_console_shell.html:67`의 "전체 권한/검수 권한"은 표시일 뿐). superuser 한정 또는 별도 관문, 자기 계정·마지막 관리자 보호를 정한다. ② 감사 대상 — `StaffActionLog`는 `target_draft`·`target_event`만 가진다(`staff/models.py:32-41`). 액션 이름만 추가하면 변경된 계정을 추적 못 하므로 계정 대상 필드와 변경·기록의 원자성이 필요. ③ 이 화면으로 첫 비-superuser 스태프가 생기면 RBAC 보류(아래)의 재검토 트리거가 켜진다. User 전체 admin 등록은 계속 기각하되 근거 정정: `[실측 2026-09-06]` allauth 65.18.0 admin은 이미 `EmailAddress`(user·email·verified·primary)·`SocialAccount`(user·provider·uid·extra_data)를 편집 노출하므로 "피해 반경 1개→전체 확대"는 성립하지 않는다. 근거 = 업무에 불필요한 계정 편집 기능의 추가 노출 최소화. 인접: prompt_plan.md 트랙 12(비밀번호 set 경로, 계획 승인·미착수). **구현 완료(2026-09-07, 트랙 19, PR #340 머지)** — superuser 전용 `/staff/accounts/`. 정본 `docs/BE/staff-account-operations.md`. 사용자 결정(2026-09-07): ★3 액션 빈도 제한·step-up은 미구현 유지 수용(이연). ★2 확정(2026-09-07): superuser는 shell로만 생성·변경, 콘솔 제외 유지 |
-| H2 | P1 | 이벤트 일괄 선택·일괄 게시 내리기, 목록 인라인 토글/검증, 정렬·기간·카테고리 필터 — **H2 전체 완료(2026-09-12)** | 만료 1건 내리기 = 목록→수정→토글 3화면 `[코드]` `staff/views/events.py:404-443`·`templates/staff/events/edit.html:137-144`; 목록 checkbox 0건 `[실측 rg templates/staff/events/list.html]`; 운영 기준 주 1회 정리 `docs/event-operations-criteria.md:50-51`; 선례 `templates/core/drafts/list.html:50-60` bulkbar | 제품 권고. 계약(2026-09-06 반영): 일괄 내리기는 "비공개로 설정"이지 토글이 아니다 — 현재 토글은 읽은 상태를 반전하므로(`staff/views/events.py:413-418`) 내리기 성공 뒤 응답만 유실되면 재시도가 다시 게시한다. **H2 분할(2026-09-09, PSO 판정)**: 트랙 24 일괄 비공개 설정 **완료(PR #350)**, 트랙 25 인라인 단건 비공개/재게시/검증 **완료(PR #353)**, 트랙 26 정렬·기간·카테고리 필터 **완료(2026-09-12, PR #364)** — H2 세 트랙 모두 완료로 종결. 정본 `docs/BE/staff-event-publish-actions.md`. **미해결 제품 결정(H2 종결과 무관하게 유지)**: 재검증("검증 완료")의 운영 절차가 `docs/event-operations-criteria.md`에 없음 — 사용자 결정 필요 |
-| H3 | P1 | 사용자 제보 드래프트 구분 표시 + 제보 폼 인라인 고지 | `web/promotion.py:73-81` `source_name` 미전달, `EventDraft`에 origin 필드 없음(`drafts/models.py`). 제보 폼 `templates/core/archive/personal_detail.html:115`에 메모 공개 전환 안내 없음 | 제품 권고. 구분 표시에 `source_name`을 쓰지 않는다(2026-09-06 반영): 승인 시 이벤트로 복사되고(`drafts/services.py:270`) 소비자 상세에 "N 제공"으로 노출된다(`templates/core/events/detail.html:33-34`). 스태프 수집분은 `DraftSource.name`이 들어가고(`drafts/candidate_intake.py:62`) 제보분은 빈 값이라, 운영용 유입 경로 필드를 따로 둔다. 고지 문안은 메모가 `summary`로 매핑돼(`web/promotion.py:80`) 검수 후 공개 요약에 쓰인다는 내용. 고지 자체는 개인정보처리방침 §3(`templates/core/legal/privacy.html:53-56`)·약관(`templates/core/legal/terms.html:76`)에 있어 SRR Medium을 Low(문구 권고)로 정정. **구현 완료(2026-09-09, 트랙 23, PR #348)** — 정본 `docs/BE/draft-review-lifecycle.md` (l). 고지는 제보 폼 두 진입점(상세·목록)에 적용 |
-| H4 | P1 | 검수 SLA 지표(최장 대기·평균 처리·반려율·사유 분포) | 대시보드는 pending 건수만 `staff/views/__init__.py:153-185` | 제품 권고. 재오픈 후 기산점은 트랙 21에서 확정(`docs/BE/draft-review-lifecycle.md` (c)). **구현 완료(2026-09-08, 트랙 22, PR #346)** — 정본 `docs/BE/draft-review-lifecycle.md` (i)~(k). 사유 분포는 H10 뒤로 이연, 증감 없음(★2) |
-| H5 | P1 | 반려 드래프트 재오픈 | 승인·반려 모두 pending 전용 `drafts/services.py:195-204`, `source_url` unique `drafts/models.py:15` → 반려는 영구 폐기, 복구는 shell | 결함(빈도 낮음). **구현 완료(2026-09-08, 트랙 21, PR #345)** — 정본 `docs/BE/draft-review-lifecycle.md`. 사용자 결정 ★2: H4 기산점 = `reopened_at or created_at` |
+| H1 | **P0** | 계정 운영 화면(잔여, 해결 내역은 "해결된 항목" 표 H1) | — | 사용자 결정(2026-09-07): ★3 액션 빈도 제한·step-up은 미구현 유지 수용(이연). ★2 확정(2026-09-07): superuser는 shell로만 생성·변경, 콘솔 제외 유지 |
+| H2 | P1 | 이벤트 일괄 선택·일괄 게시 등(잔여, 해결 내역은 "해결된 항목" 표 H2) | — | 미해결 제품 결정(H2 종결과 무관하게 유지): 재검증("검증 완료")의 운영 절차가 `docs/event-operations-criteria.md`에 없음 — 사용자 결정 필요 |
+| H4 | P1 | 검수 SLA 지표(잔여, 해결 내역은 "해결된 항목" 표 H4) | — | 사유 분포는 H10 뒤로 이연, 증감 없음(★2) |
 | H6 | P2 | 수집 소스 생성·수정·활성 토글 콘솔 편입 | admin 이탈 안내 `staff/views/__init__.py:332` `[실측 rg 2026-11-12]`(트랙 19 import 추가로 225→237, 2026-09-07 재확인), `drafts/admin.py` 빈 ModelAdmin | 제품 권고. PSO P2(admin으로 가능) / WED P1(콘솔 밖 3번째 화면 강제). 2026-09-06 정정: 이전 표기 P1은 WED 의견으로 상향한 것이라 "우선순위는 PSO 판정" 규칙과 충돌해 PSO P2로 되돌림. WED 이견은 기록만. **사용자 결정(2026-09-07): P2 유지** — 운영자가 소스를 주 1회 이상 만진다는 사실이 확인되면 올리고, 착수 시 `superuser_console_required` 재사용(admin은 superuser 전용인데 콘솔 소스 화면은 is_staff 전체가 보므로) |
-| H7 | P1 | 감사 범위 확대(드래프트 생성·필드 수정) | `/api/event-drafts/` `drafts/views.py:147-161`은 `StaffActionLog` 밖. v1 의도된 경계 | **사용자 결정(2026-09-07): 선택지 2 승인** — 액션 2종(`draft_create`·`draft_update`) 사실 기록, 전후 스냅샷은 H12(b) 보존 정책 결정까지 보류. 트랙 20으로 착수(SRR Medium / PSO 이연 이견은 기록). **구현 완료(2026-09-07, 트랙 20, PR #343)** — 정본 `docs/BE/staff-audit-log.md`(admin API 뷰는 `staff/views/draft_api.py`로 이동, 근거의 `drafts/views.py:147-161`은 이동 전 위치) |
+| H7 | P1 | 감사 범위 확대(잔여, 해결 내역은 "해결된 항목" 표 H7) | — | 전후 스냅샷은 H12(b) 보존 정책 결정까지 보류 |
 | H8 | P1 | 알림(대기 누적·소스 전부 오류·러너 오프라인) | `send_mail`·`EmailMessage`·`mail_admins` 0건 `[실측 rg staff/ drafts/]` | 오프라인 즉시 표시는 트랙 39(offline 엔드포인트·대시보드 폴링)로 해소. 알림 메일은 이연 유지. DOR: 비용 정책 안 대안 없음(무료 웹훅은 외부 계정 액션 = 인프라 최후순위) |
 | H9 | P2 | 소스별 수집 이력·실패율, 실패 후보 재시도/무시 액션 | `DraftSource` 상태 필드 2개뿐 `drafts/models.py:102-103` `[실측 rg 2026-10-27]`(정정 전 표기 56-66은 필드 줄을 빗나감, 2026-09-06 재측정) | 제품 권고 |
 | H10 | P2 | 중복 경고(같은 행사 다른 URL), 반려 사유 큐 노출·템플릿 | 중복 판정은 URL 완전일치만 | 제품 권고 |
 | H11 | P2 | 이벤트 검색에 공식 URL·ID, 변경 이력, 수정 화면 소비자 링크·반응 지표, 검증 만료 예고 | 검색 3열 `events/queries.py:244-246` `[실측 rg 2026-10-27]`, `Event.updated_at` 0건 `[실측 rg events/models.py]` | 제품 권고 |
 | H12 | P2 | 수집 진행 표시, 감사 로그 보존 정책 | `staff/management/` 없음 `[실측 ls]`. 진행 표시는 현재도 제출 가드가 버튼 비활성+`.is-loading`을 적용(`templates/staff/dashboard.html:115` `data-submit-guard`, `static/js/shared/submit_guard.js`(옛 이름 `staff_submit_guard.js`) `[실측 rg 2026-10-27]`) | 권고. 2026-09-06 분리: (a) 진행 표시 — **트랙 39로 해소**(heartbeat phase·detail + 대시보드 5초/20초 폴링 + 러너 터미널 INFO 로그, 정본 `docs/BE/draft-source-agent-discovery.md` "트랙 39" 절). G2 타임아웃 조정은 원인을 공유할 뿐 진행 표시와는 별개다. (b) 감사 보존 정책 — 독립 과제, 유지. G2 해결(트랙 46) |
 | H13 | P2 | 대시보드 소스 패널 「전체 보기」 링크, 이벤트 읽기 전용 미리보기 | `templates/staff/dashboard.html:91-103`(감사 패널은 `:276`에 링크 있음 `[실측 rg 2026-10-27]`) | 제품 권고 |
-| H14 | — | 계정 정지 UI → **H1에 흡수**(2026-09-06, `is_active` 전환과 같은 범위) | 승격 스로틀 `20/day` `config/settings.py:614` `[실측 rg 2026-10-27]`는 분산 계정 남용은 못 막는다 | H1 설계에서 다룬다. 별도 항목 아님. H1과 함께 완료 |
 
 **보류·이연(기록된 사용자 결정, 재제안 아님)**: RBAC(2026-07-03 보류, 트리거는
 첫 비-superuser 스태프), 취소·연기 상태(prompt_plan.md Deferred), 일괄
@@ -483,7 +273,9 @@ grep — 정렬·기간·카테고리 필터가 이 필드를 인덱스 없이 �
 Deviates, Low·비차단 — `docs/BE/staff-event-publish-actions.md` (r) 참고).
 
 **기각(과설계)**: 담당자 배정·검수 락(`select_for_update`로 이미 안전), 전역
-검색(검색 화면 3개), User 전체 admin 등록(SRR).
+검색(검색 화면 3개), User 전체 admin 등록(SRR — 근거는 업무에 불필요한 계정 편집
+기능의 추가 노출 최소화. allauth 65.18.0 admin은 이미 `EmailAddress`·`SocialAccount`를
+편집 노출하므로 "피해 반경 1개→전체 확대"는 근거가 아니다 `[실측 2026-09-06]`).
 
 **미실측(착수 전 재측정)**: 프로덕션 활성 소스 수, `StaffActionLog` 행 수, 종료
 게시 이벤트 수.
@@ -504,7 +296,7 @@ dash-metric 카드 재사용(집계만 백엔드). 구현됨(트랙 22, 왼쪽 �
 `.docs/FE/2026-09-06-staff-backoffice-frontend-review.md`(git-ignored).
 
 - H1 — 사이드바 "계정" 그룹을 기록 그룹 뒤(`templates/staff/_console_shell.html:50-59`)에
-  superuser에게만 렌더(링크 숨김은 UX일 뿐 경계가 아님, 계약①). 목록 = 검색
+  superuser에게만 렌더(링크 숨김은 UX일 뿐 경계가 아님, `docs/BE/staff-account-operations.md` (a)). 목록 = 검색
   (`staff/search.py:15` `SEARCHABLE_URL_NAMES` 추가)·표(`templates/staff/events/list.html:32-73`)·
   페이저(`templates/core/partials/_pager.html`)·빈 상태 2분기(`templates/staff/audit_log/list.html:60-64`).
   상세 = rail-card 토글 폼 2개(`templates/staff/events/edit.html:125-146`); 자기 계정·
@@ -614,9 +406,7 @@ F10 MFA(2026-07-01 `auth-hardening` 결정).
 
 정본은 `docs/BE/i18n.md`와 `docs/plan-archive/track-43.md` §7이다. 트리거가 없는 항목은 착수하지 않는다.
 
-- **43-3 컬렉션·활동·마이페이지** — PR #397로 완료(2026-10-23, main `8ca4c9f5`; 아카이브 날짜 서식·영어 리터럴 통일 포함).
 - **원문 제목 "세션 유지"** — `templates/account/delete_account.html:36`. 바로 아래 본문이 "즉시 로그아웃"이라 의미가 충돌한다(AI 검수자 3명 일치). 한국어 제품 문구 결정이라 사용자 확인 후 수정한다.
-- **`record-action-link` 접근 가능한 이름** — 해소(2026-11-18): 홈 '기록 대기' 행은 `aria-labelledby`(자기 id + 같은 행 제목 id, 새 번역 문자열 없음)로 행마다 이름이 다르다. 템플릿에서 이 클래스를 쓰는 곳은 `templates/core/partials/_home_collection_snapshot.html:77` 하나뿐이다 `[실측 rg 2026-11-18]`. 내 활동 목록에는 이 클래스가 없다.
 - **`static/js/shared/status.js:40` 죽은 `interested` 라벨** — 쓰이는 템플릿이 없다 `[코드 BIR 확인]`. 정리는 트리거 없음.
 - **AI 검수 후 보류한 용어 제안** — 낮은 확신이라 반영하지 않았다. 목록은 `docs/BE/i18n.md` "AI 검수 기록". 트리거: 원어민 검수 도입.
 - **스태프가 새로 만든 카테고리의 번역과 행·상세·칩 표시** — 새 카테고리도 자동으로 en·ja·zh-hans가 등록돼야 한다는 사용자 결정(2026-10-22)에 따라 트랙 44-4가 맡기로 했으나 44-4는 폐기됐다(2026-11-18, `Category.label_translations` 초안은 `docs/plan-archive/track-44.md`). 슬러그가 그대로 나오던 행·상세·칩(`web/views/_helpers.py:67, :161` `[실측 rg 2026-10-27, 그 시점의 줄]`)은 트랙 59에서 DB 라벨 조회로 바뀌었다(`core.categories.category_display_labels` `[코드]`, 가드레일 `docs/BE/category-vocabulary.md`). 번역 등록은 하지 않으므로 새 카테고리는 한국어 라벨로 남는다.
@@ -629,7 +419,6 @@ F10 MFA(2026-07-01 `auth-hardening` 결정).
 - **번역 큐 영구 실패 20건 초과** — 서버 큐는 가장 오래된 20건만 돌려주므로(`events/translation_queue.py::PENDING_LIMIT`), 시도 한도(`TRANSLATION_MAX_ATTEMPTS = 2`)에 도달한 이벤트가 20건을 넘으면 그보다 새 이벤트가 처리되지 않을 수 있다. 트리거: 실제 발생(44-3은 폐기).
 - **단위 풀어쓰기 숫자 격리** — "5만원"→"KRW 50,000" 같은 단위 풀어쓰기는 지어낸 숫자로 격리된다(`number_invented`). 알려진 한계, 트리거 없음.
 - **`manual` 플래그는 이벤트 단위 하나** — 언어별로 쪼갤지는 번역 관리 화면을 다시 계획할 때 사용자 재확인한다(44-3은 폐기).
-- **시각 의존 테스트 불안정** — `tests/drafts/test_discovery_runs.py::test_runner_is_online…` 3케이스가 파라미터 `timezone.now()`를 수집 시점에 한 번 계산해 하트비트 신선도 기준 120초(`[코드 drafts/discovery_runs.py:16]` `HEARTBEAT_FRESH_SECONDS`)를 넘겨 실행되면 실패하고, `tests/drafts/test_agent_drafts.py`의 모듈 상수 `_TODAY`는 자정을 넘기면 어긋난다. 전체 회귀가 152.46초 `[실측 2026-10-27 main e38a0db9]`(2026-10-26에는 128.91초)로 120초 기준을 넘었다 — 트리거 충족. 트리거: 다음에 이 테스트를 손댈 때 또는 CI 시간이 120초를 넘을 때(충족, 다음 백엔드 트랙에서 먼저 처리). → **해소(2026-10-27, 트랙 45)**: 파라미터를 초 단위 오프셋으로 바꿔 실행 시점에 `timezone.now()`를 계산하고, `test_agent_drafts.py`의 `_TODAY` 상수는 호출 시점 함수로 교체. 수집 후 121초 대기 플러그인으로 수정 전 2 failed → 수정 후 3 passed `[실측 2026-10-27]`.
 - **번역 의미 품질 사람 검수·표본 평가 없음** — 사용자 결정(AI 검증만). 트리거: 원어민 검수 도입.
 - **장식 유니코드가 판정은 통과하고 원형 그대로 저장될 수 있음** — 문자 판정·ASCII 우회·한글 잔존 검사는 NFKC로 접은 문자열에서 돌고 저장은 NFC라서, 수학 알파뉴메릭 기호(예: U+1D400 대역) 같은 장식 유니코드가 통과할 수 있다(XSS 아님, 표시 품질·눈속임 문제). 트리거: 번역문 화면 노출을 다시 계획할 때(44-2는 폐기).
 - **러너 배치가 통신·기타 예외에서 매번 같은 자리에서 멈출 수 있음** — `translate_pending_batch`는 4xx(429 제외)·`AdapterOutputError`·`ValueError`만 이벤트별 시도 횟수에 반영한다(전수검사 2026-10-26로 HTTP 상태 오류 분류는 해소). 5xx·429·`OSError` 등 통신·기타 예외는 의도적으로 전파되어 배치가 중단되고 횟수가 오르지 않으므로, 개별 이벤트 탓인 `OSError`가 나면 같은 자리에서 반복 중단될 수 있다. 트리거: 실제 발생 시.
@@ -653,80 +442,66 @@ F10 MFA(2026-07-01 `auth-hardening` 결정).
 - **푸터 언어 선택기 시각 다듬기** — 현재 브라우저 기본 select·버튼 모양이다. 사양이 "새 CSS 없음"이어서 그대로 두었다.
 - **전체 페이지 캐시 도입 시** `Vary: Accept-Language`와 언어 쿠키를 캐시 키에 넣는다.
 
-### K1 테스트 병렬 실행(pytest-xdist) 도입 — 해소(트랙 49, PR #407, 2026-10-30)
-
-- 근거: 직렬 149.07초 → `-n 4` 53.87초, 4,284 passed 동일 `[실측 2026-10-28, 8코어]`. 단일 병목은 없다(`docs/BE/test-suite-speed.md` §7).
-- 정책: `AGENTS.md` "Package And Command Policy" — 새 test-convenience 패키지는 승인된 계획과 사용자 명시 승인이 필요하다.
-- 도입 시 변경: `uv add --group dev pytest-xdist`; `pytest.ini` `addopts`에 `-n auto` 또는 CI 잡만 `-n 4`; 워커별 테스트 DB 생성 권한 확인; `tests/e2e`는 직렬 유지.
-- 트리거: 사용자 승인 — 2026-10-30 사용자 지시 "2번 진행"으로 충족.
-- 결과: dev 그룹 `pytest-xdist>=3.8,<4.0` 추가, CI `test` 잡과 전체 회귀
-  명령(`CLAUDE.md`)만 `-n auto`(`pytest.ini` `addopts`·표적 실행·e2e는
-  직렬 유지). 직렬 134.77초 → `-n auto` 41.72~44.14초(연속 3회)
-  `[실측 2026-10-30]`. CI 호스트 러너 "Run test suite" 단계 82초 → 55초,
-  `test` 잡 전체 116초 → 102초(run 41070183412) `[실측 gh 2026-10-30]`.
-  정본은 `docs/BE/test-suite-speed.md` §8.
-
 ---
 
-## L. 문서 전수검사(2026-10-27) 발견 — 코드·운영 잔여 → 트랙 45로 처리(2026-10-27)
+## 해결된 항목
 
-문서를 코드와 대조하다 나온 코드·운영 쪽 항목이다. 사용자 지시("모든 백로그 수정")로 같은 날 트랙 45(`docs/plan-archive/track-45.md`)에서 처리했다. 남은 것은 아래 "사용자 몫" 2건뿐이다.
+완전히 닫힌 항목의 한 줄 기록이다. 지운 본문과 검증 결과는 `docs/pr-log.md`와
+git 이력에 있다(트랙 60 직전 원문: `git show 2a8f783a:docs/backlog.md`). 표 안의
+수는 그 원문 본문의 값이고, 출처 태그(`[실측]`·`[코드]`)도 원문 항목을 따른다
+`[문서 git show 2a8f783a:docs/backlog.md]`.
 
-- 활동 달력 `#selected-date` `scroll-margin-top` — **해소**: `static/css/pages/archive_calendar.css` `.date-detail-section`에 추가. 날짜 선택(클릭·키보드) 후 top 85px / 헤더 하단 65px / 포커스 이동 true `[실측 Chrome DevTools 500×800 2026-10-27]`. WED·BIR 사후 verdict는 `docs/plan-archive/track-45.md` §Evidence.
-- `static/css/staff/base.css` 중복 블록 — **해소**: 두 번째 복사본 18줄 삭제, `.page`·`[hidden]` 각 1건 잔존 `[실측 rg]`, 대시보드 `.page` 14px·`[hidden]` 17개 display none `[실측]`.
-- `_home_event_calendar.html` 주석 — **해소**: '모두 보기' 링크 목적지 구분 + 아젠다 상한 "5건"을 코드 상수 3건(`HOME_CALENDAR_AGENDA_LIMIT`)으로 정정.
-- `core/client_error_views.py` 주석 — **해소**: 스로틀이 아직 IP를 쓰지 않는다는 사실로 교체. **IP 보조 스로틀 착수는 사용자 결정(미결)**.
-- `static/css/pages/auth.css` 폴백 블록 — **해소**: 27줄 삭제. 유일한 매치였던 닉네임 힌트(`.auth-field-hint`)는 전용 규칙이 덮어써 margin-top 4px 전후 동일 `[실측]`.
-- 폰트 preload 교집합 — **재측정 완료**: 3페이지 × ko/en/ja/zh-hans 12조합 전부 13개 사용·경고 0건, ja/zh-hans는 CSS 경로로 10~11개 추가 로드(언어 전용이라 preload 제외) → `FONT_PRELOAD_CHUNKS` 유지 `[실측 2026-10-27]`. 상세 `docs/FE/font-delivery.md` F5.
-- `EmailAddress` 중복 감사 — 절차를 `docs/operations-runbook.md` §10에 기록, 로컬 DB 12행·중복 0건 `[실측]`. **운영 DB 실행은 사용자 몫(미완)**.
-- 트리거 충족 2건 — **해소**: `staff/views/events.py` 809→731줄(`StaffEventBulkUnpublishView`·`MAX_BULK_EVENT_IDS`를 `events_actions.py`로 이동 `[실측 wc -l]`); 시각 의존 테스트 2곳 수정(K절 참조, 121초 대기 플러그인 Red 2 failed → Green 3 passed `[실측]`).
-- `prompt_plan.md` 트랙 44 머리말 — **해소**: "44-1 PR #399 머지 완료(2026-10-27)"로 갱신(사용자 지시).
-- 어댑터 2개의 `/tmp/claude-progress` 진행 파일 규약 — **삭제**(사용자 지시, 소비자 없음).
-
-## M. DOS UI(트랙 58) 보류 — 프런트 잔여 (2026-11-17)
-
-트랙 58 중 발견했지만 main부터 있던 동작이고 작지 않아 넘긴 항목이다. 사용자에게 보고됐고, 사용자가 머지 승인과 함께 진행을 지시했다(2026-11-17 "머지 승인 후 백로그 진행"). 트랙 59에서 처리했다(PR #421, 2026-11-18 머지).
-
-- **해소(글자 채움색 투명 방식, 버튼 392개 어긋남 0 `[실측 2026-11-17 Playwright]`)** 저장·삭제 요청 중 로딩 표시가 버튼마다 다르다 — 공용 `button.is-loading { font-size: 0 }`(`static/css/objects/interaction.css:56-58` `[코드, 해소 전 줄]`)를 쪽 규칙이 이겨 글자 위에 스피너가 겹치는 버튼과, 글자가 접히며 폭이 줄어드는 버튼이 섞여 있다. 예: `/archive/` 기록 삭제 버튼 42px → 18px `[실측 2026-11-17 Playwright]`. 가드레일 `docs/FE/loading-feedback.md` "스피너는 버튼 폭을 바꾸면 안 된다"와 어긋난다.
-- **해소(`static/js/components/form_feedback.js`)** 폼 검증 접근성 — 컬렉션·개인 기록·방문 기록 폼에서 JS가 검증 실패 입력에 `aria-invalid`를 세팅하지 않는다(`rg -n "aria-invalid" static/js` 0건 `[실측 2026-11-17]`). 오류 문장이 화면 밖에 생겨도 스크롤·포커스 이동이 없다.
-- **해소(사이드바 접힘 56.25rem 하나로, 사용자 결정 "활동 쪽만 900px로"; 53.75rem은 활동 쪽 탭 라벨·hero·하단 고정 막대에, 60rem은 행사 상세 하단 고정 막대에 남음)** 2열 → 1열 접힘 폭이 쪽마다 다르다 — 기록 목록 53.75rem(`static/css/pages/archive.css:846`), 폼 45rem(`archive_personal_create.css:356`), 컬렉션 목록 56.25rem(`archive_collection.css:267`), 행사 목록 56.24rem(`event_list.css:252`), 행사 상세 60rem(`event_detail.css:369`) `[코드, 해소 전 줄]` `[실측 rg -n "max-width: (53.75|45|56.25|60)rem" static/css/pages 2026-11-17]`.
-- **해소(`components/text.css`·`components/cards.css` 한 벌씩)** 복제된 CSS — `.sr-only` 숨김 규칙이 쪽 CSS 8개 파일에 1벌씩 8곳 복제돼 있다(`archive_visit_edit`·`archive_visit_create`·`archive_personal_create`·`archive_collection`·`auth`·`account_settings`·`archive_personal_detail`·`archive_visit_detail`; `rg -n "\.sr-only" static/css/pages` 9줄 중 1줄은 주석 `[실측 2026-11-17]`). 공용 한 벌로 올리면 누락이 막힌다(트랙 58에서 컬렉션 폼 "(필수)" 노출로 한 번 발생). 시리즈 `gi-0`~`gi-12` 색 대응 13행이 `archive_collection.css`·`archive_collection_detail.css`·`archive_visit_detail.css` 3개 파일에 복제돼 있다 `[실측 rg -c "^\S.*\.gi-[0-9]+ \{" static/css/pages 2026-11-17, 파일당 13]`.
-- **해소(세 가지 모두)** 키보드·보조기기 — 활동 달력·행사 달력에서 월 이동 뒤 키보드 포커스가 문서 처음으로 돌아간다(전체 페이지 이동). 기록 목록 결과 창 제목의 건수가 실시간 검색 뒤 갱신되지 않는다. 하위 탭에 `aria-current`가 없다.
-- **해소(사용자 결정 "새 카테고리에도 색 점", `data-palette-slot`)** 스태프가 만든 카테고리 색이 공개 화면에 안 쓰인다 — 7개 슬러그 점만 색이 있다. `--cat-slot-*` 24개 선언(12슬롯 × 2, `static/css/tokens.css:61-84`)은 공개 CSS 소비처 0곳이고 계약 테스트 `tests/core/test_category_token_contract.py` 때문에 남아 있다 `[실측 2026-11-17]`. 사용자 결정 "새 카테고리에도 색 점"으로 살렸다.
-
-트랙 59 완료 보고 때 남겼던 10건은 사용자 지시("백로그 남기지 말고 모두 처리하라고", 2026-11-17)로 같은 PR에서 전부 처리했다. 남은 열린 항목은 없다.
-
-1. **해소(`core.categories.category_display_labels`)** 내 활동·컬렉션 행(`_subject_view`)과 스태프 화면 4곳의 새 카테고리 라벨이 슬러그로 나오던 것. 같이 고친 것: 방문 목록 카테고리 칩이 슬러그를 내고 그 칩을 누르면 0건이 되던 것 `[실측 pytest XS-1~XS-15, .docs/BE 기록]`.
-2. **해소(`category_label_lang` + `{% category_lang_attr %}`)** 비한국어 화면에서 새 카테고리 한글 라벨에 `lang="ko"`가 없던 것. en·ja·zh-hans 8쪽에서 한글 라벨 요소 32개 모두 `ko` 범위, 속성 유무에 따른 모양 차이 0곳 `[실측 2026-11-17 Playwright]`.
-3. **해소** 소비자 JS 2개가 한국어 리터럴 가드 목록 밖이던 것. 목록은 소비자 JS 27개 전부를 덮는다 `[코드 tests/core/test_ui_korean_literal_guard.py]`.
-4. **해소(로딩 중 버튼은 비활성 모양을 입지 않는다)** 로딩 중 버튼 색이 계열마다 다르던 것. 버튼 392개 중 380개가 로딩 전후 같은 색이고, 나머지 12개는 로딩 경로가 없는 홈 대표 행사 교체 단추에 측정이 `disabled`를 강제로 건 값이다. 스피너 대비 최솟값 7.16:1 `[실측 2026-11-17 Playwright]`.
-5. **해소(`form_feedback.js`의 재낭독)** 같은 오류 문장을 연달아 낼 때 보조가 없던 것. 접힌 동안 접근성 트리에서 문장 노드 0개, 복원 뒤 1개 `[실측 CDP]`. 실제 스크린리더 낭독은 사람이 확인해야 한다(사용자 확인 필요).
-6. **해소** `hscroll.js`의 폭 조건을 CSS `(max-width: 45rem)`의 정확한 여집합(`not all and (max-width: 45rem)`)으로 맞췄다. 앞서 쓴 `(min-width: 45.01rem)`은 720.00~720.16px에 틈이 있었다 `[계산 45.01 × 16px = 720.16px, 분수 폭은 측정하지 못함]` (이 파일은 2026-11-18 최근 굿즈 격자 전환으로 삭제됐다).
-7. **해소** 방문 등록 쪽의 쓰이지 않던 `#visit-global-error` 노드를 지웠다(높이 0px, 폼 위치 전후 동일 `[실측]`).
-8. **해소** 로딩 중 `aria-busy="true"`가 `.is-loading`과 같이 붙고 떨어진다. 스태프와 공유하는 `api.js`·`submit_guard.js`에도 적용되며 스태프 화면의 모양 변화는 0px `[실측]`.
-9. **해소(`data-feedback-pair`)** 짝 컨트롤을 고치면 서버 400으로 달린 표시까지 풀리던 것.
-10. **해소(측정)** 내 활동 하단 고정 막대의 표시 상태 전환 폭: 859px·860px에서 보이고 861px에서 숨는다 `[실측 2026-11-17 Playwright, 활동 목록 5쪽]`.
-
-확장하면서 새로 찾아 같은 PR에서 고친 것 `[실측 2026-11-17]`:
-
-- 한글 조합 입력이 끝나도 실시간 검색이 나가지 않던 것(Chromium의 이벤트 순서), 뒤로가기 직후 대기 중이던 검색이 실행되던 것, 같은 검색어가 다시 요청되고 방문 기록에 쌓이던 것, 조합 중 지우기 링크가 숨어 있던 것.
-- 고대비(forced-colors)에서 로딩 글자가 스피너와 겹쳐 보이던 것.
-- 반전된 행 안의 켜지지 않은 찜 버튼이 파랑 위 검정으로 남던 것.
-- 스태프 로딩 스피너의 중심이 2px 어긋나 있던 것.
-- 결과 영역 밖 링크(상태·분류 칩, 컬렉션 탭·보기 전환·유형·작품 필터)가 실시간 검색어를 따라가지 않던 것: 정렬 메뉴와 `data-search-links` 표식이 붙은 묶음의 `q`를 매 교체 뒤 맞춘다(활동 쪽 보기 전환·구역 탭은 서버가 `q`를 빼므로 제외). 이미 보이는 검색어로 Enter를 눌러도 같은 주소가 방문 기록에 쌓이던 것: 같은 주소면 `pushState`를 하지 않는다.
-- 활동 쪽 필터 칩 중 "전체" 칩만 현재 정렬을 잃던 것(`/archive/`·`/archive/statuses/`·`/archive/visits/`, 다른 칩은 정렬을 실었다 `[실측 2026-11-17 Playwright]`): "전체" 칩도 다른 칩과 같은 꼬리(`search_suffix`)를 써서 검색어와 정렬을 유지한다. 테스트 `tests/archive/test_archive_search.py`의 `test_전체_칩은_필터만_풀고_현재_검색어와_정렬을_유지한다`.
-- 실시간 검색에서 Enter가 인코딩만 다른 같은 주소(칩의 `filter=cat:…`, 공백이 든 작품 필터)를 방문 기록에 또 쌓던 것: 쿼리를 정규화해 비교하고, 페이저로 닿는 `page=1`은 `page` 없음과 같은 1쪽으로 본다. 뒤로가기로 `?page=N` 주소에 돌아왔을 때 1쪽 결과가 뜨던 것: 뒤로·앞으로가기는 주소의 `page`를 유지해 다시 받는다 `[실측 2026-11-17 Playwright Chromium·WebKit·Firefox, 수정 전 재현·수정 후 해소]`.
-
-2026-11-18 확장 2(사용자 요청 홈 '내 컬렉션' 패널)에서 한 일과, 그 과정에서 찾아 같은 PR에서 고친 것 `[실측 2026-11-18]`. 남은 열린 항목은 없다.
-
-- 홈 '기록 대기' 행의 어디를 눌러도 대상 상세로 간다(게시된 행사는 행사 상세, 직접 등록 항목은 항목 상세). 최근 굿즈의 사진·이름은 컬렉션 상세로 간다. 최근 굿즈는 가로 레일에서 격자(5칸, 45rem 이하 3칸, 칸 사이와 바깥 선, 카드 가운데 정렬)로 바뀌었다. 사용자 결정 "'기록 대기' 행만"에 따라 다른 행 목록은 그대로다. 측정 3개 브라우저 × 폭 9개에서 가로 넘침 0px `[실측 Playwright]`. 가드레일 `docs/FE/design-principles.md`.
-- 비공개가 된 행사를 가리키던 공개 상세 링크(404): 홈·활동 목록 3곳(`web/views/_helpers.py` `_subject_view`), 활동 달력 3경로(`archive/activity_calendar_queries.py:157, :165` `[코드]`). 게시된 행사에만 상세 주소를 싣는다.
-- 사용자 결정 "비공개 행사도 기록 허용": 방문 완료로 표시한 행사는 비공개가 돼도 방문 기록을 남길 수 있다. 규칙은 `archive/queries.py:283` `list_user_visit_target_events` 한 곳, 저장 시점 방어는 `archive/services.py:649` `[코드]`. 거절 응답은 없는 행사와 같다. 가드레일 `docs/BE/visit-completion-concurrency.md`.
-- 기록장·상태 목록의 방문 완료 행: 메모 없이 저장한 방문 기록이 있어도 '＋ 기록'이 다시 나오고 '수정'이 없던 것(main부터 있던 동작). 판정을 방문 기록 유무로 바꿨다 `[실측 pytest Red 5케이스 → Green]`.
-- 대상이 고정된 기록 폼에서 서버가 대상을 거절하면 서버 원문(`event: 유효하지 않은 pk …`)이 보이던 것: 기존 번역 문장 "항목을 찾을 수 없습니다."를 보여 주고 오류 칸으로 포커스를 보낸다(`static/js/pages/visit_create.js:298-300` `[코드]`, 3개 브라우저 × 3조합 `[실측 Playwright]`).
-- 홈 '기록 대기' 제목·장소의 `lang="ko"` 누락, '기록' 링크의 이름이 행마다 같던 것(K절), 제목 링크 포커스 링이 말줄임 상자에 잘리던 것(잘림 4px → 0px `[실측 Playwright]`), 행 사이 1px 선이 눌리지 않던 것, 굿즈 이름이 낱말 중간에서 끊기던 것.
-- 게시 판정 비교가 흩어져 있던 것: `Event.is_published` 속성 하나로 모았다(뷰·서비스 8곳, 스태프 템플릿 7곳 `[코드]`). 스태프 화면 7쪽의 HTML은 치환 전후 요청 시각 줄 1줄 외에 같다 `[실측 2026-11-18]`.
-- 이 브랜치가 줄을 밀어 낡게 만든 문서의 파일:줄 인용을 문서 9개에서 다시 쟀다 `[실측 스크립트 대조]`. 날짜가 박힌 과거 기록(`docs/BE/security-review-2026-09-27.md`)과 이 문서의 닫힌 과거 항목 속 인용은 그 시점 값으로 둔다.
+| ID | 내용 | 해결 | 정본 |
+|---|---|---|---|
+| A1 | 도메인 경계 가드(사각지대 22건 스캔 전환, core 가드 기본 거부) | 브랜치 `test/boundary-guard-glob`·`test/core-guard-glob`, 2026-07-31 | `docs/BE/contract-guards.md` |
+| A2 | 서명 규약 가드가 `core.analytics` 사각지대를 놓치던 것 | 2026-08-01 | `docs/BE/contract-guards.md` |
+| A3 | 보유/구함/교환 3축 술어 중복 | PR #277, 2026-08-01 | — |
+| A4 | 마크업 리터럴 단언 공허화(실제 위험은 1곳뿐) | 2026-07-30 | — |
+| A5 | 500 페이지 테스트 무하중(몽키패치가 실행 경로를 벗어남) | 커밋 `2db756e`, 2026-07-30(잔여 위험 PR #278) | — |
+| B1 | 직접 등록 수정 기능 부재(PATCH 신설) | 브랜치 `feat/personal-place-detail-edit`, 2026-07-30 | `docs/FE/personal-place-detail-edit.md` |
+| B2 | 소셜 가입 경로에 약관 동의 필드가 없던 것 | 트랙 11, 활성화 완료 2026-08-26 | — |
+| C3 | 사이트 로그 4단계(보존 정리) | 트랙 37, PR #378 | `docs/BE/data-retention.md` |
+| D1 | 기록 결과 화면 CTA 3분기 누락 | 완료(백엔드 변경 0줄) | — |
+| D2 | 필터 칩 접근 가능한 이름 누락 | 완료 2026-08-01(스태프 2개는 PR #275) | — |
+| D3 | 위험도 높은 스태프 POST 폼의 제출 중복 방지 부재 | 완료(리디자인 PR #275) | — |
+| D4 | 서비스 전체 공식 포스터 제거·행사 에디토리얼 전환 | PR #282, 2026-08-15 | `docs/FE/event-typography-editorial.md` |
+| E1 | `core/views.py` 분할 | PR #251 | — |
+| E2 | `archive/queries.py` 분할 | PR #274, 2026-07-31 | — |
+| E3 | 아카이브 쿼리 테스트 파일 분할 | PR #274, 2026-07-31 | — |
+| E4 | 주석 언어·길이 규칙(전면 한국어화) | PR #269~#271, 2026-07-31 | — |
+| E5 | 조건을 대신 설명하는 주석 6곳 | PR #272, 2026-07-31 | — |
+| E6 | `core/views/` → `web/views/` 프레젠테이션 계층 분리(core 팬아웃 21→0, 앱 간 순환 임포트 3쌍→0, 2158 passed, 뷰 7파일 R100 바이트 동일, 라우트 175건 순회 순서 무변경, 뮤테이션 M1~M11 전부 Red). 이관 중 발견한 이연 항목 4건(템플릿 `core→web` 리네임, `web/views/` 내부 방향 가드 부재 등)은 착수하지 않았고 정본에 등재돼 있다. | PR #281, 2026-08-06 | `docs/BE/web-views-package.md`, `docs/BE/contract-guards.md` |
+| G1 | 미디어 스토리지 저장소 계층 프라이버시 미보증(덮어쓰기) | 브랜치 `fix/media-overwrite-lowrisk-sweep`, 2026-08-25 | `docs/deploy-runbook.md` §3 체크리스트 ⑦-2 |
+| G4 | 스태프 탐색 요청 뷰 스로틀 부재 | 브랜치 `fix/media-overwrite-lowrisk-sweep`, 2026-08-25 | `docs/BE/draft-source-agent-discovery.md` |
+| G5 | `visit_edit.html` 필수 범례 누락 | 브랜치 `fix/media-overwrite-lowrisk-sweep`, 2026-08-25 | — |
+| F1 | worktree 2개 삭제 | 해소 확인 2026-08-01(`git worktree list` → 작업 트리 1개 `[실측]`) | — |
+| F2 | 런북 줄번호 드리프트 | 해소됨(날짜 불명) | — |
+| F3 | CI 컨테이너 기동 스모크 부재 | 2026-08-01 | — |
+| F4 | `project-status.md` 드리프트·사실 오류 | 2026-08-01 | `docs/pr-log.md` |
+| F5 | 스로틀 미적용 생성 엔드포인트 4개 | 2026-08-01(+2026-09-14 트랙 32 추가) | — |
+| F6 | SSRF DNS 리바인딩 TOCTOU | 2026-08-20 | — |
+| F8 | 드래프트 상태 라벨 하드코딩 | PR #278, 2026-08-01 | — |
+| F9 | `staff_event_toggle_publish`에 `select_for_update` 없음 | 2026-08-01 | — |
+| F10 | `staff_event_edit`의 lost-update 여지 — POST 저장 경로가 `atomic()` 안에서 `get_object_or_404(Event.objects.select_for_update(), pk=pk)`로 재조회(F9와 같은 패턴), `CaptureQueriesContext`로 `FOR UPDATE` 계약 테스트 | 브랜치 `fix/media-overwrite-lowrisk-sweep`, 2026-08-25 | — |
+| F11 | OpenAPI 스키마·문서 엔드포인트 부재 | 2026-08-16 | `docs/BE/openapi-schema.md` |
+| F13 | 대시보드 표 저강조 색 위계 미실현 | 브랜치 `fix/media-overwrite-lowrisk-sweep`, 2026-08-25 | — |
+| F16 | `.dockerignore`가 `.claude/`를 제외하지 않던 것 | 트랙 41 커밋 `92a7cdda`, PR #389, 2026-10-06 | — |
+| H1 | 계정 운영 화면(`is_staff` 부여/해제·`is_active` 전환·탈퇴 유예 확인), H14(계정 정지) 흡수 — superuser 전용 `/staff/accounts/` | 트랙 19, PR #340, 2026-09-07 | `docs/BE/staff-account-operations.md` |
+| H2 | 이벤트 일괄 선택·일괄 게시 내리기, 목록 인라인 토글/검증, 정렬·기간·카테고리 필터 — 트랙 24(PR #350)·트랙 25(PR #353)·트랙 26(PR #364) | 2026-09-12 | `docs/BE/staff-event-publish-actions.md` |
+| H3 | 사용자 제보 드래프트 구분 표시 + 제보 폼 인라인 고지 | 트랙 23, PR #348, 2026-09-09 | `docs/BE/draft-review-lifecycle.md` (l) |
+| H4 | 검수 SLA 지표(최장 대기·평균 처리·반려율) | 트랙 22, PR #346, 2026-09-08 | `docs/BE/draft-review-lifecycle.md` (i)~(k) |
+| H5 | 반려 드래프트 재오픈 | 트랙 21, PR #345, 2026-09-08 | `docs/BE/draft-review-lifecycle.md` |
+| H7 | 감사 범위 확대(드래프트 생성·필드 수정, 액션 2종 사실 기록) | 트랙 20, PR #343, 2026-09-07 | `docs/BE/staff-audit-log.md` |
+| H14 | 계정 정지 UI | H1에 흡수, 2026-09-06 | — |
+| K1 | 테스트 병렬 실행(pytest-xdist) 도입 — 직렬 134.77초 → `-n auto` 41.72~44.14초(연속 3회), CI "Run test suite" 82초 → 55초, `test` 잡 전체 116초 → 102초 | 트랙 49, PR #407, 2026-10-30 | `docs/BE/test-suite-speed.md` §8 |
+| K(43-3) | UI 다국어 — 컬렉션·활동·마이페이지 | PR #397, 2026-10-23 | `docs/BE/i18n.md` |
+| K(record-action-link) | 홈 '기록 대기' 행 링크 접근 가능한 이름 — `aria-labelledby`로 행마다 이름이 다름 | 2026-11-18 | `docs/BE/i18n.md` |
+| K(시각 의존 테스트) | `test_discovery_runs.py`·`test_agent_drafts.py`의 시각 의존 실패 — 파라미터를 초 단위 오프셋/호출 시점 함수로 교체 | 트랙 45, 2026-10-27 | `docs/BE/test-suite-speed.md` §6 |
+| L | 문서 전수검사(2026-10-27) 발견 — 코드·운영 잔여(활동 달력 scroll-margin-top, `static/css/staff/base.css` 중복 제거, 홈 달력 주석 정정, `client_error_views.py` 주석 교체, `auth.css` 폴백 삭제, 폰트 preload 재측정, 트리거 충족 2건, `prompt_plan.md` 트랙 44 머리말 갱신, 어댑터 진행 파일 규약 삭제). 사용자 몫 2건은 "사용자 확인 대기"에 있다 | 트랙 45, 2026-10-27 | `docs/plan-archive/track-45.md` |
+| M(잔여 6건) | 트랙 58 보류분 6건 — 로딩 글자 채움색 투명 방식, 폼 검증 접근성(`aria-invalid`), 사이드바 접힘 폭 56.25rem 통일, `.sr-only`·`gi-*` 공용 CSS, 키보드·보조기기 3건, 새 카테고리 색 점(`data-palette-slot`) | 트랙 59, PR #421, 2026-11-18 | `docs/FE/loading-feedback.md`, `docs/FE/design-principles.md`, `docs/BE/category-vocabulary.md` |
+| M(완료 보고 10건) | 트랙 59 완료 보고 당시 남겼던 10건 — 새 카테고리 라벨 슬러그 노출, 비한국어 `lang="ko"`, 소비자 JS 한국어 리터럴 가드 포함, 로딩 중 버튼 색 통일, 오류 문장 재낭독, `hscroll.js` 폭 조건 정합, `#visit-global-error` 삭제, `aria-busy` 동기화, `data-feedback-pair`, 내 활동 하단 고정 막대 전환 폭 | 트랙 59, PR #421, 2026-11-18 | `docs/plan-archive/track-59.md`(`#visit-global-error`·`data-feedback-pair` 상세는 `git show 2a8f783a:docs/backlog.md` M절) |
+| M(확장) | 확장 중 발견·처리 — 한글 조합 입력 중 실시간 검색·뒤로가기·중복 적재, 고대비 로딩 겹침, 반전 행 찜 버튼 대비, 스태프 로딩 스피너 중심, 결과 영역 밖 링크 검색어 미동기화, 활동 '전체' 칩 정렬 유실, 인코딩만 다른 주소 중복 적재 | 트랙 59, PR #421, 2026-11-17 | `docs/plan-archive/track-59.md` |
+| M(확장 2) | 확장 2(홈 '내 컬렉션' 패널) — '기록 대기' 행 클릭 이동, 최근 굿즈 격자 전환, 비공개 전환 행사 링크 제거, 비공개 행사 방문 기록 허용, 방문 완료 판정 통일, 대상 거절 응답 번역, `Event.is_published` 속성 단일화 | 트랙 59, PR #421, 2026-11-18 | `docs/plan-archive/track-59.md`, `docs/BE/visit-completion-concurrency.md` |
 
 ## 착수하지 않는 것
 
@@ -755,7 +530,7 @@ F10 MFA(2026-07-01 `auth-hardening` 결정).
 | 트랙 38 어댑터 얇게 | 슬라이스 A·B·C | PR 0 #380·PR 1 #382 | `docs/plan-archive/track-38.md` |
 | 트랙 44 행사 다국어 자동 등록 | 44-2·44-3·44-4 | 44-1(PR #399) | `docs/plan-archive/track-44.md` |
 | 트랙 50 디자인 시스템 | 예약 트랙 B~E(51~54) | A단계 `docs/FE/design-principles.md` | `docs/plan-archive/track-50.md` |
-| C2 소개 페이지 | 전체(미착수, 트랙 50의 E단계) | 없음 | 이 문서 C2 |
+| C2 소개 페이지 | 전체(미착수, 트랙 50의 E단계) | 없음 | `git show f3e5b3d3:docs/backlog.md` C2 절 |
 
 `docs/BE/i18n.md`, `docs/FE/design-principles.md`, 런북 등 가드레일 문서 본문에
 남은 "44-2", "44-3", "44-4", "트랙 B", "트랙 31" 언급은 폐기된 계획을 가리킨다.
@@ -766,7 +541,8 @@ F10 MFA(2026-07-01 `auth-hardening` 결정).
 
 ## 갱신 규칙
 
-- 항목을 지울 때는 해결 근거(PR 번호 + 검증 명령 결과)를 함께 남긴다.
+- 해결 근거는 "해결된 항목" 표에 PR 번호(또는 커밋)와 정본 문서 링크로 남긴다.
+  지운 본문과 검증 결과는 `docs/pr-log.md`와 git 이력에 있다.
 - **어떤 항목이 서술한 문제를 고쳤다면, 그 항목의 표기를 같은 커밋에서 바꾼다.**
   이걸 빠뜨려 A1과 A5가 **해결된 지 몇 시간 만에** 미착수로 읽혔고, 두 번 다
   이미 있는 코드를 다시 쓸 뻔했다. 고침과 표기가 갈라지는 순간이 곧 사고 지점이다.
