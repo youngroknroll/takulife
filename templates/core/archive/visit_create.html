@@ -9,17 +9,15 @@
 {% endblock %}
 
 {% block content %}
-  <main class="page visit-create-page" id="content">
+  <main class="page visit-create-page window" id="content">
     <a class="visit-create-back-link" href="/archive/visits/">{% translate "← 다녀온 기록으로" %}</a>
     <section class="visit-create-head">
       <div class="visit-create-head-row">
-        <h1>{% translate "다녀온 기록 작성" %}</h1>
+        <h1 class="window-title">{% translate "다녀온 기록 작성" %}</h1>
         <span class="visit-create-legend">{% translate "＊ 표시는 필수" %}</span>
       </div>
       <p class="visit-create-subtitle">{% translate "대상과 방문 날짜는 필수, 메모와 사진은 선택입니다" %}</p>
     </section>
-
-    <div id="visit-global-error" class="visit-create-error"></div>
 
     <form id="visit-create-form" class="visit-create-grid" novalidate>
       <input type="hidden" name="client_token" value="{{ client_token }}">
@@ -106,5 +104,6 @@
 {% endblock %}
 
 {% block extra_js %}
+  <script defer src="{% static 'js/components/form_feedback.js' %}"></script>
   <script defer src="{% static 'js/pages/visit_create.js' %}"></script>
 {% endblock %}

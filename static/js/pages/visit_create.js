@@ -13,6 +13,7 @@
   var MAX_BYTES = 5 * 1024 * 1024;
   var ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
   var VISITS_URL = "/archive/visits/";
+  var SUBJECT_ALIASES = { event: "subject", personal_entry: "subject" };
 
   // pendingItems: 업로드 대기열의 단일 진실 공급원 [{ file, url }]
   var pendingItems = [];
@@ -28,12 +29,40 @@
     if (el) { el.textContent = message; }
   }
 
+  // 폼 오류 표시 헬퍼(form_feedback.js)가 없으면 조용히 건너뛴다.
+  function clearFeedback(form) {
+    if (window.TakuFormFeedback) { window.TakuFormFeedback.clear(form); }
+  }
+
+  function markInvalid(controls, errorEl) {
+    if (window.TakuFormFeedback) { window.TakuFormFeedback.markInvalid(controls, errorEl); }
+  }
+
+  function focusError(errorEl) {
+    if (window.TakuFormFeedback) { window.TakuFormFeedback.focusError(errorEl); }
+  }
+
+  function showServerError(form, result, errorEl, aliases) {
+    if (window.TakuFormFeedback) {
+      window.TakuFormFeedback.showServerError(form, result.data, errorEl, aliases);
+    }
+  }
+
+  // 방문 대상이 숨은 입력으로 정해진 폼에서 서버가 그 대상을 거절하면, 사용자는
+  // 대상을 바꿀 수 없으므로 서버 원문 대신 "항목을 찾을 수 없습니다"만 보여 준다.
+  function isLockedSubjectRejected(form, result) {
+    var data = result.data;
+    return form.elements["subject"].type === "hidden" &&
+      !!data && (data.event !== undefined || data.personal_entry !== undefined);
+  }
+
   function handle403(result, errorEl) {
     var kind = window.TakuAPI.classify(result);
     if (kind === "auth") {
       window.TakuAPI.redirectToLogin();
     } else {
       setText(errorEl, gettext("보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요."));
+      focusError(errorEl);
     }
   }
 
@@ -112,8 +141,9 @@
       var next = buttons[Math.min(index, buttons.length - 1)];
       if (next) { next.focus(); }
     } else {
-      var input = document.getElementById("visit-photos");
-      if (input) { input.focus(); }
+      // 숨은 파일 입력은 보이지 않으므로 눈에 보이는 추가 단추로 옮긴다.
+      var trigger = document.getElementById("visit-photos-trigger");
+      if (trigger) { trigger.focus(); }
     }
   }
 
@@ -215,6 +245,7 @@
 
     form.addEventListener("submit", async function (evt) {
       evt.preventDefault();
+      clearFeedback(form);
       setText(errorEl, "");
       setText(statusEl, "");
 
@@ -224,6 +255,11 @@
 
       if (!subjectValue || !visitedOn) {
         setText(errorEl, gettext("대상과 방문 날짜를 모두 입력해 주세요."));
+        // 비어 있는 것만 표시한다. 대상이 미리 정해진 숨김 입력이면 표시 대상에서 빠진다.
+        var emptyControls = [];
+        if (!subjectValue) { emptyControls.push(form.elements["subject"]); }
+        if (!visitedOn) { emptyControls.push(form.elements["visited_on"]); }
+        markInvalid(emptyControls, errorEl);
         return;
       }
 
@@ -258,8 +294,14 @@
           handle403(result, errorEl);
         } else if (result.status === 0) {
           setText(errorEl, gettext("네트워크 오류가 발생했습니다. 다시 시도해 주세요."));
+          focusError(errorEl);
+        } else if (isLockedSubjectRejected(form, result)) {
+          setText(errorEl, gettext("항목을 찾을 수 없습니다."));
+          focusError(errorEl);
         } else {
           setText(errorEl, window.TakuAPI.formatError(result));
+          // 서버는 대상을 event·personal_entry 키로 돌려주지만 화면 입력은 subject 하나다.
+          showServerError(form, result, errorEl, SUBJECT_ALIASES);
         }
         return;
       }

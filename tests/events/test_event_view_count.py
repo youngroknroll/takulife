@@ -35,6 +35,19 @@ class TestViewCountIncrement:
         event.refresh_from_db()
         assert event.view_count == 2
 
+    def test_행사_상세를_두_번_HEAD로_조회해도_조회수는_증가하지_않는다(self, make_event):
+        """링크 미리보기·크롤러의 HEAD 요청이 조회수를 부풀리지 않아야 한다."""
+        event = make_event()
+        client = Client()
+
+        resp1 = client.head(f"/events/{event.pk}/")
+        resp2 = client.head(f"/events/{event.pk}/")
+
+        assert resp1.status_code == 200
+        assert resp2.status_code == 200
+        event.refresh_from_db()
+        assert event.view_count == 0
+
     def test_미게시_행사_상세_조회는_404를_반환하고_조회수를_증가시키지_않는다(self, make_event):
         event = make_event(publish_status=Event.PublishStatus.DRAFT)
         client = Client()

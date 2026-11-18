@@ -202,6 +202,26 @@ def test_인증된_사용자가_행사_상태를_수정하면_새_상태로_반�
 
 
 @pytest.mark.django_db
+def test_비공개_행사의_예정_상태를_방문_완료로_수정하면_상태가_변경된다(
+    client, make_user, make_draft_event, make_status
+):
+    user = make_user()
+    event = make_draft_event()
+    status = make_status(user, event, status="planned")
+
+    client.force_login(user)
+    response = client.patch(
+        f"/api/user-event-statuses/{status.id}/",
+        {"status": "visited"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    status.refresh_from_db()
+    assert status.status == UserEventStatus.Status.VISITED
+
+
+@pytest.mark.django_db
 def test_지난_행사에서_계획으로_되돌리면_missed_overridden이_고정되어_계획_상태를_유지한다(
     client, make_user, make_event, make_status
 ):

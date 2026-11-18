@@ -90,6 +90,34 @@ class TestArchiveVisitCreatePreselect:
         assert b'name="subject"' in resp.content
         assert f"event:{event.id}".encode() in resp.content
 
+    def test_본인이_방문_완료로_표시한_비공개_행사를_subject로_지정해_접근하면_해당_행사로_대상이_고정된다(
+        self, user_client, make_draft_event, make_status
+    ):
+        user, client = user_client()
+        draft = make_draft_event(title="비공개 방문 행사")
+        make_status(user, event=draft, status="visited")
+
+        resp = client.get(f"/archive/visits/new/?subject=event:{draft.id}")
+
+        assert resp.status_code == 200
+        assert resp.context["preselect"] == {
+            "value": f"event:{draft.id}",
+            "label": "비공개 방문 행사",
+            "is_official": True,
+        }
+
+    def test_비공개_행사_제목에_HTML이_있어도_잠긴_대상_표시에서_이스케이프된다(
+        self, user_client, make_draft_event, make_status
+    ):
+        user, client = user_client()
+        draft = make_draft_event(title="<b>x</b>")
+        make_status(user, event=draft, status="visited")
+
+        resp = client.get(f"/archive/visits/new/?subject=event:{draft.id}")
+
+        assert b"&lt;b&gt;x&lt;/b&gt;" in resp.content
+        assert b"<b>x</b>" not in resp.content
+
     def test_본인의_장소_항목을_subject로_지정해_접근하면_해당_항목으로_대상이_고정된다(
         self, user_client, make_entry
     ):
@@ -116,7 +144,7 @@ class TestArchiveVisitCreatePreselect:
 
         assert resp.context["preselect"] is None
 
-    def test_미게시_행사를_subject로_지정해_접근하면_사전_선택이_무시된다(
+    def test_방문_완료_표시가_없는_비공개_행사를_subject로_지정해_접근하면_사전_선택이_무시된다(
         self, user_client, make_draft_event
     ):
         _, client = user_client()
@@ -125,6 +153,42 @@ class TestArchiveVisitCreatePreselect:
         resp = client.get(f"/archive/visits/new/?subject=event:{draft.id}")
 
         assert resp.context["preselect"] is None
+
+    @pytest.mark.parametrize(
+        ("own_status", "other_status", "is_existing"),
+        [
+            pytest.param("planned", None, True, id="본인_예정_비공개"),
+            pytest.param(None, "visited", True, id="타인_방문_완료만_비공개"),
+            pytest.param(None, None, False, id="존재하지_않는_id"),
+        ],
+    )
+    def test_방문_완료_표시가_없거나_없는_행사를_subject로_지정해_접근하면_사전_선택이_무시되고_대상_필드에_그_행사가_나오지_않는다(
+        self,
+        user_client,
+        make_user,
+        make_draft_event,
+        make_status,
+        own_status,
+        other_status,
+        is_existing,
+    ):
+        user, client = user_client()
+        hidden_title = "숨겨야 하는 비공개 제목"
+        event_id = 900_101 if is_existing else 987654321
+        if is_existing:
+            draft = make_draft_event(id=event_id, title=hidden_title)
+            if own_status is not None:
+                make_status(user, event=draft, status=own_status)
+            if other_status is not None:
+                make_status(make_user(username="stranger"), event=draft, status=other_status)
+
+        resp = client.get(f"/archive/visits/new/?subject=event:{event_id}")
+
+        assert resp.status_code == 200
+        assert resp.context["preselect"] is None
+        # 언어 전환 폼이 현재 주소를 그대로 싣기 때문에 본문 전체가 아니라 대상 필드만 본다.
+        assert f'value="event:{event_id}"'.encode() not in resp.content
+        assert hidden_title.encode() not in resp.content
 
     def test_타인의_개인_항목을_subject로_지정해_접근하면_사전_선택이_무시된다(
         self, user_client, make_user, make_entry

@@ -2,15 +2,16 @@
 
 from datetime import datetime
 
+from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.utils import timezone
 
 from archive.models import UserEventStatus
 from archive.queries import user_interest_event_ids
 from core.calendar_grid import default_selected_date
+from core.categories import category_display_labels
 from core.vocab import (
     ARCHIVE_STATUS_LABELS,
-    CATEGORY_LABELS,
     EVENT_STATUS_LABELS,
     REGION_LABELS,
     personal_category_label,
@@ -38,6 +39,7 @@ def _attach_display(events, *, today=None, user=None):
     """
     events = list(events)
     event_ids = [event.id for event in events]
+    category_labels = category_display_labels(event.category for event in events)
 
     user_status_map = {}
     user_interest_map = {}
@@ -64,7 +66,7 @@ def _attach_display(events, *, today=None, user=None):
                 "event": event,
                 "status_slug": status_slug,
                 "status_label": EVENT_STATUS_LABELS.get(status_slug, ""),
-                "category_label": CATEGORY_LABELS.get(event.category, event.category),
+                "category_label": category_labels.get(event.category, event.category),
                 "category_slug": event.category,
                 "region_label": REGION_LABELS.get(event.region, "") if event.region else "",
                 "dday": display["dday"],
@@ -77,6 +79,23 @@ def _attach_display(events, *, today=None, user=None):
             }
         )
     return result
+
+
+def _attach_display_many(sections, *, today=None, user=None):
+    """구간 이름 -> 행사 목록 dict를 받아 같은 이름 -> 표시 행 목록 dict를
+    돌려준다. 사용자 상태·관심 조회를 구간마다 하지 않고 전체 행사를
+    합쳐 ``_attach_display``를 한 번만 호출하므로, 같은 행사가 여러
+    구간에 있어도 같은 값을 받는다. 각 구간은 ``list()``로 정확히 한 번만
+    평가된다.
+
+    ``_attach_display``가 입력 행사마다 정확히 한 행을 입력 순서대로
+    돌려준다는 성질에 기대어 구간별로 다시 자른다 — 행을 거르거나
+    순서를 바꾸면 구간 배분이 어긋난다.
+    """
+    materialized = {name: list(events) for name, events in sections.items()}
+    all_events = [event for events in materialized.values() for event in events]
+    rows = iter(_attach_display(all_events, today=today, user=user))
+    return {name: [next(rows) for _ in events] for name, events in materialized.items()}
 
 
 def _adjacent_month(year, month, delta):
@@ -107,6 +126,63 @@ def _parse_calendar_month(raw_month, *, today):
     return parsed.year, parsed.month, None
 
 
+# 공개 달력이 보여주는 달의 범위(오늘 기준, 경계 포함). 크롤러가 끝없는
+# 이전·다음 달 주소를 따라가지 못하게 한다.
+PUBLIC_CALENDAR_PAST_MONTHS = 24
+PUBLIC_CALENDAR_FUTURE_MONTHS = 12
+
+
+def _parse_public_calendar_month(raw_month, *, today):
+    """_parse_calendar_month와 같은 (year, month, error)를 돌려주되,
+    형식은 맞지만 허용 범위(오늘 기준 과거 24개월~미래 12개월, 경계
+    포함) 밖이면 error가 "out_of_range"다. ASCII가 아니면 형식 오류다.
+    """
+    # 다른 글자체 숫자도 날짜로 읽혀 같은 달의 별칭 주소가 생기므로 막는다.
+    if raw_month is not None and not raw_month.isascii():
+        return None, None, "invalid"
+    year, month, error = _parse_calendar_month(raw_month, today=today)
+    if error is not None:
+        return year, month, error
+    lower, upper = _public_calendar_bounds(today)
+    if not lower <= (year, month) <= upper:
+        return year, month, "out_of_range"
+    return year, month, None
+
+
+def _public_calendar_bounds(today):
+    """공개 달력이 보여주는 첫 달과 마지막 달 (year, month) 쌍."""
+    return (
+        _adjacent_month(today.year, today.month, -PUBLIC_CALENDAR_PAST_MONTHS),
+        _adjacent_month(today.year, today.month, PUBLIC_CALENDAR_FUTURE_MONTHS),
+    )
+
+
+def _bounded_month_param(year, month, delta, *, today):
+    """(year, month)에서 delta개월 떨어진 달의 "YYYY-MM"을 돌려주되,
+    공개 범위 밖이면 None.
+    """
+    lower, upper = _public_calendar_bounds(today)
+    target = _adjacent_month(year, month, delta)
+    if not lower <= target <= upper:
+        return None
+    return f"{target[0]:04d}-{target[1]:02d}"
+
+
+def _is_public_calendar_month(day, *, today):
+    """그 날짜의 달이 공개 범위 안인가 — 달력 칸을 링크로 낼지 정한다."""
+    lower, upper = _public_calendar_bounds(today)
+    return lower <= (day.year, day.month) <= upper
+
+
+def _redirect_without_calendar_params(request):
+    """month·date만 빼고 나머지 쿼리는 그대로 둔 같은 경로로 리다이렉트한다."""
+    params = request.GET.copy()
+    params.pop("month", None)
+    params.pop("date", None)
+    query = params.urlencode()
+    return HttpResponseRedirect(f"{request.path}?{query}" if query else request.path)
+
+
 def _parse_calendar_date(raw_date, *, year, month, today):
     """이미 정해진 (year, month)를 기준으로 ?date=YYYY-MM-DD 파라미터를
     파싱한다. (date, error)를 반환하며 error는 성공 시 None, 형식이
@@ -128,6 +204,16 @@ def _parse_calendar_date(raw_date, *, year, month, today):
     return parsed, None
 
 
+def _parse_public_calendar_date(raw_date, *, year, month, today):
+    """_parse_calendar_date와 같은 (date, error)를 돌려주되, ASCII가
+    아니면 형식 오류다 — 다른 글자체 숫자도 날짜로 읽혀 같은 날의 별칭
+    주소가 생기므로 막는다.
+    """
+    if raw_date is not None and not raw_date.isascii():
+        return None, "invalid"
+    return _parse_calendar_date(raw_date, year=year, month=month, today=today)
+
+
 def _render_archive_list(request, *, full_template, fragment_template, context):
     """archive 목록 페이지 전체를 렌더링하거나, 라이브 검색용 결과
     프래그먼트만 렌더링한다.
@@ -143,7 +229,12 @@ def _render_archive_list(request, *, full_template, fragment_template, context):
     return render(request, template, context)
 
 
-def _subject_view(obj):
+def _subject_category_labels(objs):
+    """공식 행사 대상 행들의 카테고리 라벨 맵을 한 번의 조회로 만든다."""
+    return category_display_labels(obj.event.category for obj in objs if obj.event_id is not None)
+
+
+def _subject_view(obj, *, category_labels=None):
     """archive 행의 대상(공식 Event 또는 비공식 PersonalEntry)을 일관되고
     null 안전하게 보여준다.
 
@@ -151,14 +242,22 @@ def _subject_view(obj):
     UserEventStatus)은 전부 ``event``/``event_id``와 ``personal_entry``를
     노출하는데, 이 함수가 둘을 하나의 dict로 합쳐 템플릿과 JS가 어느 FK가
     설정됐는지로 분기하지 않게 한다. ``subject_type``/``subject_id``는
-    API 응답을 이루고, 비공개 항목(공개 페이지 없음)은 ``detail_url``이
-    비어 있으며, 굿즈는 기간 날짜가 None이다.
+    API 응답을 이루고, 공개 페이지가 없는 항목(직접 등록 항목, 게시되지
+    않은 행사)은 ``detail_url``이 비어 있으며, 굿즈는 기간 날짜가 None이다.
+    게시 여부는 ``Event.objects.published()``와 같은 뜻으로 판단한다.
+
+    ``category_labels``는 슬러그 -> 라벨 맵이다. 없으면 이 행 한 건만 푼다.
+    여러 행을 그리는 목록은 ``_subject_category_labels``로 만든 맵을 넘겨야
+    한다. 빼먹으면 새 카테고리 행마다 조회가 나간다.
     """
     if obj.event_id is not None:
         event = obj.event
+        is_published = event.is_published
+        if category_labels is None:
+            category_labels = category_display_labels([event.category])
         return {
             "title": event.title,
-            "category_label": CATEGORY_LABELS.get(event.category, event.category),
+            "category_label": category_labels.get(event.category, event.category),
             "category_slug": event.category,
             "location": event.location_name,
             "start_date": event.start_date,
@@ -167,7 +266,7 @@ def _subject_view(obj):
             "kind": "",
             "subject_type": "event",
             "subject_id": event.id,
-            "detail_url": f"/events/{event.id}/",
+            "detail_url": f"/events/{event.id}/" if is_published else "",
         }
     entry = obj.personal_entry
     return {

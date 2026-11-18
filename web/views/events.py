@@ -8,13 +8,12 @@ from urllib.parse import urlencode
 
 from django.core.paginator import Paginator
 from django.core.serializers.json import DjangoJSONEncoder
-from django.db.models import Count
 from django.shortcuts import get_object_or_404, render
 from django.template.defaultfilters import truncatechars
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.formats import date_format
-from django.utils.translation import get_language, gettext
+from django.utils.translation import gettext
 from rest_framework.exceptions import ValidationError
 
 from archive.models import UserEventStatus
@@ -28,7 +27,7 @@ from archive.queries import (
     user_visit_record_counts,
 )
 from core.calendar_grid import month_grid
-from core.models import HomeConfig
+from core.categories import category_display_labels, category_label_lang, category_labels_for
 from core.presenters import build_website_json_ld
 from core.vocab import (
     ARCHIVE_STATUS_LABELS,
@@ -45,16 +44,20 @@ from events.models import Event
 from events.presenters import build_event_json_ld, derive_event_display
 from events.queries import (
     PUBLIC_LISTING_PAGE_SIZE,
-    consumer_category_choices,
     list_published_events,
     list_published_events_for_month,
     parse_public_listing_params,
 )
+from web.public_cache import home_public_sections, public_category_choices, public_month_events
 from web.views._helpers import (
-    _adjacent_month,
     _attach_display,
-    _parse_calendar_date,
-    _parse_calendar_month,
+    _attach_display_many,
+    _bounded_month_param,
+    _is_public_calendar_month,
+    _parse_public_calendar_date,
+    _parse_public_calendar_month,
+    _redirect_without_calendar_params,
+    _subject_category_labels,
     _subject_view,
 )
 
@@ -105,6 +108,7 @@ def _home_calendar_cell(cell, events_by_date, *, today, selected_date):
         "categories": _dedupe_category_slugs(
             [event.category for event in cell_events], limit=HOME_CALENDAR_DOT_LIMIT
         ),
+        "linkable": cell.date is not None and _is_public_calendar_month(cell.date, today=today),
     }
 
 
@@ -119,12 +123,14 @@ def _home_calendar_weeks(grid, events_by_date, *, today, selected_date):
     ]
 
 
-def _home_calendar_context(raw_month, raw_date, *, today):
-    """홈 이벤트 달력 섹션 컨텍스트를 만든다."""
-    year, month, calendar_error = _parse_calendar_month(raw_month, today=today)
+def _home_calendar_context(year, month, calendar_error, raw_date, *, today):
+    """홈 이벤트 달력 섹션 컨텍스트를 만든다. year/month/calendar_error는
+    호출자(home)가 이미 파싱한 달 — 범위 밖 판단을 조회 전에 끝내기
+    위해서다.
+    """
     selected_date = None
     if calendar_error is None:
-        selected_date, calendar_error = _parse_calendar_date(
+        selected_date, calendar_error = _parse_public_calendar_date(
             raw_date, year=year, month=month, today=today
         )
 
@@ -133,25 +139,28 @@ def _home_calendar_context(raw_month, raw_date, *, today):
         year, month = today.year, today.month
         selected_date = today
 
-    events = list(list_published_events_for_month({}, year=year, month=month, today=today))
+    events = public_month_events(year=year, month=month, today=today)
     events_by_date = _events_by_date(events)
 
     grid = month_grid(year, month)
     weeks = _home_calendar_weeks(grid, events_by_date, today=today, selected_date=selected_date)
-    prev_year, prev_month = _adjacent_month(year, month, -1)
-    next_year, next_month = _adjacent_month(year, month, 1)
     selected_events = events_by_date.get(selected_date, [])
     month_categories = {event.category for event in events if event.category}
     legend = [
         {"slug": slug, "label": label} for slug, label in CATEGORY if slug in month_categories
+    ]
+    # 고정 카테고리 밖 슬러그는 DB 라벨을 정렬 순서대로 뒤에 붙인다(없으면 쿼리 없음).
+    extra_slugs = month_categories - set(CATEGORY_LABELS)
+    legend += [
+        {"slug": slug, "label": label} for slug, label in category_labels_for(extra_slugs).items()
     ]
     return {
         "year": year,
         "month": month,
         "month_start": date(year, month, 1),
         "month_param": f"{year:04d}-{month:02d}",
-        "prev_month": f"{prev_year:04d}-{prev_month:02d}",
-        "next_month": f"{next_year:04d}-{next_month:02d}",
+        "prev_month": _bounded_month_param(year, month, -1, today=today),
+        "next_month": _bounded_month_param(year, month, 1, today=today),
         "selected_date": selected_date,
         "selected_is_today": selected_date == today,
         "selected_count": len(selected_events),
@@ -164,42 +173,49 @@ def _home_calendar_context(raw_month, raw_date, *, today):
 
 def home(request):
     today = timezone.localdate()
-    ongoing_qs = list_published_events({"status": "ongoing"}, today=today)
-    closing_qs = Event.objects.published().ending_within_days(5, today=today)
-    # 슬라이더는 기간이 이미 끝난 행사(end_date < today)를 제외한다.
-    # end_date가 없는 행사는 "종료"가 될 수 없으므로 그대로 남긴다.
-    recent_qs = Event.objects.published().exclude(end_date__lt=today).order_by("-id")[:15]
+    year, month, calendar_error = _parse_public_calendar_month(
+        request.GET.get("month"), today=today
+    )
+    # 범위 밖 달은 조회 전에 돌려보낸다.
+    if calendar_error == "out_of_range":
+        return _redirect_without_calendar_params(request)
+    public_sections = home_public_sections(today=today)
 
-    # "카테고리로 둘러보기" 타일: HomeConfig로 스태프가 순서/선택을 큐레이션한다.
-    # 저장된 선택이 없으면 어휘의 전체 카테고리로 대체한다.
-    category_counts = {
-        row["category"]: row["count"]
-        for row in Event.objects.published().values("category").annotate(count=Count("id"))
-    }
+    # 홈 카테고리 쌍과 건수는 공개 캐시에서 받고, 라벨 번역은 요청마다 한다.
     category_tiles = []
-    for slug, label in HomeConfig.get_solo().featured_category_pairs():
+    for slug, label in public_sections["featured_category_pairs"]:
         text, lang = _translate_category_label(label)
         category_tiles.append(
-            {"slug": slug, "label": text, "lang": lang, "count": category_counts.get(slug, 0)}
+            {
+                "slug": slug,
+                "label": text,
+                "lang": lang,
+                "count": public_sections["category_counts"].get(slug, 0),
+            }
         )
 
-    # 홈 대표 행사: 인기(조회수) 슬라이더 대신 공개 목록 기본 우선순위
-    # (진행중 -> 예정 -> 종료, "active"는 종료 행사를 제외)의 최대 5건을
-    # 로테이터로 노출한다.
-    featured_event_rows = _attach_display(
-        list_published_events({"status": "active"}, today=today)[:5],
-        today=today,
-        user=request.user,
-    )
+    # 구간마다 _attach_display를 따로 부르면 사용자 상태·관심 조회가
+    # 구간 수만큼 늘어나므로, 모든 구간 행사를 모아 한 번에 처리한다.
+    # 건수·카테고리 쌍은 행사 목록이 아니라 넣지 않는다.
+    sections = {
+        key: public_sections[key]
+        for key in ("ongoing_rows", "closing_rows", "recent_rows", "featured_event_rows")
+    }
+    if request.user.is_authenticated:
+        sections = {
+            **sections,
+            "upcoming_planned": list_user_upcoming_planned_events(request.user, today=today)[:4],
+        }
+    rows_by_section = _attach_display_many(sections, today=today, user=request.user)
 
     context = {
-        "ongoing_rows": _attach_display(ongoing_qs[:15], today=today, user=request.user),
-        "closing_rows": _attach_display(closing_qs[:15], today=today, user=request.user),
-        "recent_rows": _attach_display(recent_qs, today=today, user=request.user),
+        "ongoing_rows": rows_by_section["ongoing_rows"],
+        "closing_rows": rows_by_section["closing_rows"],
+        "recent_rows": rows_by_section["recent_rows"],
         "category_tiles": category_tiles,
-        "featured_event_rows": featured_event_rows,
+        "featured_event_rows": rows_by_section["featured_event_rows"],
         "home_calendar": _home_calendar_context(
-            request.GET.get("month"), request.GET.get("date"), today=today
+            year, month, calendar_error, request.GET.get("date"), today=today
         ),
         "json_ld_script": _json_ld_script(build_website_json_ld(request.build_absolute_uri("/"))),
     }
@@ -214,15 +230,16 @@ def home(request):
         # statuses가 이미 그것만 걸러낸다) 별도 유도가 필요 없고
         # _subject_view 자체도 derived_status에 의존하지 않으므로 이
         # 원본 슬라이스를 그대로 써도 안전하다.
+        unrecorded_statuses = list(list_user_unrecorded_visited_statuses(user)[:5])
+        unrecorded_category_labels = _subject_category_labels(unrecorded_statuses)
         unrecorded_rows = [
-            {"status_id": row.pk, "subject": _subject_view(row)}
-            for row in list_user_unrecorded_visited_statuses(user)[:5]
+            {
+                "status_id": row.pk,
+                "subject": _subject_view(row, category_labels=unrecorded_category_labels),
+            }
+            for row in unrecorded_statuses
         ]
-        upcoming_rows = _attach_display(
-            list_user_upcoming_planned_events(user, today=today)[:4],
-            today=today,
-            user=user,
-        )
+        upcoming_rows = rows_by_section["upcoming_planned"]
         context.update(
             {
                 "collection_summary": collection_summary,
@@ -248,22 +265,25 @@ def _active_filter_chips(*, q, selected_region, selected_category, selected_stat
     """활성 q/region/category/status 필터를 사람이 읽을 수 있는 칩으로
     요약한다(Eventbrite 스타일). event_list와 event_calendar가 공유해
     두 페이지가 같은 선택으로부터 같은 칩 라벨을 만들게 한다 — 새 조회
-    없이 호출자가 이미 파싱한 값에 라벨만 붙인다."""
+    없이 호출자가 이미 파싱한 값에 라벨만 붙인다.
+
+    (칩 목록, 한글 원문이라 lang="ko"를 붙일 칩 목록)을 돌려준다. 검색어
+    칩은 사용자 입력이라 후자에 넣지 않는다."""
     chips = []
+    ko_chips = []
     if q:
         chips.append(gettext("검색: %(q)s") % {"q": q})
     for region in selected_region:
         chips.append(REGION_LABELS.get(region, region))
+    labels = category_display_labels(selected_category)
     for category in selected_category:
-        chips.append(CATEGORY_LABELS.get(category, category))
+        label = labels.get(category, category)
+        chips.append(label)
+        if category_label_lang(label):
+            ko_chips.append(label)
     if selected_status:
         chips.append(EVENT_STATUS_LABELS.get(selected_status, selected_status))
-    return chips
-
-
-def _has_hangul(text):
-    # 가드가 한국어 문자열 상수를 막으므로 코드포인트 범위로 판별한다.
-    return any(0xAC00 <= ord(ch) <= 0xD7A3 for ch in text)
+    return chips, ko_chips
 
 
 def _translate_category_label(label):
@@ -274,18 +294,15 @@ def _translate_category_label(label):
     번역되지 않은 한글 라벨이 비한국어 화면에 섞일 때만 lang="ko"를 돌려준다.
     """
     text = gettext(label)
-    language = get_language()
-    is_korean_ui = language is None or language.startswith("ko")
-    if not is_korean_ui and text == label and _has_hangul(label):
-        return text, "ko"
+    if text == label:
+        return text, category_label_lang(label)
     return text, ""
 
 
 def _translated_category_choices():
-    """소비자 필터용 (slug, 번역 라벨, lang) 목록."""
-    return [
-        (slug, *_translate_category_label(label)) for slug, label in consumer_category_choices()
-    ]
+    """소비자 필터용 (slug, 번역 라벨, lang) 목록. 원문은 공개 캐시에서
+    받고 번역은 요청마다 한다."""
+    return [(slug, *_translate_category_label(label)) for slug, label in public_category_choices()]
 
 
 def event_list(request):
@@ -307,9 +324,10 @@ def event_list(request):
         if not params.get("status"):
             params = {**params, "status": "active"}
         qs = list_published_events(params)
-        total_count = qs.count()
         paginator = Paginator(qs, PUBLIC_LISTING_PAGE_SIZE)
         page_obj = paginator.get_page(request.GET.get("page"))
+        # 페이지 나누기가 이미 센 전체 건수를 다시 쓴다 — 따로 세면 같은 COUNT가 두 번 나간다.
+        total_count = paginator.count
         event_rows = _attach_display(page_obj.object_list, user=request.user)
     except ValidationError:
         pass
@@ -333,7 +351,7 @@ def event_list(request):
     active_filters = bool(q or selected_region or selected_category or selected_status)
 
     # 활성 필터를 사람이 읽을 수 있는 칩으로 요약한다(Eventbrite 스타일).
-    active_filter_chips = _active_filter_chips(
+    active_filter_chips, active_filter_ko_chips = _active_filter_chips(
         q=q,
         selected_region=selected_region,
         selected_category=selected_category,
@@ -346,6 +364,7 @@ def event_list(request):
         "event_rows": event_rows,
         "active_filters": active_filters,
         "active_filter_chips": active_filter_chips,
+        "active_filter_ko_chips": active_filter_ko_chips,
         "category_labels": CATEGORY_LABELS,
         # 필터 UI용 어휘 튜플
         "CATEGORY": _translated_category_choices(),
@@ -432,10 +451,15 @@ def event_calendar(request):
     """
     today = timezone.localdate()
 
-    year, month, calendar_error = _parse_calendar_month(request.GET.get("month"), today=today)
+    year, month, calendar_error = _parse_public_calendar_month(
+        request.GET.get("month"), today=today
+    )
+    # 범위 밖 달은 조회 전에 돌려보낸다.
+    if calendar_error == "out_of_range":
+        return _redirect_without_calendar_params(request)
     selected_date = None
     if calendar_error is None:
-        selected_date, calendar_error = _parse_calendar_date(
+        selected_date, calendar_error = _parse_public_calendar_date(
             request.GET.get("date"), year=year, month=month, today=today
         )
 
@@ -447,11 +471,18 @@ def event_calendar(request):
         params = parse_public_listing_params(request.GET)
     except ValidationError:
         # event_list와 같은 완화 방식: 인식되지 않거나 잘못된 필터 값은
-        # calendar_error와 무관하게 "매치 없음"이지 절대 오류 화면이 아니다.
-        params = {}
+        # calendar_error와 무관하게 "맞는 행사 없음"(빈 달력)이지 절대
+        # 오류 화면이 아니다 — "필터 없음"과 구분해 조회 자체를 건너뛴다.
+        params = None
 
     try:
-        events = list(list_published_events_for_month(params, year=year, month=month))
+        if params is None:
+            events = []
+        # 필터 없는 달력만 공개 캐시를 쓴다(필터 조합은 끝이 없어 담지 않는다).
+        elif not params:
+            events = public_month_events(year=year, month=month, today=today)
+        else:
+            events = list(list_published_events_for_month(params, year=year, month=month))
     except Exception:
         logger.exception("Failed to query events calendar for year=%s month=%s", year, month)
         events = []
@@ -491,6 +522,8 @@ def event_calendar(request):
                 ],
                 "more_count": max(len(events_by_date.get(cell.date, [])) - 2, 0),
                 "count": len(events_by_date.get(cell.date, [])),
+                "linkable": cell.date is not None
+                and _is_public_calendar_month(cell.date, today=today),
             }
             for cell in week
         ]
@@ -501,14 +534,18 @@ def event_calendar(request):
         events_by_date.get(selected_date, []), today=today, user=request.user
     )
 
-    prev_year, prev_month_num = _adjacent_month(year, month, -1)
-    next_year, next_month_num = _adjacent_month(year, month, 1)
-
     selected_region = request.GET.getlist("region")
     selected_category = request.GET.getlist("category")
     selected_status = request.GET.get("status", "")
     q = request.GET.get("q", "")
     selected_sort = request.GET.get("sort", "")
+
+    active_filter_chips, active_filter_ko_chips = _active_filter_chips(
+        q=q,
+        selected_region=selected_region,
+        selected_category=selected_category,
+        selected_status=selected_status,
+    )
 
     context = {
         "calendar_error": calendar_error,
@@ -517,15 +554,11 @@ def event_calendar(request):
         "weeks": weeks,
         "selected_date": selected_date,
         "selected_events": selected_events,
-        "prev_month": f"{prev_year:04d}-{prev_month_num:02d}",
-        "next_month": f"{next_year:04d}-{next_month_num:02d}",
+        "prev_month": _bounded_month_param(year, month, -1, today=today),
+        "next_month": _bounded_month_param(year, month, 1, today=today),
         "extra_query": _calendar_extra_query(request),
-        "active_filter_chips": _active_filter_chips(
-            q=q,
-            selected_region=selected_region,
-            selected_category=selected_category,
-            selected_status=selected_status,
-        ),
+        "active_filter_chips": active_filter_chips,
+        "active_filter_ko_chips": active_filter_ko_chips,
         # 필터 패널 컨텍스트. event_list와 그대로 맞춰 기존 필터 체크
         # 마크업을 그대로 재사용할 수 있게 한다.
         "CATEGORY": _translated_category_choices(),
@@ -587,7 +620,9 @@ def _build_event_meta_description(event, category_label):
 
 def event_detail(request, event_id):
     event = get_object_or_404(Event.objects.published(), pk=event_id)
-    Event.objects.increment_view_count(event.pk)
+    # 본문을 받지 않는 HEAD 요청(링크 미리보기·크롤러)은 조회수에 넣지 않는다.
+    if request.method != "HEAD":
+        Event.objects.increment_view_count(event.pk)
     display = derive_event_display(event)
     status_slug = display["status"]
 
@@ -615,7 +650,7 @@ def event_detail(request, event_id):
     )
 
     region_label = REGION_LABELS.get(event.region, "") if event.region else ""
-    category_label = CATEGORY_LABELS.get(event.category, event.category)
+    category_label = category_display_labels([event.category]).get(event.category, event.category)
     meta_description = _build_event_meta_description(event, category_label)
     json_ld_payload = build_event_json_ld(
         event, region_label=region_label, description=meta_description

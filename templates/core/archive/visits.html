@@ -42,17 +42,18 @@
     {# BIR 최고위험 판정: 이 노드는 #archive-results(라이브 검색 swap 대상) #}
     {# 밖에 있어야 한다 — 삭제 in-flight 중 검색 스왑이 겹치면 closure된 #}
     {# globalErrorEl이 detached돼 오류가 무음 처리된다. #}
-    <div id="visit-global-error" class="form-error" style="margin-bottom:8px;" aria-live="polite"></div>
+    <div id="visit-global-error" class="form-error" aria-live="polite"></div>
 
     <section class="layout">
       {% translate "카테고리 필터 및 빠른 이동" as aside_label %}
-      <aside class="panel" aria-label="{{ aside_label }}">
+      <aside class="panel window" aria-label="{{ aside_label }}">
         {% if has_visits and category_chips or has_visits and has_unofficial %}
-          <div class="chips">
-            <a class="chip{% if not selected_filter %} active{% endif %}"{% if not selected_filter %} aria-current="page"{% endif %} href="?{% if has_query %}q={{ q|urlencode }}{% endif %}">{% translate "전체" %}</a>
+          <div class="chips" data-search-links>
+            {# search_suffix는 &로 시작하므로 첫 글자를 떼어 ? 뒤에 붙인다 #}
+            <a class="chip{% if not selected_filter %} active{% endif %}"{% if not selected_filter %} aria-current="page"{% endif %} href="?{{ search_suffix|slice:"1:" }}">{% translate "전체" %}</a>
             {% for chip in category_chips %}
               {% with cat_token="cat:"|add:chip.token %}
-              <a class="chip{% if selected_filter == cat_token %} active{% endif %}"{% if selected_filter == cat_token %} aria-current="page"{% endif %} href="?filter=cat:{{ chip.token|urlencode }}{{ search_suffix }}">{{ chip.label }}</a>
+              <a class="chip{% if selected_filter == cat_token %} active{% endif %}"{% if selected_filter == cat_token %} aria-current="page"{% endif %} href="?filter=cat:{{ chip.token|urlencode }}{{ search_suffix }}"{% if chip.lang %} lang="{{ chip.lang }}"{% endif %}>{{ chip.label }}</a>
               {% endwith %}
             {% endfor %}
             {% if has_unofficial %}
@@ -70,9 +71,9 @@
         </div>
       </aside>
 
-      <article class="panel">
-        <div class="results-head">
-          <h2>{% blocktranslate trimmed count counter=page_obj.paginator.count %}방문 타임라인 <span class="results-count">{{ counter }}</span>건{% plural %}방문 타임라인 <span class="results-count">{{ counter }}</span>건{% endblocktranslate %}</h2>
+      <article class="panel window">
+        <div class="results-head window-head">
+          <h2 class="window-title" data-results-title-target>{% include "core/partials/_archive_results_title_visits.html" %}</h2>
           {# 옵션이 평범한 GET 링크라 JS 드롭다운 대신 <details>를 쓴다 — #}
           {# 네이티브 disclosure만으로 키보드 조작과 무JS 대체 수단이 공짜로 #}
           {# 생긴다. event_list.js는 바깥 클릭 시 닫는 동작만 더한다. #}
@@ -102,6 +103,7 @@
 {% endblock %}
 
 {% block extra_js %}
+  <script defer src="{% static 'js/components/form_feedback.js' %}"></script>
   <script defer src="{% static 'js/pages/visit.js' %}"></script>
   <script defer src="{% static 'js/pages/archive_search.js' %}"></script>
   <script defer src="{% static 'js/shared/cta_visibility.js' %}"></script>

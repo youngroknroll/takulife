@@ -8,8 +8,8 @@ clear_query_suffix, request
 {% if item_rows %}
   {# 시안의 결과 헤더. 시안의 "최근 등록순 ▾" 정렬 토글은 백엔드가 -id 고정이라 #}
   {# 의도적으로 제외했고(죽은 UI 금지), 건수 표시만 가져왔다.                  #}
-  <div class="collection-resulthead collection-resulthead--{{ view_mode }}">
-    <h2>{% blocktranslate trimmed count n=page_obj.paginator.count %}전체 <span>{{ n }}</span>점{% plural %}전체 <span>{{ n }}</span>점{% endblocktranslate %}</h2>
+  <div class="collection-resulthead collection-resulthead--{{ view_mode }} window-head">
+    <h2 class="window-title">{% blocktranslate trimmed count n=page_obj.paginator.count %}전체 <span>{{ n }}</span>점{% plural %}전체 <span>{{ n }}</span>점{% endblocktranslate %}</h2>
   </div>
   {% if view_mode == "list" %}
     <div class="collection-rows">

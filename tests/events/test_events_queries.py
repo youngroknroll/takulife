@@ -10,6 +10,7 @@ from datetime import date, timedelta
 
 import pytest
 
+from core.vocab import CATEGORY
 from events.models import Event
 
 
@@ -170,6 +171,22 @@ class TestParsePublicListingParams:
         with pytest.raises(ValidationError) as exc_info:
             parse_public_listing_params({"sort": "not_a_real_sort"})
         assert "sort" in str(exc_info.value.detail)
+
+    def test_검색어가_100자면_그대로_통과한다(self):
+        """상한 100은 로그인 화면 검색어 자르기(web/views/_helpers.py:27)와 같은 숫자다."""
+        from events.queries import parse_public_listing_params
+
+        result = parse_public_listing_params({"q": "a" * 100})
+        assert result["q"] == "a" * 100
+
+    def test_검색어가_101자면_거부된다(self):
+        from rest_framework.exceptions import ValidationError
+
+        from events.queries import parse_public_listing_params
+
+        with pytest.raises(ValidationError) as exc_info:
+            parse_public_listing_params({"q": "a" * 101})
+        assert "q" in str(exc_info.value.detail)
 
 
 @pytest.mark.domain
@@ -591,3 +608,51 @@ class TestStaffEventSearch:
         make_event(title="둘")
 
         assert list_staff_events(search="  ").count() == 2
+
+
+@pytest.mark.domain
+@pytest.mark.django_db
+class TestPublicCacheQueryFunctions:
+    def test_마감임박_조회_함수는_기본_창_5일로_ending_within_days에_위임한다(self, make_event):
+        from events.queries import list_closing_soon_events
+
+        today = date(2026, 6, 10)
+        boundary = make_event(
+            title="D+5경계행사", start_date=date(2026, 6, 1), end_date=date(2026, 6, 15)
+        )
+        make_event(title="D+6행사", start_date=date(2026, 6, 1), end_date=date(2026, 6, 16))
+
+        titles = [event.title for event in list_closing_soon_events(today=today)]
+        assert boundary.title in titles
+        assert "D+6행사" not in titles
+
+    def test_최신_게시_행사_조회_함수는_종료된_행사를_제외하고_id_내림차순으로_돌려준다(
+        self, make_event
+    ):
+        from events.queries import list_latest_published_events
+
+        today = date(2026, 6, 10)
+        make_event(title="종료행사", start_date=date(2026, 6, 1), end_date=date(2026, 6, 9))
+        first = make_event(title="먼저행사")
+        second = make_event(
+            title="나중행사", start_date=date(2026, 6, 1), end_date=date(2026, 6, 20)
+        )
+
+        titles = [event.title for event in list_latest_published_events(today=today)]
+        assert titles == [second.title, first.title]
+
+    def test_게시_카테고리_건수_집계는_빈_문자열_카테고리도_포함해_1쿼리로_센다(
+        self, make_event, make_draft_event, django_assert_num_queries
+    ):
+        from events.queries import published_category_counts
+
+        first_category_slug = CATEGORY[0][0]
+        make_event(title="첫째1", category=first_category_slug)
+        make_event(title="첫째2", category=first_category_slug)
+        make_event(title="빈카테고리", category="")
+        make_draft_event(title="초안", category=first_category_slug)
+
+        with django_assert_num_queries(1):
+            counts = published_category_counts()
+
+        assert counts == {first_category_slug: 2, "": 1}

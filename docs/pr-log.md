@@ -18,41 +18,52 @@ state" 절 참고).
 number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴다 — 제목 앞의
 `feat:`/`fix:`/`docs:` 같은 접두어도 변경 성격을 알려주는 정보이므로 유지한다.
 
-이 문서는 200줄을 넘기지 않는다. 머지된 PR 402건(`gh pr list --state merged --limit 500`,
-2026-11-05 `[실측]`; 2026-08-17에는 289건)이 전부 들어가지 않으므로 최신부터 채우고 줄 수
+이 문서는 200줄을 넘기지 않는다. 머지된 PR 412건(`gh pr list --state merged --limit 500`,
+2026-11-17 `[실측]`; 2026-08-17에는 289건)이 전부 들어가지 않으므로 최신부터 채우고 줄 수
 예산에서 끊는다 — 컷오프는 "재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래
-목록은 PR #410부터 #269까지다(#411은 위 상세 항목). 그보다 오래된 PR은 `gh pr list
+목록은 PR #419부터 #280까지다(#420은 위 상세 항목). 그보다 오래된 PR은 `gh pr list
 --state merged --limit 500 --json number,title` 으로 언제든 다시 조회할 수 있다.
 
 ---
 
 ## 최신 PR
 
-### PR #411 — fix: Track 55 — review residuals, hook gaps, plan archive
+### PR #420 — style: Track 58 — apply the DOS design to all public pages, staff screens excluded
 
-**무엇을 바꿨나**: 2026-11-11 상태 문서 전수 검토의 결함·드리프트를 정리하고,
-계획서 닫힌 트랙을 보관 파일로 옮겨 커밋하는 규약을 신설했다. 계획서 보관(닫힌
-트랙 절 40개·5,673줄을 `docs/plan-archive/track-<id>.md`로 원문 이동, SHA-256
-재조립 일치), 훅 빈틈(Bash 훅 4개가 통과시키던 10개 형태 차단, 계약 테스트
-85건, `.claude/settings.json` timeout을 초 단위로 정정), 백엔드(상태 전환
-3함수의 동시 PATCH 오기록을 잠금 재조회로 수정, 시리얼라이저 중복 제거),
-프론트 7건(방문 기록 빈 상태 링크·동적 오류 `aria-live`·죽은 바인딩 삭제·
-스태프 큐 판정 공지·검색 빈 상태 공지 일치·컬렉션 폼 포커스), Gunicorn 접근
-로그(`docker/entrypoint.sh`에 `--access-logfile -`, 사용자 지시), 문서 정리
-(README·backlog·`docs/BE`·`docs/FE` 줄 인용 드리프트 재측정, PR #410 롤링
-반영 포함). 머지 완료 2026-11-12T11:43:49Z, merge commit `21a9e408` `[실측
-gh]`. 머지된 트리는 검증한 브랜치 최신 커밋 `e94e9317`과 diff 0 `[실측 gh·git]`.
+**무엇을 바꿨나**: 스태프를 뺀 공개 화면 전체(셸, 공용 컴포넌트, 홈, 행사 목록·달력·상세,
+컬렉션, 내 활동 목록·달력·기록 폼, 마이페이지, 계정 설정, 로그인·가입, 약관, 오류 쪽)를
+DOS 형태로 바꿨다 — 3px 겹선 창, 위 테두리 위의 `[ 제목 ]`, 파란 반전 선택, 반경 0,
+굵기 700은 쪽 h1과 로고뿐, 그림자는 떠 있는 패널의 오프셋 그림자만. 옛 토큰 59개를
+지웠다(`tokens.css` 선언 138 → 79개). 디자인 정본 `docs/FE/design-principles.md`를
+A4에서 DOS로 개정했다. 스태프 경로와 스태프가 함께 쓰는 파일은 변경 0개, 파이썬 변경은
+주석 2줄과 독스트링 1곳, 테스트 추가·삭제 0건. 로컬 검수 1에서 지운 것 4건(홈 히어로
+문구 2개, 푸터 둘째 문장, 외부 링크 `↗`). 커밋 23개, 114 files changed +7,955/−8,324
+`[실측 git diff --shortstat 35dd816f 86d4ef33]`. 머지 완료 2026-11-17T06:56:24Z, merge
+commit `86d4ef33` `[실측 gh]`. 머지한 main 트리는 검증한 브랜치 커밋 `278a26de`와 diff 0
+`[실측 git diff --quiet]`.
 
-**왜**: 상태 문서 전수 검토가 찾은 문서 드리프트와, 같은 트랙 중 발견한 같은
-유형의 훅·접근성·동시성 결함을 사용자 표준 지시("새 발견 백로그 이연 금지")에
-따라 같은 PR에서 묶어 처리했다.
+**왜**: 사용자 지시 2026-11-17 "시안대로 ui 전면 수정. 스태프 화면은 제외." 결정 4건
+"문구는 전부 유지" / "전부 그대로"(움직임) / "시리즈 색 점은 유지" / PR 1개·검수 2회.
+머지 승인 원문 "머지 승인 후 백로그 진행".
 
-**검증**: `uv run pytest -q -n auto` 4,391 passed / 57.84초(기준 4,301 대비
-+90건 `[계산]`), `uv run pytest -q -m e2e tests/e2e` 10 passed / 11.89초,
-`manage.py check`·`makemigrations --check` 이상 없음, `ruff check`·`ruff
-format --check` 통과(461파일). PR CI 6잡 전부 success `[실측 gh pr checks]`.
+**검증**: `278a26de`에서 `uv run pytest -q -n auto` 4,484 passed / 40.74초, `-m e2e
+tests/e2e` 10 passed / 9.46초, `tests/staff` 581 passed / 30.28초, `ruff check`·`ruff
+format --check`(466파일)·`manage.py check`·`makemigrations --check --dry-run` 실패 0
+`[실측 2026-11-17]`. PR CI 6개 체크 전부 pass `[실측 gh pr checks]`. 브라우저(Playwright,
+커밋 안 함) 147건(로그인 27쪽 × 4폭, 비로그인 7쪽 × 3폭, 일본어 9쪽 × 2폭) 가로 넘침
+0px `[실측 2026-11-17]`. 최종 리뷰 권장 5건 반영 뒤 WED·BIR 재판정은 받지 않았다.
+사용자 로컬 검수 2와 활동 달력 기호(찜 ♥·굿즈 ●)는 명시 답 없이 머지됐다. 넘긴 프런트
+잔여 6건은 `docs/backlog.md` M절.
 
 ## 이전 PR (번호 — 실제 PR 제목)
+- #419 — docs: Track 57 — replace the spacing step scale with role tokens, add a definition-location guard
+- #418 — refactor: Track 56 — remove dark mode, keep light only, add mobile bottom tab bar
+- #416 — chore(deps): Upgrade soupsieve to 4.1 for two GHSA advisories
+- #415 — perf: Track 17 — DB connection reuse, public calendar range, public cache
+- #414 — deploy: main → production
+- #413 — deploy: main → production
+- #412 — deploy: main → production
+- #411 — fix: Track 55 — review residuals, hook gaps, plan archive
 - #410 — deploy: main → production
 - #409 — docs: Track 50 design principles — A4 black-and-grey direction and the Track B token input
 - #408 — style(home): Replace the neon highlighter with a dark emphasis block
@@ -183,14 +194,3 @@ format --check` 통과(461파일). PR CI 6잡 전부 success `[실측 gh pr chec
 - #282 — feat: 공식 포스터를 걷어내고 행사 화면을 타이포그래피 에디토리얼로 바꾼다
 - #281 — refactor: 프레젠테이션 계층을 web 앱으로 분리해 앱 순환을 없앤다
 - #280 — chore: 운영·위생 백로그 4건을 닫는다 (F3·F4·F5·F9)
-- #279 — docs: 백로그 현재 상태를 main b43957c 기준으로 갱신
-- #278 — fix: 조용히 깨질 자리 두 곳을 닫는다 (백로그 A5 잔여 + F8)
-- #277 — refactor: 보유·교환 축 술어를 CollectionItem으로 모은다 (백로그 A3 이관분)
-- #276 — refactor: core.analytics를 서명 규약 가드에 넣는다 (백로그 A2)
-- #275 — feat(staff): 스태프 콘솔을 소비자 셸에서 분리하고 재설계한다
-- #274 — refactor: Split archive queries and their tests by domain (E2 + E3)
-- #273 — docs: Close E4, E5, and E1 in the backlog
-- #272 — refactor: Name the conditions that comments were explaining (E5)
-- #271 — style: Close the comment-policy track — missed files and a guard
-- #270 — style: Sweep every comment under the rewritten policy
-- #269 — style: Bring auth-track comments under the comment policy, and register E4

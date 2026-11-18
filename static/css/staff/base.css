@@ -11,10 +11,6 @@
   box-sizing: border-box;
 }
 
-html {
-  color-scheme: light dark;
-}
-
 body {
   margin: 0;
   font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
@@ -188,6 +184,7 @@ select:focus {
   left: 50%;
   width: 0.85rem;
   height: 0.85rem;
+  box-sizing: border-box;
   margin: -0.425rem 0 0 -0.425rem;
   border: 2px solid currentColor;
   border-top-color: transparent;

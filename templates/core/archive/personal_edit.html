@@ -9,13 +9,13 @@
 
 {% block content %}
   {% translate "직접 입력 — 위 추천 외 카테고리" as category_placeholder %}{% translate "예: 서울 성수" as location_placeholder %}
-  <main class="page personal-create-page personal-edit-page" id="content">
+  <main class="page personal-create-page personal-edit-page window" id="content">
     <a class="personal-form-back-link" href="/archive/personal/{{ entry.id }}/">{% translate "← 장소 상세로" %}</a>
     <div id="personal-edit-global-error" class="personal-edit-global-error" aria-live="polite"></div>
 
     <section class="personal-form-head">
-      <div class="personal-form-head-row">
-        <h1>{% translate "장소 정보 수정" %}</h1>
+      <div class="personal-form-head-row window-head">
+        <h1 class="window-title">{% translate "장소 정보 수정" %}</h1>
         <span class="personal-form-legend">{% translate "＊ 표시는 필수" %}</span>
       </div>
       <p class="personal-form-subtitle" title="{{ entry.title }}">{{ entry.title }}</p>
@@ -58,7 +58,6 @@
               name="title"
               maxlength="255"
               required
-              aria-describedby="personal-edit-error"
               value="{{ entry.title }}"
             >
           </div>
@@ -127,5 +126,6 @@
 {% endblock %}
 
 {% block extra_js %}
+  <script defer src="{% static 'js/components/form_feedback.js' %}"></script>
   <script defer src="{% static 'js/pages/personal_edit.js' %}"></script>
 {% endblock %}

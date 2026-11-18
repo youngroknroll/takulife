@@ -30,11 +30,15 @@
 | 함수 | 포함 범위 | 쓰는 곳 |
 |---|---|---|
 | `category_exists(slug)` | 전체(비활성 포함) | 어휘 검증 |
-| `category_label(slug)` | 전체, 없으면 슬러그 반환 | 라벨 표시 |
+| `category_label(slug)` | 전체, 없으면 슬러그 반환 | 현재 비테스트 호출처 없음. 화면 표시에는 `category_display_labels`(이 함수는 고정 7종도 DB 한국어 원문을 돌려줘 번역이 빠진다) |
 | `category_slugs()` | 활성만 | LLM 추출 enum·러너 어휘 |
 | `active_category_choices()` | 활성만 | 신규 등록 폼 |
 | `category_choices_for_editing(keep_slugs=)` | 활성 + 현재 값 | 기존 값 편집 폼 |
 | `all_category_choices()` | 전체 | 필터 칩 |
+| `palette_slot_by_slug()` | 슬롯이 배정된 전체(비활성 포함) | 공개 화면 점 색 |
+| `category_labels_for(slugs)` | 전체, 행이 없는 슬러그는 결과에 없음 | `category_display_labels` 내부 조회, 홈 범례(`web/views/events.py:155`) |
+| `category_display_labels(slugs)` | 고정 7종은 번역되는 상수 라벨, 그 밖은 DB 라벨, 행이 없으면 슬러그. 빈 슬러그는 결과에 없음. 조회는 고정이 아닌 슬러그가 있을 때만 1건 | 공개 화면 목록 행·적용 필터 칩·상세·내 활동 행·방문 목록 칩, 스태프 행사·드래프트 목록과 드래프트 상세 |
+| `category_label_lang(label)` | 비한국어 화면이고 라벨에 한글 음절이 있으면 `"ko"`, 아니면 빈 문자열 | 템플릿 태그 `category_lang_attr`, 적용 칩·방문 목록 칩·홈 타일·필터 체크박스 선택지(`web/views/events.py`의 `_translate_category_label`)의 `lang` 값 |
 
 `category_label`의 `.get(slug, slug)` 폴백은 필수다(선례 `archive_status_label`).
 카테고리 행이 사라져도 그 슬러그를 쓰던 이벤트 렌더가 깨지지 않아야 한다.
@@ -87,31 +91,104 @@ atomic의 마지막 문장)는 예외 없이 이벤트만 되돌아가고 EVENT_
 `test_삭제_경로에서_슬롯_재획득이_충돌해도_이벤트_삭제와_감사로그가_함께_커밋된다`
 (세이브포인트를 되돌리면 2 failed `[실측]`).
 
-## 아직 닫히지 않은 간극 — 소비자 화면의 색
+## 공개 화면의 카테고리 색과 라벨
 
-**소비자 화면은 아직 슬러그 기반 토큰(`--cat-{slug}-*`)을 쓴다.** 슬롯
-토큰(`--cat-slot-{n}-*`)은 48개가 정의돼 있지만 소비처가 0곳이다
-`[실측 2026-09-13]`.
+사용자 결정(2026-11-17): 새 카테고리에도 색 점을 준다(트랙 59).
 
-결과: 스태프가 새로 만든 카테고리는 스태프 화면에서는 제 색으로 보이지만
-**소비자 화면에서는 중립 폴백으로 렌더된다.** 기능(필터·라벨·목록·홈 타일)은
-정상이고 강조색만 폴백이다.
+- **고정 7종**은 슬러그 색이다. 점의 `data-category="<slug>"`가 `--dot-<slug>`
+  토큰(`static/css/tokens.css` 20~26줄 `[코드]`)을 고른다.
+- **그 밖의 카테고리**는 점 요소의 `data-palette-slot="N"`이 `--cat-slot-N-ink`를
+  고른다. 12줄 매핑은 `static/css/components/category.css` 21~32줄 `[코드]`에 있다.
+- **슬롯이 없거나 행이 없는 슬러그**는 중립색 점이다.
 
-남은 이관 표면 `[실측 2026-09-13]`: 소비자 템플릿 9지점 / 7파일, 소비자 CSS
-41지점 / 4파일(`home.css`·`event_list.css`·`event_calendar.css`·
-`home_calendar.css`, 슬러그 6종 하드코딩) `[실측 2026-10-27:
-rg -o '--cat-[a-z_]+-(soft|ink)' static/css/pages | sort | uniq -c]`
-(2026-09-13에는 25지점/3파일). 이 이관은 소비자 렌더를 바꾸므로 FE 리뷰
-2역할의 사전 산출이 선행돼야 한다.
+조회 경로: `palette_slot_by_slug()` → 컨텍스트 프로세서 `category_palette_slots`
+(`core/context_processors.py`)의 지연 객체 → 템플릿 태그 `palette_slot_attr`
+(`core/templatetags/category_dots.py`). 고정 7종·빈 카테고리만 있는 화면은 추가
+쿼리가 0건이고, 새 카테고리가 있으면 슬롯 조회가 요청당 1건이다
+`[코드 core/templatetags/category_dots.py, core/context_processors.py]`.
+
+읽기 전용 규칙: 이 경로에서 `reconcile_palette_slot`을 부르지 않고 프로세스 전역
+캐시를 두지 않는다. 테스트가 각각 지키는 것은 다음과 같다.
+
+- 프로세스 전역 캐시를 두지 않아 슬롯 재배정이 다음 요청에 바로 보인다:
+  `tests/core/test_category_queries.py`의
+  `test_슬롯이_재배정되면_다음_슬롯_맵_조회가_바뀐_슬롯을_돌려준다`.
+- 읽기만 하고 슬롯을 반납하지 않는다:
+  `tests/core/test_category_palette_slot_display.py`의
+  `test_비활성이고_게시_행사가_없는_카테고리의_속성을_그려도_슬롯이_반납되지_않고_속성에_실린다`.
+- 요청당 슬롯 조회는 1번이다: 같은 파일의
+  `test_프로세서가_준_슬롯_맵으로_include를_거쳐_여러_점을_그려도_조회는_한_번이다`.
+- 컨텍스트 프로세서 등록이 빠지면 행마다 조회가 나가 쿼리 수가 늘어난다:
+  `tests/events/test_event_list_view.py`의
+  `test_새_카테고리_행사가_여러_개여도_목록_조회_쿼리_수는_행_수에_비례하지_않는다`가
+  실패한다(등록 한 줄을 지운 뮤테이션: 행 2건 6쿼리 / 행 6건 8쿼리
+  `[실측 2026-11-17 뮤테이션]`).
+
+새 카테고리가 있는 화면의 요청당 추가 쿼리 상한은 아래와 같고 행 수에 비례하지
+않는다. 고정 7종·빈 카테고리만 있으면 모두 0건이다.
+
+| 화면 | 추가 쿼리 상한 |
+|---|---|
+| 행사 목록·행사 달력·행사 상세 | 3건(슬롯 1 + 라벨 2) `[계산 호출 횟수, web/views/events.py:331·354(목록), 533·543(달력), 647·653(상세), web/views/_helpers.py:42]` |
+| 로그인 홈 | 5건(슬롯 1 + 라벨 4, 기록 대기 행 라벨 1건 포함). 비로그인 홈은 4건(기록 대기 행 없음) `[실측 2026-11-17 pytest 쿼리 캡처: 새 카테고리 행사 2건과 6건(3종)에서 로그인 18 → 23·23건, 비로그인 8 → 12·12건]` `[코드 web/views/events.py:155·168·209·234, web/views/_helpers.py:42·97·232-234]` |
+| 내 활동 기록장·나의 일정·방문 목록·찜 목록 | 각 1건 `[계산 호출 횟수, web/views/archive.py:72·250·659, web/views/_helpers.py:42]` |
+| 방문 상세·방문 수정 | 최대 1건 `[계산 호출 횟수, web/views/archive.py:458·archive.py:485]` |
+| 컬렉션 작성 폼(`?visit_record=` 미리 선택) | 최대 1건, 그 라벨은 화면에 쓰이지 않음 `[코드 web/views/collection.py:272, web/views/_helpers.py:254-255]` |
+| 스태프 행사 목록 | 행 1건 + 새 카테고리 필터를 걸고 결과가 없을 때 요약 1건 `[계산 호출 횟수, staff/views/events.py:95·staff/views/events.py:229]` |
+| 스태프 드래프트 목록·상세 | 각 1건 `[계산 호출 횟수, staff/views/drafts.py:77·staff/views/drafts.py:174]` |
+
+알려진 어긋남: 고정 카테고리가 슬롯을 반납했다가 다른 슬롯으로 재활성화되면,
+스태프 견본은 새 슬롯 색이고 공개 화면은 슬러그 색이다. 고정 7종은 슬롯을
+조회하지 않기 때문이다.
+
+`-soft` 12개 선언(`--cat-slot-N-soft`)은 공개 화면에서 여전히 쓰지 않는다.
+계약 테스트가 선언을 요구해서만 남아 있다.
+
+### 라벨
+
+공개 화면의 목록 행·적용 필터 칩·행사 상세·홈 달력 범례는 새 카테고리의 DB
+라벨을 보여 준다(트랙 59 이전에는 슬러그가 나왔다). 홈 범례는 고정 카테고리
+뒤에 새 카테고리를 `category_labels_for`가 돌려준 정렬 순서(`sort_order, id`)로
+붙인다 `[코드 web/views/events.py]`.
+
+내 활동·컬렉션 행(`web/views/_helpers.py`의 `_subject_view`)과 방문 목록 칩은
+같은 규칙(`core.categories.category_display_labels`)으로 라벨을 푼다. 호출처는
+행 묶음마다 라벨 맵을 한 번 만들어 `category_labels=`로 넘기고, 단건 화면은
+맵 없이 부르면 그 한 건만 푼다. 방문 목록 칩의 토큰은 고정 7종이면 한국어 원문,
+새 카테고리면 DB 라벨이다. 새 카테고리 칩을 누르면 그 카테고리 방문만 걸린다.
+스태프 화면 4곳(`staff/views/events.py`, `staff/views/drafts.py`)도 같은 함수를
+쓴다. 병합 규칙이 `core`에 있어 `staff`가 `web`을 임포트하지 않는다.
+
+**`lang` 규칙**:
+
+- `lang="ko"`는 비한국어 화면이고 표시 라벨에 한글이 있을 때만 붙는다. 판정은
+  `category_label_lang` 하나가 가진다. 고정 7종 번역 라벨과 영문 DB 라벨에는
+  한글이 없어 붙지 않는다.
+- 한국어 화면에는 속성 자체를 내지 않는다.
+- 개인 항목(직접 등록) 행의 카테고리는 사용자 입력이라 붙이지 않는다. 활동
+  화면은 공식 행사일 때만 태그를 쓴다.
+- 스태프 화면은 한국어 전용(`<html lang="ko">`, `translation.override("ko")`)이라
+  붙이지 않는다.
+- 라벨 요소가 템플릿에서 직접 보이는 곳은 `{% category_lang_attr 라벨 %}`을 쓴다.
+  적용 필터 칩은 문자열이 섞여 있어 뷰가 `active_filter_ko_chips`로, 방문 목록
+  칩은 칩 dict의 `lang` 키로 값을 준다.
+- `lang`을 `.record-row-pills`·`.record-row-end`·`.status-row`나 그 조상에 붙이지
+  않는다. `archive.css`의 `:not(:lang(ko))` 선택자가 이 요소를 고른다.
 
 ## 색 계약 가드
 
-`tests/core/test_category_token_contract.py`가 세 가지를 강제한다.
+`tests/core/test_category_token_contract.py`가 네 가지를 강제한다.
 
 1. `tokens.css`에 12슬롯 × soft/ink 토큰이 **존재**한다
 2. 그 토큰 **값이 `PALETTE`와 일치**한다 — 이름만 검사하면 두 파일이 조용히
    어긋나고, 스태프 화면(Python hex)과 소비자 화면(CSS 토큰)의 색이 달라진다
 3. 활성 카테고리는 모두 유효 슬롯에 배정돼 있다
+4. `tokens.css`의 `--dot-*` 이름 집합이 `core.vocab.CATEGORY_SOURCE_LABELS`의 키
+   집합과 같다
+   (`test_tokens_css의_점_색_토큰_이름은_고정_카테고리_슬러그_집합과_같다`)
+
+그래서 `--dot-slot` 같은 새 이름을 `tokens.css`에 넣으면 4번이 깨진다. 슬롯
+점 변수는 `category.css`에 둔다.
 
 ## 마이그레이션
 

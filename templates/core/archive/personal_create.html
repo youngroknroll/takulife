@@ -8,12 +8,12 @@
 
 {% block content %}
   {% translate "예: 숨은 콜라보 카페 / 한정 팝업스토어" as title_placeholder %}{% translate "직접 입력 — 위 추천 외 카테고리" as category_placeholder %}{% translate "예: 서울 성수" as location_placeholder %}
-  <main class="page personal-create-page" id="content">
+  <main class="page personal-create-page window" id="content">
     <a class="personal-form-back-link" href="/archive/personal/">{% translate "← 직접 등록 목록으로" %}</a>
 
     <section class="personal-form-head">
-      <div class="personal-form-head-row">
-        <h1>{% translate "비공식 장소 등록" %}</h1>
+      <div class="personal-form-head-row window-head">
+        <h1 class="window-title">{% translate "비공식 장소 등록" %}</h1>
         <span class="personal-form-legend">{% translate "＊ 표시는 필수" %}</span>
       </div>
       <p class="personal-form-subtitle">{% translate "공식 목록에 없는 장소를 나만의 기록으로 추가합니다" %}</p>
@@ -58,7 +58,6 @@
               name="title"
               maxlength="255"
               required
-              aria-describedby="personal-create-error"
               placeholder="{{ title_placeholder }}"
             >
           </div>
@@ -128,5 +127,6 @@
 {% endblock %}
 
 {% block extra_js %}
+  <script defer src="{% static 'js/components/form_feedback.js' %}"></script>
   <script defer src="{% static 'js/pages/personal_create.js' %}"></script>
 {% endblock %}

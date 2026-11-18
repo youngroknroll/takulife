@@ -1,40 +1,39 @@
-/* ── legal pages (개인정보처리방침 / 이용약관) ──────────────────── */
-/* 공용 .page/.panel을 그대로 쓰고, 여기선 긴 글에 필요한 너비 제한과
-   제목·목록 스타일만 추가한다. */
-.legal-doc {
+/* 약관·개인정보 쪽 — <main>이 창 1개이고 쪽 h1이 창 제목이다(공용 .page.window).
+   안쪽 article은 창 테두리와 겹치지 않게 상자를 없애고 긴 글 너비만 제한한다. */
+.legal-doc.panel {
   max-width: 46rem;
-  margin: 0 auto;
-}
-
-.legal-doc h1 {
-  margin: 0 0 0.75rem;
-  font-size: var(--fs-xl);
-  line-height: 1.4;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
 }
 
 .legal-doc .lead {
-  margin: 0 0 1.5rem;
-  color: var(--muted);
-  font-size: var(--fs-base);
-  line-height: 1.7;
+  margin: 0 0 var(--space-4);
+  color: var(--ink-2);
+  font-size: var(--fs-3);
+  line-height: var(--lh-base);
 }
 
-/* §8 간격 관례: 섹션 간 24~32px */
+/* 구획은 위쪽 1px 단선으로 나눈다. */
 .legal-doc section {
-  margin-top: 1.75rem;
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: var(--bw-1) solid var(--rule);
 }
 
 .legal-doc h2 {
-  margin: 0 0 0.625rem;
-  font-size: var(--fs-lg);
-  line-height: 1.4;
+  margin: 0 0 var(--space-2);
+  font-size: var(--fs-4);
+  font-weight: 400;
+  line-height: var(--lh-tight);
 }
 
 .legal-doc p {
-  margin: 0 0 0.625rem;
-  color: var(--text);
-  font-size: var(--fs-base);
-  line-height: 1.7;
+  margin: 0 0 var(--space-2);
+  color: var(--ink);
+  font-size: var(--fs-3);
+  line-height: var(--lh-base);
 }
 
 .legal-doc p:last-child {
@@ -45,19 +44,20 @@
   margin: 0;
   padding-left: 1.25rem;
   display: grid;
-  gap: 0.5rem;
-  color: var(--text);
-  font-size: var(--fs-base);
-  line-height: 1.7;
+  gap: var(--space-2);
+  color: var(--ink);
+  font-size: var(--fs-3);
+  line-height: var(--lh-base);
 }
 
 .legal-revision-list {
-  color: var(--muted);
-  font-size: var(--fs-md);
+  color: var(--ink-2);
+  font-size: var(--fs-2);
 }
 
+/* 창 제목이 창 안 첫 줄로 내려오는 폭에서는 본문과 간격을 둔다. */
 @media (max-width: 45rem) {
-  .legal-doc h1 {
-    font-size: var(--fs-xl-mobile);
+  .legal-doc h1.window-title {
+    margin-bottom: var(--space-3);
   }
 }

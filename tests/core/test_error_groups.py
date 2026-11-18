@@ -607,7 +607,8 @@ def test_뷰가_처리되지_않은_예외를_던지면_500_응답과_함께_오
     def _boom(*args, **kwargs):
         raise RuntimeError("simulated view failure")
 
-    monkeypatch.setattr("web.views.events.list_published_events", _boom)
+    # 홈은 공개 구간을 이 함수 하나로 받으므로 여기서 실패를 일으킨다.
+    monkeypatch.setattr("web.views.events.home_public_sections", _boom)
     client.raise_request_exception = False
 
     resp = client.get("/")

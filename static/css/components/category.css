@@ -1,20 +1,32 @@
-/* ── category color system (archive list chip) ─────────────── */
-/* 카테고리 색은 상태색 4종과 구분되도록 채도를 낮췄다. */
 /* ── archive list chip (.event-category) ──────────────────────── */
-/* .unofficial은 비공식(개인) 기록 표시용이다. */
+/* 카테고리 색은 점에만 쓴다. 칩은 색 없이 글자만, .unofficial(개인 기록)은
+   1px 단선 테두리로 구분한다. */
 .event-category {
-  border-radius: var(--radius-chip);
-  padding: 0.25rem 0.5625rem;
-  font-size: var(--fs-xs);
-  font-weight: 700;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--fs-1);
+  font-weight: var(--fw-regular);
   overflow-wrap: anywhere;
-  background: var(--brand-soft);
-  color: var(--brand-ink);
+  color: var(--ink-2);
 }
-/* --brand-soft 배경엔 --brand-ink를 써야 명암비 AA(4.5:1)를 만족한다. */
+
 .event-category.unofficial {
   display: inline-flex;
   align-items: center;
-  background: var(--muted-soft);
-  color: var(--muted);
+  border: var(--bw-1) solid var(--rule);
+  color: var(--ink-2);
 }
+
+/* 스태프가 만든 카테고리의 점 색. 슬롯 번호는 서버가 내려 data-palette-slot에 담는다.
+   고정 카테고리가 반납한 0~6번도 새 카테고리가 받을 수 있어 12줄이 모두 필요하다. */
+[data-palette-slot="0"] { --dot-slot: var(--cat-slot-0-ink); }
+[data-palette-slot="1"] { --dot-slot: var(--cat-slot-1-ink); }
+[data-palette-slot="2"] { --dot-slot: var(--cat-slot-2-ink); }
+[data-palette-slot="3"] { --dot-slot: var(--cat-slot-3-ink); }
+[data-palette-slot="4"] { --dot-slot: var(--cat-slot-4-ink); }
+[data-palette-slot="5"] { --dot-slot: var(--cat-slot-5-ink); }
+[data-palette-slot="6"] { --dot-slot: var(--cat-slot-6-ink); }
+[data-palette-slot="7"] { --dot-slot: var(--cat-slot-7-ink); }
+[data-palette-slot="8"] { --dot-slot: var(--cat-slot-8-ink); }
+[data-palette-slot="9"] { --dot-slot: var(--cat-slot-9-ink); }
+[data-palette-slot="10"] { --dot-slot: var(--cat-slot-10-ink); }
+[data-palette-slot="11"] { --dot-slot: var(--cat-slot-11-ink); }

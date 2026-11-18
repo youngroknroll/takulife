@@ -321,7 +321,8 @@ def test_영어_상세의_카테고리_줄_세_곳은_번역_라벨이고_ko_범
 def test_영어_달력_아젠다의_카테고리는_번역_라벨이고_ko_범위가_아니다(make_event):
     _event(make_event, "popup_store")
 
-    root = _parse(_get("/events/calendar/?month=2026-03&date=2026-03-05", "en"))
+    with patch("web.views.events.timezone.localdate", return_value=date(2026, 3, 15)):
+        root = _parse(_get("/events/calendar/?month=2026-03&date=2026-03-05", "en"))
 
     cats = root.find_all(cls="agenda-cat")
     assert [cat.text() for cat in cats] == ["Pop-up store"]

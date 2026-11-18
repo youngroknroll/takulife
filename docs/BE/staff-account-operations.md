@@ -69,7 +69,7 @@ superuser 세션이 탈취되면 HTTP 요청만으로 비-superuser 계정을 �
 대상 행을 잠그고, 서비스 호출과 `StaffActionLog.objects.create(...)`가 같은
 트랜잭션에서 실행된다(`staff/views/accounts.py:128-140`). 감사 로그 저장이
 실패하면 플래그 변경도 함께 롤백된다 — 삭제 확인 패턴
-(`staff/views/events.py:695` `confirmed` 검사, `:707-708` atomic +
+(`staff/views/events.py:699` `confirmed` 검사, `:711-712` atomic +
 select_for_update)과 같은 흐름이다.
 
 ## (e) 감사 대상은 `target_user`, 운영자 화면에는 이메일을 노출하지 않는다
@@ -135,8 +135,8 @@ superuser 경계를 감사 로그 화면이 우회해 노출하기 때문이다.
 
 확인 화면(`confirm.html`)은 순수 폼 POST(PRG) 흐름이라 fetch 기반 화면이
 쓰는 `commitAndNavigate`/`data-committed-redirect` 표시
-(`static/js/shared/api.js:315-320`)와 그 표시를 읽는 `pageshow` 핸들러
-(`static/js/shared/api.js:333-347`)를 쓸 수 없다. 여기 로드된
+(`static/js/shared/api.js:317-322`)와 그 표시를 읽는 `pageshow` 핸들러
+(`static/js/shared/api.js:335-349`)를 쓸 수 없다. 여기 로드된
 `static/js/shared/submit_guard.js`(옛 이름 `staff_submit_guard.js`;
 `form[data-submit-guard]`, 약 23-30행)는 제출 시 버튼에 `.is-loading` +
 `disabled`만 건다. 뒤로가기로 확인

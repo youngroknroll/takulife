@@ -33,6 +33,7 @@
 from datetime import date
 import html
 import re
+from unittest.mock import patch
 from urllib.parse import parse_qs, urlparse
 
 from django.test import Client
@@ -865,3 +866,25 @@ def test_굿즈_수량만_수정하면_달력에_새_활동이_생기지_않는�
     assert resp.context["kind_counts"]["goods"] == 1
     acquired_cell = _find_cell(resp.context["weeks"], acquired_on)
     assert acquired_cell["count"] == 1
+
+
+# ---------------------------------------------------------------------------
+# D6 — 공개 달력(/events/calendar/)과 달리 활동 달력은 범위 제한을 받지
+# 않는다(월 파서를 공유하지 않음, web/views/activity.py:231).
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+@pytest.mark.contract
+def test_활동_달력은_공개_달력_범위보다_먼_과거_달도_그대로_보여준다(user_client, make_event):
+    user, client = user_client()
+    fixed_today = date(2026, 6, 26)
+    event = make_event(title="60개월전방문행사")
+    VisitRecord.objects.create(user=user, event=event, visited_on=date(2021, 6, 15))
+
+    with patch("web.views.activity.timezone.localdate", return_value=fixed_today):
+        resp = client.get("/archive/calendar/", {"month": "2021-06", "date": "2021-06-15"})
+
+    assert resp.status_code == 200
+    section = _selected_date_section(resp.content.decode())
+    assert "60개월전방문행사" in section

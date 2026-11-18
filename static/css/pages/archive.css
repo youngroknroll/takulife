@@ -1,1072 +1,1041 @@
-  /* 공유 .hero 박스를 이 페이지 전용으로 평평하게 만든다. `.hero`가 아니라
-     `.hero-activity`로 스코프해야 home.html의 별도 히어로에 스타일이
-     새어나가지 않는다. 3열 그리드로 lead/토글/액션을 배치하고 바깥 두 열은
-     최소폭을 보장해 좁은 화면에서 가운데 토글과 겹치지 않게 한다. */
-  .hero-activity {
-    /* cards.css 공유 박스가 border-radius: 12px를 준다 — 여기서 0으로
-       재선언하지 않으면 밑줄 양 끝이 둥글게 남는다. */
-    background: none;
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
-    padding: 0 0 1.125rem;
-    margin: 0 0 1.5rem;
-    border-bottom: 2px solid var(--text);
-    display: grid;
-    grid-template-columns: minmax(min-content, 1fr) auto minmax(min-content, 1fr);
-    align-items: flex-end;
-    gap: 1.25rem;
-  }
-  .hero-lead {
-    min-width: 0;
-  }
-  .hero-activity h1 {
-    margin: 0 0 0.625rem;
-    font-size: 1.5rem;
-    /* --fs-xl(tokens.css)은 홈 히어로 제목 전용 토큰이라 여기서는 쓰지 않고
-       리터럴 값을 둔다. */
-    /* cards.css의 `.hero h1`은 font-weight를 선언하지 않아 브라우저 기본
-       굵기(700)로 렌더된다 — 컬렉션 페이지(800)와 맞추려면 명시가 필요하다. */
-    font-weight: 800;
-  }
-  /* 공유 카드를 인라인 통계 행으로 평평하게 바꾼다 — DOM 순서(라벨→값)는
-     그대로 두고 flex order로 값을 먼저 보이게 한다. */
-  .hero-activity .summary-grid {
-    display: flex;
-    align-items: baseline;
-    gap: 0;
-    margin-top: 0;
-  }
-  .hero-activity .summary-card {
-    /* cards.css 공유 카드 박스를 명시적으로 초기화하지 않으면 흰 박스가
-       그대로 비친다. */
-    background: none;
-    border: none;
-    border-radius: 0;
-    display: flex;
-    align-items: baseline;
-    gap: 0.4375rem;
-    padding: 0 1.25rem;
-    border-left: 1px solid var(--line);
-  }
-  .hero-activity .summary-card:first-child {
-    padding-left: 0;
-    border-left: none;
-  }
-  .hero-activity .summary-label {
-    order: 2;
-    margin: 0;
-    font-size: 0.78rem;
-    font-weight: 700;
-    color: var(--muted);
-  }
-  .hero-activity .summary-value {
-    order: 1;
-    margin: 0;
-    font-size: 1.625rem;
-    font-weight: 800;
-    line-height: 1.15;
-    font-variant-numeric: tabular-nums;
-  }
-  .hero-activity .summary-card:nth-child(1) .summary-value {
-    color: var(--up-ink);
-  }
-  .hero-activity .summary-card:nth-child(2) .summary-value {
-    color: var(--mint-ink);
-  }
-  .hero-activity .summary-card:nth-child(3) .summary-value {
-    color: var(--end-ink);
-  }
-  /* 영어·일본어·중국어 라벨은 한국어보다 길어 좁은 폭에서 카드가 넘치거나
-     라벨이 한 글자씩 쪼개진다 — 한국어는 이 규칙을 받지 않는다. */
-  @media (max-width: 45rem) {
-    .hero-activity:not(:lang(ko)) .summary-grid {
-      flex-wrap: wrap;
-      row-gap: 0.5rem;
-    }
-    .hero-activity:not(:lang(ko)) .summary-card {
-      padding: 0 0.75rem;
-    }
-    .hero-activity:not(:lang(ko)) .summary-card:first-child {
-      padding-left: 0;
-    }
-    .hero-activity:not(:lang(ko)) .summary-label {
-      white-space: nowrap;
-    }
-  }
-  /* `.hero-action`은 활동 셸 여러 페이지가 공유하는 클래스라 여기서 값을
-     바꾸면 셸 전체 색이 함께 바뀐다. */
-  .hero-action {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-    text-decoration: none;
-    border-radius: 10px;
-    border: 1px solid var(--teal);
-    background: var(--teal);
-    color: #fff;
-    padding: 0 1.25rem;
-    min-height: 44px;
-    font-size: var(--fs-md);
-    font-weight: 700;
-    flex: none;
-    /* 자식이 둘뿐인 페이지(예: /archive/statuses/, 토글 생략)에서는 자동
-       배치가 액션을 가운데 열에 놓아 오른쪽에 빈 공간이 생긴다 —
-       grid-column: 3으로 자식 수와 무관하게 항상 마지막 열에 고정한다. */
-    grid-column: 3;
-    justify-self: end;
-  }
+/* ── 내 활동 기록 목록 5쪽 + 활동 달력 머리·툴바 (DOS) ──────────────── */
+/* /archive/, /archive/statuses/, /archive/visits/, /archive/interests/,
+ * /archive/personal/과 활동 달력이 이 파일을 함께 읽고, 홈은 `.record-action-link`
+ * 하나만 쓴다. 바탕 위에는 h1·요약·탭·검색만 놓고 목록은 창 안에 둔다.
+ * 방문·일정 상태 배지(.status)의 테두리 모양은 components/controls.css가 맡는다.
+ */
+
+/* ── hero: h1 + 요약 + 목록/달력 토글 + 기록 추가 (바탕 위) ───────── */
+/* 공용 .hero 상자(cards.css)를 쓰지 않는 평면 머리다. 홈의 별도 히어로로
+   새지 않도록 `.hero-activity`로 좁혀 둔다. */
+.hero-activity {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: end;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  background: none;
+  border: none;
+}
+
+.hero-lead {
+  min-width: 0;
+}
+
+.hero-activity h1 {
+  margin: 0 0 var(--space-2);
+}
+
+/* 요약 3칸은 cards.css의 단선 칸 모양을 그대로 쓰고 폭만 제한한다. */
+.hero-activity .summary-grid {
+  max-width: 30rem;
+  margin-top: 0;
+}
+
+.hero-activity .summary-card {
+  min-width: 0;
+}
+
+.hero-activity .summary-label {
+  margin: 0 0 var(--space-1);
+  overflow-wrap: anywhere;
+}
+
+.hero-activity .summary-value {
+  color: var(--ink);
+}
+
+.hero-activity .activity-view-toggle {
+  grid-column: 2;
+  justify-self: end;
+}
+
+/* 주 버튼: 표면 + 2px 테두리. 가운데 열이 비는 쪽에서도 항상 마지막 열이다. */
+.hero-action {
+  grid-column: 3;
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-height: var(--hit-md);
+  padding: 0 var(--space-3);
+  background: var(--surface);
+  color: var(--ink);
+  border: var(--bw-2) solid var(--ink);
+  font-size: var(--fs-2);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+@media (hover: hover) {
   .hero-action:hover {
-    filter: brightness(0.95);
+    background: var(--select);
+    color: var(--on-select);
+    border-color: var(--select);
+  }
+}
+
+.hero-action:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+  border-color: var(--select);
+}
+
+/* ── activity-toolbar: 서브탭 | 검색 | 찜 목록 (바탕 위) ─────────── */
+.activity-toolbar {
+  position: relative;
+  display: grid;
+  /* 1·3열은 내용 폭, 2열이 남는 폭을 차지해 검색창이 탭과 찜 사이 가운데에 온다. */
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.activity-toolbar .sub-nav {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+  margin: 0;
+}
+
+.activity-toolbar .archive-nav-wrap {
+  width: auto;
+}
+
+/* 찜 링크는 탭 줄(<nav>) 밖에 있어 nav.css의 탭 규칙을 못 받는다. 같은
+   칸 모양을 여기서 직접 준다. */
+.activity-toolbar .nav-interest {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--hit-md);
+  padding: var(--space-1) var(--space-3);
+  background: var(--surface);
+  color: var(--ink);
+  border: var(--bw-1) solid var(--ink);
+  font-size: var(--fs-2);
+  line-height: var(--lh-tight);
+  text-decoration: none;
+}
+
+.activity-toolbar .nav-interest.active,
+.activity-toolbar .nav-interest:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+  border-color: var(--select);
+}
+
+@media (hover: hover) {
+  .activity-toolbar .nav-interest:hover {
+    background: var(--select);
+    color: var(--on-select);
+    border-color: var(--select);
   }
 
-  /* ── view toggle: 목록 | 달력 — 칩 모양 자체는 components/nav.css로
-     옮겼다. 이 스타일시트를 안 불러오는 달력 페이지에서도 스타일이
-     적용되도록 하기 위해서다. 여기는 그리드 안 위치만 남긴다. */
-  .hero-activity .activity-view-toggle {
-    justify-self: center;
+  .activity-toolbar .nav-interest:not(.active):hover {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
   }
+}
 
-  /* ── activity-toolbar: 서브탭 / 검색 / 찜 목록을 한 헤어라인 레일로
-     배치한다. */
-  .activity-toolbar {
-    position: relative; /* 지금은 절대 배치 기준으로 안 쓰이지만 다른
-      자손이 쓸 수 있어 보수적으로 유지한다. */
-    display: grid;
-    /* 1·3열을 콘텐츠 폭으로 좁히고 2열이 남는 공간을 다 가지면, 그 안에서
-       중앙 정렬한 검색창이 탭과 찜 사이 정중앙에 온다(더블 auto-margin은
-       좌우 아이템 폭이 같을 때만 중앙에 와 여기서는 어긋난다). */
-    grid-template-columns: auto 1fr auto;
-    align-items: center;
-    gap: 0.75rem;
-    border-bottom: 1px solid var(--line);
-    margin-bottom: 1.25rem;
-  }
-  .activity-toolbar .sub-nav {
-    /* site-chrome.css 공유 카드 박스를 명시적으로 초기화하지 않으면 탭
-       줄이 카드 박스로 남는다. */
-    background: none;
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
-    padding: 0;
-    margin-bottom: 0;
-    min-width: 0;
-  }
-  .activity-toolbar .archive-nav-wrap {
-    width: auto;
-    border-bottom: none;
-  }
-  /* 찜 링크가 더 이상 `<nav class="archive-nav-wrap">` 안에 있지 않아
-     nav.css의 핑크 필 규칙이 여기서는 매치되지 않는다 — 이 규칙이 대신
-     쓸 평면 텍스트 링크 모양을 정의한다. */
-  .activity-toolbar .nav-interest {
-    justify-self: end; /* 그리드 자식이라 margin-left:auto 대신 이 방식 사용 */
-    display: inline-flex;
-    align-items: center;
-    /* 아이콘-텍스트 간격을 마크업 공백에 기대지 않고 명시한다. */
-    gap: 0.25rem;
-    border: none;
-    background: none;
-    border-radius: 0;
-    padding: 0;
-    min-height: 0;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    /* 찜을 <nav> 밖으로 옮기며 상속받던 색이 사라져 브라우저 기본
-       링크색으로 보이던 결함을 여기서 명시 색상으로 고쳤다. */
-    color: var(--pink-ink);
-    transition: color 0.15s ease;
-  }
-  .activity-toolbar .nav-interest:hover,
-  .activity-toolbar .nav-interest.active {
-    background: none;
-    border-color: transparent;
-    transform: none;
-    box-shadow: none;
-  }
-  /* 이 리터럴 앵커는 이 스타일시트를 불러오는 페이지에만 있어 여기
-     스코프해도 무방하다. */
-  .activity-toolbar .nav-interest-short {
-    display: none;
-  }
-  .activity-toolbar .archive-search {
-    width: 21.25rem; /* 실측 340px — 2열(1fr) 폭과 무관하게 고정 폭 유지 */
-    max-width: 100%; /* 2열이 340px보다 좁아지는 폭에서도 넘치지 않게 */
-    min-width: 0;
-    margin: 0;
-    /* 2열이 탭↔찜 사이 남는 공간을 모두 차지하므로, 그 안에서 다시 중앙
-       정렬해야 "탭과 찜 사이 중앙"이 된다. */
-    justify-self: center;
-  }
-  /* 에러 메시지를 절대 배치에서 일반 흐름으로 바꿔 결과 영역과 겹치지
-     않게 한다. 비어 있을 때는 `:empty`로 숨겨 여백이 생기지 않는다.
-     sr-only 상태 텍스트(#archive-search-status)는 손대지 않는다 — 흐름으로
-     바꾸면 클립이 깨져 시각적으로 노출된다. */
-  .activity-page #archive-search-error {
-    position: static;
-    grid-column: 1 / -1;
-    margin: 0.5rem 0 0;
-  }
-  .activity-page #archive-search-error:empty {
-    display: none;
-  }
+.activity-toolbar .nav-interest-short {
+  display: none;
+}
 
-  /* 지우기 버튼을 절대 배치로 빼야 나타날 때 검색창 높이가 늘어나지 않아
-     툴바 전체 높이가 변하지 않는다. */
-  .activity-page .archive-search {
-    position: relative;
-  }
-  .activity-page .archive-search-clear {
-    position: absolute;
-    top: calc(100% + 0.25rem);
-    right: 0;
-  }
+.activity-toolbar .archive-search {
+  grid-column: 2;
+  grid-row: 1;
+  width: 21.25rem;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  justify-self: center;
+}
 
-  /* ── two-column layout: aside(필터/검색/빠른 이동) 좌측, article(결과) 우측 ── */
-  .layout {
-    display: grid;
-    grid-template-columns: minmax(200px, 232px) minmax(0, 1fr);
-    gap: 1.75rem;
-    align-items: start;
-  }
-  /* 공유 .panel 박스를 이 페이지 두 컬럼 전용으로 평평하게 만든다. */
-  .layout .panel {
-    background: none;
-    border: none;
-    box-shadow: none;
-    padding: 0;
-  }
-  .right-section {
-    margin-top: 0.75rem;
-    border-top: 1px solid var(--border-soft);
-    padding-top: 0.75rem;
-  }
-  .right-section:first-child {
-    margin-top: 0;
-    border-top: none;
-    padding-top: 0;
-  }
-  /* `.aside-label`이 특이도에서 cards.css의 `.panel h2`에 밀려 값이
-     조용히 무시되는 함정이 있다 — 로드 순서가 아니라 특이도 자체가 낮아서라
-     순서를 바꿔도 못 고친다. `.activity-page` 스코프로 특이도를 올려 이긴다. */
-  .activity-page .aside-label {
-    margin: 0 0 0.625rem;
-    font-size: 0.6875rem; /* 시안 실측 11px */
-    font-weight: 800;
-    letter-spacing: 0.07em; /* 시안 실측 */
-    color: var(--muted);
-  }
-  /* ── 빠른 이동: 박스가 아니라 평문 링크 + 화살표(화살표는 템플릿 텍스트
-     리터럴 "→"). 공용 `.side-list` 박스 스타일은 그대로 두고 이 페이지에서만
-     되돌린다. */
-  .activity-page .side-list li {
-    display: flex;
-    align-items: center;
-    min-height: 44px;
-    border: none;
-    background: none;
-    padding: 0;
-  }
-  /* 빠른 이동 기본색은 청록 — "활동 달력 →"만 아래에서 다른 색으로 덮어써
-     구분한다. */
-  .activity-page .side-list a {
-    font-size: 0.84375rem; /* 시안 실측 13.5px */
-    color: var(--teal-ink);
-  }
-  .activity-page .side-list a.quick-link-calendar {
-    color: var(--up-ink);
-  }
-  .activity-page .side-list a.quick-link-events {
-    color: var(--up-ink);
-  }
-  /* teal 강조색 재선언은 components/nav.css로 옮겼다 — 이 파일에만 있으면
-     이 스타일시트를 안 불러오는 다른 아카이브 페이지에는 적용되지 않아
-     밑줄과 칩·페이저 색이 어긋나는 결함이 있었다. */
-  .results-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 0.625rem;
-    margin-bottom: 0.5rem;
-  }
-  /* `.results-head h2`도 `.panel h2`와 특이도가 같아 지금은 로드 순서로만
-     이기고 있다 — 위 `.aside-label`과 같은 함정이라 함께 스코프를 올린다. */
-  .activity-page .results-head h2 {
-    margin: 0;
-    font-size: 0.94rem;
-    font-weight: 700;
-  }
-  .results-count {
-    color: var(--teal-ink);
-  }
-  /* 정렬 메뉴는 <details>로 구현. 패널이 절대 배치라 열려도 아래 목록이
-     밀리지 않는다. `position: relative`가 없으면 메뉴가 더 먼 조상 기준으로
-     배치된다. */
-  .results-sort {
-    position: relative;
-    font-size: 0.8rem;
-    color: var(--muted);
-  }
-  .results-sort-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3125rem;
-    min-height: 44px;
-    padding: 0 0.125rem;
-    font-size: 0.78rem;
-    color: var(--muted);
-    cursor: pointer;
-    list-style: none; /* Firefox 기본 마커 제거 */
-    white-space: nowrap;
-  }
-  /* 이게 없으면 Safari/Chrome이 기본 삼각형을 그려 라벨과 반대쪽에 남는다. */
-  .results-sort-toggle::-webkit-details-marker {
-    display: none;
-  }
-  .results-sort-toggle span {
-    color: var(--text);
-    font-weight: 600;
-  }
-  .results-sort-toggle::after {
-    content: "▾";
-    font-size: 0.66rem;
-    color: var(--muted);
-    transition: transform 0.15s ease;
-  }
-  .results-sort[open] .results-sort-toggle::after {
-    transform: rotate(180deg);
-  }
-  .results-sort-toggle:focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: 2px;
-    border-radius: 4px;
-  }
-  /* display를 일부러 선언하지 않는다 — 선언하면 details의 기본 collapse가
-     깨져 닫힌 메뉴 링크가 Tab으로 여전히 잡힌다. */
-  .results-sort-menu {
-    position: absolute;
-    right: 0;
-    top: calc(100% - 0.375rem);
-    z-index: 30;
-    min-width: 9.5rem;
-    margin: 0;
-    padding: 0.3125rem;
-    list-style: none;
-    background: var(--surface);
-    border: 1px solid var(--border-soft);
-    border-radius: 10px;
-    box-shadow: var(--shadow-dropdown);
-  }
-  .results-sort-menu a {
-    display: flex;
-    align-items: center;
-    min-height: 40px;
-    padding: 0 0.6875rem;
-    border-radius: 7px;
-    font-size: 0.8rem;
-    color: var(--text);
+/* 오류 줄은 흐름 안에 둬서 결과 영역과 겹치지 않게 한다. 탭·검색·찜은 위
+   명시적 칸에 고정해, 오류 글자가 들어와도 찜 링크가 밀려나지 않는다.
+   sr-only 상태 문장(#archive-search-status)은 건드리지 않는다. */
+.activity-page #archive-search-error {
+  position: static;
+  grid-column: 1 / -1;
+  margin: var(--space-2) 0 0;
+}
+
+/* 비어 있을 때는 칸을 차지하지 않게 흐름에서만 뺀다(숨기지는 않는다). */
+.activity-page #archive-search-error:empty {
+  position: absolute;
+  margin: 0;
+}
+
+/* 지우기 링크를 절대 위치로 빼야 나타날 때 툴바 높이가 변하지 않는다. */
+.activity-page .archive-search {
+  position: relative;
+}
+
+.activity-page .archive-search-clear {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  right: 0;
+}
+
+/* ── 두 칸 배치: 필터·안내 창 | 결과 창 ───────────────────────── */
+.layout {
+  display: grid;
+  grid-template-columns: 14rem minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+/* 그리드 열이 내용 때문에 늘어나지 않게 한다. */
+.layout .panel.window {
+  min-width: 0;
+}
+
+/* 창 안 구획: 위쪽 단선 + 소제목. 처음 오는 구획은 선이 없다. */
+.right-section {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: var(--bw-1) solid var(--rule);
+}
+
+.right-section:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+/* `.panel h2`(cards.css)보다 특이도를 올려야 값이 먹는다. */
+.activity-page .aside-label {
+  margin: 0 0 var(--space-2);
+  font-size: var(--fs-3);
+  color: var(--ink);
+}
+
+.activity-page .aside-label + .rule-list {
+  margin-top: 0;
+}
+
+/* 빠른 이동: 박스 없이 링크 한 줄씩. 활동 달력의 날짜별 목록도 같은 클래스다. */
+.activity-page .side-list li {
+  display: flex;
+  align-items: center;
+  min-height: var(--hit-md);
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+@media (hover: hover) {
+  .activity-page .side-list a:hover {
+    background: var(--select);
+    color: var(--on-select);
     text-decoration: none;
-    white-space: nowrap;
   }
+}
+
+.activity-page .side-list a:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+  text-decoration: none;
+}
+
+/* ── 결과 창 머리: h2가 창 제목, 정렬 메뉴는 오른쪽 ─────────────── */
+.activity-page .results-head {
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* 대괄호는 글자 요소 대신 CSS로 둔다 — 제목 글자를 테스트가 통째로 비교한다.
+   대체 글자를 비워 스크린 리더에는 읽히지 않게 한다. */
+.activity-page .results-head .window-title::before {
+  content: "[ ";
+  content: "[ " / "";
+}
+
+.activity-page .results-head .window-title::after {
+  content: " ]";
+  content: " ]" / "";
+}
+
+.results-count {
+  font-weight: var(--fw-regular);
+}
+
+/* ── 정렬 메뉴: 떠 있는 패널 (행사 목록과 같은 모양) ───────────── */
+/* 패널은 절대 위치라 열려도 아래 행 목록이 밀리지 않는다. 위치 기준이
+   없으면 더 먼 조상 기준으로 놓인다. */
+.results-sort {
+  position: relative;
+  flex: none;
+}
+
+.results-sort-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--hit-md);
+  padding: 0 var(--space-3);
+  background: var(--surface);
+  color: var(--ink);
+  border: var(--bw-1) solid var(--ink);
+  font-size: var(--fs-2);
+  cursor: pointer;
+  list-style: none;
+  white-space: nowrap;
+}
+
+/* Safari/Chrome는 이게 없으면 기본 삼각형을 라벨 반대쪽에 그린다. */
+.results-sort-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.results-sort-toggle span {
+  color: inherit;
+}
+
+.results-sort-toggle::after {
+  content: "▾";
+  font-size: var(--fs-1);
+}
+
+/* 열림 표시 화살표는 모양을 맡은 회전이라 남긴다(전환은 없다). */
+.results-sort[open] .results-sort-toggle::after {
+  transform: rotate(180deg);
+}
+
+.results-sort[open] .results-sort-toggle {
+  background: var(--select);
+  color: var(--on-select);
+  border-color: var(--select);
+}
+
+@media (hover: hover) {
+  .results-sort-toggle:hover {
+    background: var(--select);
+    color: var(--on-select);
+    border-color: var(--select);
+  }
+}
+
+/* display를 일부러 선언하지 않는다 — 선언하면 details의 기본 접힘이 깨져
+   닫힌 메뉴 링크가 Tab으로 잡힌다. */
+.results-sort-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 30;
+  min-width: 12rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--surface);
+  border: var(--bw-1) solid var(--ink);
+  box-shadow: var(--shadow-dropdown);
+}
+
+.results-sort-menu a {
+  display: flex;
+  align-items: center;
+  min-height: var(--hit-md);
+  padding: var(--space-1) var(--space-3);
+  color: var(--ink);
+  font-size: var(--fs-2);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+@media (hover: hover) {
   .results-sort-menu a:hover {
-    background: var(--bg-soft);
-  }
-  /* 다른 chip·페이저와 통일해 teal 강조색을 쓴다 — 기본값(브랜드 레드)을
-     그대로 두면 이 메뉴만 색이 어긋난다. */
-  .results-sort-menu a[aria-current="true"] {
-    background: var(--teal-soft);
-    color: var(--teal-ink);
-    font-weight: 700;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .results-sort-toggle::after {
-      transition: none;
-    }
+    background: var(--select);
+    color: var(--on-select);
   }
 
-  /* ── record rows (flat divider list, replaces the boxed .record-card) ── */
-  .record-rows {
-    display: flex;
-    flex-direction: column;
-  }
-  .record-row {
-    display: grid;
-    grid-template-columns: 4.625rem 1fr auto; /* 74px 날짜 열, 데스크톱 */
-    grid-template-areas: "date body end";
-    gap: 1rem;
-    align-items: center;
-    padding: 0.875rem 0.125rem;
-    border-bottom: 1px solid var(--line);
-    /* 최소 높이가 없으면 '기록' 링크가 있는 행과 없는 행의 높이가 서로
-       달라 목록이 들쭉날쭉해진다 — 더 큰 쪽에 맞춘 값이다. */
-    min-height: 6.875rem;
-  }
-  .record-row-date {
-    grid-area: date;
-    text-align: center;
-  }
-  .record-row-date time {
-    display: block;
-  }
-  .record-row-month {
-    display: block;
-    font-size: 0.68rem;
-    font-weight: 700;
-    color: var(--muted);
-  }
-  .record-row-day {
-    display: block;
-    font-size: 1.3rem;
-    font-weight: 800;
-    color: var(--text);
-    line-height: 1.15;
-    font-variant-numeric: tabular-nums;
-  }
-  .record-row-date-empty {
-    color: var(--muted);
-    font-size: 1rem;
-  }
-  .record-row-body {
-    grid-area: body;
-    min-width: 0;
-  }
-  .record-row-meta {
-    margin: 0 0 0.25rem;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.375rem;
-    font-size: var(--fs-xs);
-    color: var(--muted);
-    overflow-wrap: anywhere;
-  }
-  .record-row-cat {
-    font-size: 0.6875rem; /* 시안 실측 11px */
-    font-weight: 700;
-  }
-  .record-row-place {
-    font-size: 0.6875rem; /* 시안 실측 11px */
-    font-weight: 600;
-  }
-  /* 마크업의 텍스트 `·`(aria-hidden)를 CSS로 숨기고 3×3px 원형 박스로
-     대체 — 템플릿은 무편집, 폰트 렌더링에 기대던 점을 실제 도형으로. */
-  .record-row-dot {
-    font-size: 0;
-    display: inline-block;
-    width: 0.1875rem;
-    height: 0.1875rem;
-    border-radius: 50%;
-    background: var(--muted);
-  }
-  .record-row-title {
-    margin: 0;
-    font-size: 1rem; /* 시안 실측 16px */
-    font-weight: 700;
-    line-height: 1.35;
-    overflow-wrap: anywhere;
-  }
-  /* 카드 제목 링크 — 다른 카드 제목 링크들과 같은 관례: 색 상속, 밑줄 없음. */
-  .record-row-title a {
-    color: inherit;
-    text-decoration: none;
-  }
-  .record-row-title a:focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: 2px;
-    border-radius: 4px;
-  }
-  /* 리뷰 인용 — 제목 아래 1줄 말줄임, review_text가 있을 때만 렌더. */
-  .record-row-review {
-    margin: 0.1875rem 0 0;
-    font-size: 0.78125rem; /* 시안 실측 12.5px */
-    color: var(--muted);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  /* 사진 캐러셀을 대체하는 정적 썸네일. record-row 그리드에 전용 area가
-     없어 .record-row-body 안(제목/리뷰 아래)에 배치한다. */
-  .record-row-photos {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.375rem;
-    margin-top: 0.5rem;
-  }
-  .record-row-photo {
-    display: block;
-    width: 3.25rem;
-    height: 3.25rem;
-    border-radius: 0.5rem;
-    border: 1px solid var(--line);
-    overflow: hidden;
-    background: var(--bg-soft);
-  }
-  .record-row-photo img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-  .record-row-photo-more {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 3.25rem;
-    height: 3.25rem;
-    border-radius: 0.5rem;
-    border: 1px solid var(--line);
-    background: var(--bg-soft);
-    color: var(--muted);
-    font-size: 0.71875rem;
-    font-weight: 700;
-    text-decoration: none;
-  }
-  .record-row-photo:focus-visible,
-  .record-row-photo-more:focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: 2px;
-  }
-  .record-row-end {
-    grid-area: end;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.5rem;
-  }
-  /* 조건부 행 액션 — 상태 필 아래 가로 배치, gap 12px(시안 실측). */
-  .record-row-actions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 0.75rem;
-  }
-  /* 색·모양은 components/controls.css가 제공 — 여기서는 탭 오인식을
-     막을 최소 높이만 보강한다. */
-  .record-row-actions .status-btn {
-    min-height: 1.875rem; /* 30px, 데스크톱 */
-  }
-  /* "＋ 기록" — 방문 완료 && 리뷰 없음. home과 공유하는 `.record-action-link`
-     와는 별도 클래스라 여기서 고쳐도 home.html에는 번지지 않는다. */
-  .record-row-add-link {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    height: 1.75rem; /* 28px */
-    padding: 0.25rem 0.6875rem; /* 4px 11px */
-    border: 1px solid var(--teal);
-    border-radius: 0.5rem; /* 8px */
-    background: var(--teal-soft);
-    color: var(--teal-ink);
-    font-size: 0.71875rem; /* 11.5px */
-    font-weight: 700;
-    text-decoration: none;
-    white-space: nowrap;
-  }
-  /* "수정" — 방문 완료 && 리뷰 있음 && visit_record_id 있음. */
-  .record-row-edit-link {
-    font-size: 0.75rem; /* 12px */
-    font-weight: 600;
-    color: var(--teal-ink);
-    text-decoration: none;
-    white-space: nowrap;
-  }
-  .record-row-edit-link:hover,
-  .record-row-add-link:hover {
+  /* 현재 항목과 구분되도록 hover에만 밑줄을 더한다. */
+  .results-sort-menu a:not([aria-current]):hover {
     text-decoration: underline;
+    text-underline-offset: 0.2em;
   }
-  /* "삭제" — 전 행 공통. 순수 텍스트 버튼, .status-btn 계열 채움 스타일은
-     상속하지 않는다. */
-  .record-row-delete-btn {
-    border: none;
-    background: none;
-    padding: 0;
-    font-size: 0.75rem; /* 12px */
-    font-weight: 400;
-    color: var(--muted);
-    cursor: pointer;
-    white-space: nowrap;
-  }
-  .record-row-delete-btn:hover {
-    text-decoration: underline;
-  }
-  .record-row-add-link:focus-visible,
-  .record-row-edit-link:focus-visible,
-  .record-row-delete-btn:focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: 2px;
-    border-radius: 4px;
-  }
-  /* --teal-soft 위 --teal-ink 대비는 WCAG AA 소형 텍스트 기준(4.5:1)에
-     못 미치지만(4.38:1), 승인된 시안 값 그대로 진행한다. */
-  @media (max-width: 45rem) {
-    /* 라벨이 길어져("정렬 최근 수정순 ▾") 좁은 화면에서 글자 크기를
-       줄인다. */
-    .results-sort {
-      font-size: 0.72rem;
-    }
-    .record-row {
-      grid-template-columns: 2.75rem 1fr; /* 44px 날짜 열, 모바일 */
-      grid-template-areas:
-        "date body"
-        ".    end";
-      gap: 0.625rem;
-      align-items: start;
-      padding: 0.6875rem 0;
-      /* 이 화면 폭의 쌓인 배치에서도 같은 원리로 최소 높이를 재계산했다. */
-      min-height: 7.5625rem;
-    }
-    .record-row-end {
-      flex-direction: row;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .record-row-actions .status-btn {
-      min-height: 1.625rem; /* 26px, 모바일 */
-    }
-    .record-row-actions .record-row-add-link {
-      margin-right: auto;
-    }
-    .record-row-actions {
-      width: 100%;
-    }
-    /* 42px 썸네일 — 모바일 날짜 열 축소에 맞춰 함께 줄인다. */
-    .record-row-photo,
-    .record-row-photo-more {
-      width: 2.625rem;
-      height: 2.625rem;
-    }
-  }
+}
 
-  /* ── record-row--personal: 같은 .record-row 시스템이지만 첫 열은 날짜가
-     아니라 사진/글리프 셀 — 영역명을 photo/body/end로 재선언해 다른
-     모디파이어와 충돌하지 않는다. 공식제보 확장 폼은 4번째 자식이라
-     명시 grid-column 없이는 첫 트랙에 눌려 들어간다. */
-  .record-row--personal {
-    grid-template-columns: 3.625rem 1fr auto; /* 58px 사진 열, 데스크톱 */
-    grid-template-areas: "photo body end";
+/* 현재 항목·포커스는 반전이라 링은 안쪽 흰색으로 둔다. */
+.results-sort-menu a[aria-current="true"],
+.results-sort-menu a:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+}
+
+.results-sort-menu a:focus-visible {
+  outline-offset: -2px;
+  outline-color: var(--on-select);
+}
+
+/* ── 기록 행: 날짜 | 본문 | 상태·동작 ──────────────────────────── */
+/* 행 안에 수정·삭제·상태 버튼이 있어 행 전체 반전은 쓰지 않는다. 제목
+   링크만 반전한다. */
+.record-rows {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--space-2);
+}
+
+.record-row {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr) auto;
+  grid-template-areas: "date body end";
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-2) 0;
+  border-bottom: var(--bw-1) solid var(--rule);
+}
+
+.record-row:last-child {
+  border-bottom: none;
+}
+
+.record-row-date {
+  grid-area: date;
+  text-align: center;
+}
+
+.record-row-date time {
+  display: block;
+}
+
+.record-row-month {
+  display: block;
+  font-size: var(--fs-1);
+  color: var(--ink-2);
+}
+
+.record-row-day {
+  display: block;
+  font-size: var(--fs-4);
+  line-height: var(--lh-tight);
+  font-variant-numeric: tabular-nums;
+}
+
+.record-row-date-empty {
+  color: var(--ink-2);
+}
+
+.record-row-body {
+  grid-area: body;
+  min-width: 0;
+}
+
+.record-row-meta {
+  margin: 0 0 var(--space-1);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--fs-1);
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+/* 카테고리는 색 없이 글자로만 알린다. */
+.record-row-cat,
+.record-row-place {
+  font-size: var(--fs-1);
+}
+
+/* 마크업의 글자 `·`(aria-hidden)는 숨기고 3×3px 원형 점으로 대신한다. */
+.record-row-dot {
+  flex: none;
+  display: inline-block;
+  width: 0.1875rem;
+  height: 0.1875rem;
+  border-radius: 50%;
+  background: currentColor;
+  font-size: 0;
+}
+
+.record-row-title {
+  margin: 0;
+  font-size: var(--fs-3);
+  line-height: var(--lh-base);
+  overflow-wrap: anywhere;
+}
+
+.record-row-title a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+@media (hover: hover) {
+  .record-row-title a:hover {
+    background: var(--select);
+    color: var(--on-select);
+    text-decoration: none;
   }
-  .record-row-photo-cell {
-    grid-area: photo;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 3.625rem;
-    height: 3.625rem;
-    border-radius: 0.5625rem;
-    border: 1px solid var(--line);
-    background: var(--bg-soft);
-    overflow: hidden;
-  }
-  .record-row-photo-cell img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-  .record-row-glyph {
-    font-size: 1.25rem;
-    color: var(--muted);
-  }
-  /* ── promote-to-review + form-error/form-submit-btn: 이 페이지 전용으로만
-     쓰여 공유 파일(archive_visits.css)에서 이곳으로 이식했다 — 원본은
-     무접촉. */
-  .form-error {
-    font-size: var(--fs-sm);
-    color: var(--rose-ink);
-    min-height: 1.2em;
-  }
-  .form-submit-btn {
-    border: 1px solid var(--brand);
-    border-radius: 8px;
-    background: var(--brand);
-    color: #fff;
-    font-size: var(--fs-md);
-    font-weight: 700;
-    padding: 0.5625rem 0.875rem;
-    cursor: pointer;
-    min-height: 44px;
-    width: 100%;
-  }
-  .form-submit-btn:hover {
-    opacity: 0.9;
-  }
-  .promote-btn {
-    border: 1px solid var(--teal);
-    border-radius: 8px;
-    background: var(--teal-soft);
-    color: var(--teal-ink);
-    font-size: var(--fs-sm);
-    font-weight: 700;
-    padding: 0.4375rem 0.75rem;
-    min-height: 1.75rem;
-    cursor: pointer;
-    white-space: nowrap;
-  }
+}
+
+.record-row-title a:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+  text-decoration: none;
+}
+
+/* 리뷰 인용: 제목 아래 1줄 말줄임. */
+.record-row-review {
+  margin: var(--space-1) 0 0;
+  font-size: var(--fs-2);
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 사진 정적 썸네일: 본문 안(제목·리뷰 아래)에 놓는다. */
+.record-row-photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+
+.record-row-photo,
+.record-row-photo-more {
+  width: 3.25rem;
+  height: 3.25rem;
+  border: var(--bw-1) solid var(--rule);
+  background: var(--surface);
+}
+
+.record-row-photo {
+  display: block;
+  overflow: hidden;
+}
+
+.record-row-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.record-row-photo-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-2);
+  font-size: var(--fs-1);
+  text-decoration: none;
+}
+
+.record-row-end {
+  grid-area: end;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+/* 조건부 행 액션: 상태 배지 아래 가로 배치. */
+.record-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+/* 행 안 보조 버튼 "＋ 기록"·"공식 제보": 표면 + 1px 테두리. */
+.record-row-add-link,
+.promote-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--hit-sm);
+  padding: 0 var(--space-2);
+  background: var(--surface);
+  color: var(--ink);
+  border: var(--bw-1) solid var(--ink);
+  font-size: var(--fs-2);
+  line-height: var(--lh-tight);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .record-row-add-link:hover,
   .promote-btn:hover {
-    background: var(--teal);
-    color: #fff;
+    background: var(--select);
+    color: var(--on-select);
+    border-color: var(--select);
   }
-  .promote-badge {
-    display: inline-flex;
-    align-items: center;
-    border-radius: var(--radius-chip);
-    padding: 0.3125rem 0.625rem;
-    font-size: var(--fs-sm);
-    font-weight: 700;
-    background: var(--amber-soft);
-    color: var(--amber-ink);
-    white-space: nowrap;
-  }
-  .promote-form {
-    margin-top: 0.625rem;
-    padding: 0.75rem;
-    border: 1px solid var(--border-soft);
-    border-radius: 10px;
-    background: var(--bg-soft);
-  }
-  .promote-note {
-    margin: 0 0 0.5rem;
-    font-size: var(--fs-sm);
-    color: var(--muted);
-    line-height: 1.45;
-  }
-  .record-row--personal .promote-form {
-    grid-column: 1 / -1;
-    margin-top: 0.625rem;
-  }
-  @media (max-width: 45rem) {
-    .record-row--personal {
-      grid-template-columns: 2.75rem 1fr; /* 44px 사진 열, 모바일 */
-      grid-template-areas:
-        "photo body"
-        ".     end";
-    }
-    .record-row-photo-cell {
-      width: 2.75rem;
-      height: 2.75rem;
-    }
-  }
+}
 
-  /* ── record-row--interest: 같은 .record-row 시스템이지만 첫 열은 D-day
-     셀 — area명은 dday/body/end로 다른 모디파이어와 분리한다. 좁은 화면에서는
-     열 구조는 유지하고 area만 재배치해 본문·액션이 아래로 쌓인다. */
-  .record-row--interest {
-    grid-template-columns: 4rem 1fr auto;
-    grid-template-areas: "dday body end";
-  }
-  .record-row-dday {
-    grid-area: dday;
-    text-align: center;
-  }
-  .record-row-dday-label {
-    display: block;
-    font-size: 0.6875rem; /* 시안 실측 11px */
-    font-weight: 700;
-    color: var(--muted);
-  }
-  .record-row-dday-value {
-    display: block;
-    font-size: 1.0625rem; /* 시안 실측 17px */
-    font-weight: 800;
-    line-height: 1.15;
-    font-variant-numeric: tabular-nums;
-    color: var(--text);
-  }
-  .record-row-dday-value[data-tone="mint"] {
-    color: var(--mint-ink);
-  }
-  .record-row-dday-value[data-tone="up"] {
-    color: var(--up-ink);
-  }
-  .record-row-dday-value[data-tone="end"] {
-    color: var(--end-ink);
-  }
-  /* 배지 줄(비공식 배지·카테고리·상태 필) — 시안 실측 gap 8px. */
-  .record-row-badges {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 0 0 0.25rem;
-  }
-  .record-row-status {
-    display: inline-flex;
-    align-items: center;
-    border-radius: var(--radius-chip);
-    padding: 0.125rem 0.5625rem; /* 시안 실측 2px 9px */
-    font-size: 0.6875rem; /* 시안 실측 11px */
-    font-weight: 700;
-    white-space: nowrap;
-  }
-  .record-row-status[data-tone="mint"] {
-    background: var(--mint-soft);
-    color: var(--mint-ink);
-  }
-  .record-row-status[data-tone="up"] {
-    background: var(--up-soft);
-    color: var(--up-ink);
-  }
-  .record-row-status[data-tone="end"] {
-    background: var(--end-soft);
-    color: var(--end-ink);
-  }
-  /* 버튼 줄(♥ 찜 해제 + 방문 예정 추가) — 모양·색은 공유 클래스가 이미
-     제공, 여기서는 높이만 보강한다. */
-  .record-row-pills {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-  }
-  .record-row-pills .interest-btn,
-  .record-row-pills .status-btn {
-    min-height: 1.875rem; /* 시안 실측 30px, 데스크톱 */
-    padding: 0 0.75rem;
-  }
-  /* 한국어 외 언어는 pill 라벨이 길어 글자 중간에서 쪼개지므로 pill은 한
-     줄로 두고 줄 단위로 넘긴다. 한국어는 적용하지 않는다. */
-  .record-row-pills:not(:lang(ko)) {
-    flex-wrap: wrap;
-    row-gap: 0.375rem;
-  }
-  .record-row-pills:not(:lang(ko)) .interest-btn,
-  .record-row-pills:not(:lang(ko)) .status-btn {
-    white-space: nowrap;
-  }
-  .record-row-detail-link {
-    font-size: 0.75rem; /* 12px */
-    font-weight: 600;
-    color: var(--teal-ink);
-    text-decoration: none;
-    white-space: nowrap;
-  }
+.record-row-add-link:focus-visible,
+.promote-btn:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+  border-color: var(--select);
+}
+
+/* "수정"·"상세 보기": 창 표면 위 텍스트 링크. */
+.record-row-edit-link,
+.record-row-detail-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--hit-sm);
+  color: var(--link);
+  font-size: var(--fs-2);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  white-space: nowrap;
+}
+
+@media (hover: hover) {
+  .record-row-edit-link:hover,
   .record-row-detail-link:hover {
-    text-decoration: underline;
+    background: var(--select);
+    color: var(--on-select);
+    text-decoration: none;
   }
-  .record-row-detail-link:focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: 2px;
-    border-radius: 4px;
+}
+
+.record-row-edit-link:focus-visible,
+.record-row-detail-link:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+  text-decoration: none;
+}
+
+/* "삭제": 오류색 테두리·글자. 라벨 동사가 의미를 함께 준다. */
+.record-row-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--hit-sm);
+  padding: 0 var(--space-2);
+  background: var(--surface);
+  color: var(--error);
+  border: var(--bw-1) solid var(--error);
+  font-size: var(--fs-2);
+  line-height: var(--lh-tight);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .record-row-delete-btn:hover {
+    background: var(--error);
+    color: var(--surface);
   }
-  @media (max-width: 45rem) {
-    .record-row--interest {
-      grid-template-areas:
-        "dday body body"
-        ".    end  end";
-    }
-    .record-row-dday-label {
-      font-size: 0.59375rem; /* 시안 실측 9.5px */
-    }
-    .record-row-dday-value {
-      font-size: 0.875rem; /* 시안 실측 14px */
-    }
-    .record-row-pills .interest-btn,
-    .record-row-pills .status-btn {
-      min-height: 1.625rem; /* 시안 실측 26px, 모바일 */
-      padding: 0 0.625rem;
-    }
+}
+
+.record-row-delete-btn:focus-visible {
+  background: var(--error);
+  color: var(--surface);
+}
+
+.record-row-delete-btn:disabled:not(.is-loading) {
+  background: transparent;
+  color: var(--off);
+  border-color: var(--off);
+  cursor: not-allowed;
+}
+
+/* ── 개인 기록 행: 첫 칸이 날짜 대신 사진·글리프 칸 ──────────────── */
+/* 영역 이름을 photo/body/end로 다시 선언해 다른 변형과 부딪치지 않게 한다.
+   공식 제보 폼은 4번째 자식이라 명시 열 지정이 없으면 첫 트랙에 눌린다. */
+.record-row--personal {
+  grid-template-columns: 3.625rem minmax(0, 1fr) auto;
+  grid-template-areas: "photo body end";
+}
+
+.record-row-photo-cell {
+  grid-area: photo;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.625rem;
+  height: 3.625rem;
+  border: var(--bw-1) solid var(--rule);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+/* 이미지 없는 칸은 --off 면. */
+.record-row-photo-cell:not(:has(img)) {
+  background: var(--off);
+}
+
+.record-row-photo-cell img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.record-row-glyph {
+  font-size: var(--fs-4);
+  color: var(--ink);
+}
+
+/* ── 공식 제보 폼·오류 줄·제출 버튼 (이 쪽 전용) ─────────────────── */
+.form-error {
+  font-size: var(--fs-2);
+  color: var(--error);
+}
+
+/* 오류가 있을 때만 1px 오류색 상자로 보인다. */
+.form-error:not(:empty) {
+  padding: var(--space-2);
+  border: var(--bw-1) solid var(--error);
+}
+
+/* 기록·방문 목록의 오류 줄은 글자가 있을 때만 아래 여백을 둔다. */
+#entry-global-error:not(:empty),
+#visit-global-error.form-error:not(:empty) {
+  margin-bottom: var(--space-2);
+}
+
+.form-submit-btn {
+  width: 100%;
+  min-height: var(--hit-md);
+  background: var(--surface);
+  color: var(--ink);
+  border: var(--bw-2) solid var(--ink);
+  font-size: var(--fs-2);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .form-submit-btn:hover {
+    background: var(--select);
+    color: var(--on-select);
+    border-color: var(--select);
+  }
+}
+
+.form-submit-btn:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+  border-color: var(--select);
+}
+
+.promote-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.5rem;
+  padding: 0 var(--space-2);
+  color: var(--ink);
+  border: var(--bw-1) solid var(--rule);
+  font-size: var(--fs-1);
+  white-space: nowrap;
+}
+
+/* 폼은 행 아래 전폭 구획: 위쪽 단선만 둔다. display를 선언하지 않는다 —
+   hidden 속성으로 여닫는다. */
+.promote-form {
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: var(--bw-1) solid var(--rule);
+}
+
+.promote-note {
+  margin: 0 0 var(--space-2);
+  font-size: var(--fs-2);
+  color: var(--ink-2);
+  line-height: var(--lh-base);
+}
+
+.record-row--personal .promote-form {
+  grid-column: 1 / -1;
+}
+
+/* ── 찜 행: 첫 칸이 D-day 칸 ────────────────────────────────────── */
+.record-row--interest {
+  grid-template-columns: 4rem minmax(0, 1fr) auto;
+  grid-template-areas: "dday body end";
+}
+
+.record-row-dday {
+  grid-area: dday;
+  text-align: center;
+}
+
+.record-row-dday-label {
+  display: block;
+  font-size: var(--fs-1);
+  color: var(--ink-2);
+}
+
+.record-row-dday-value {
+  display: block;
+  font-size: var(--fs-3);
+  line-height: var(--lh-tight);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 종료된 행사의 날짜는 보조 글자색. 구분은 라벨 글자가 맡는다. */
+.record-row-dday-value[data-tone="end"] {
+  color: var(--ink-2);
+}
+
+/* 배지 줄: 비공식 배지·카테고리·행사 상태. */
+.record-row-badges {
+  color: var(--ink-2);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-1);
+}
+
+/* 행사 상태는 색 없이 1px 윤곽 + 글자로만 알린다. */
+.record-row-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--space-2);
+  border: var(--bw-1) solid var(--rule);
+  font-size: var(--fs-1);
+  white-space: nowrap;
+}
+
+.record-row-pills {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* 한국어 외 언어는 라벨이 길어 글자 중간에서 쪼개지므로 버튼은 한 줄로
+   두고 줄 단위로 넘긴다. */
+.record-row-pills:not(:lang(ko)) {
+  flex-wrap: wrap;
+  row-gap: var(--space-1);
+}
+
+.record-row-pills:not(:lang(ko)) .interest-btn,
+.record-row-pills:not(:lang(ko)) .status-btn {
+  white-space: nowrap;
+}
+
+/* 홈 컬렉션 스냅샷도 쓰는 공유 클래스: 기록 작성 바로가기. 홈은 자기
+   행 안에서 다시 선언해 덮는다. */
+.record-action-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--hit-sm);
+  padding: 0 var(--space-2);
+  background: var(--surface);
+  color: var(--ink);
+  border: var(--bw-1) solid var(--ink);
+  font-size: var(--fs-2);
+  text-decoration: none;
+}
+
+/* ── 모바일 하단 고정 막대 ────────────────────────────────────── */
+.mobile-cta {
+  display: none;
+}
+
+/* ── 56.24rem 이하: 사이드바와 결과를 한 열로 접는다 (행사 목록과 같은 짝) ── */
+@media (max-width: 56.24rem) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
+  }
+}
+
+/* ── 53.75rem 이하: 히어로를 다시 배치하고 짧은 탭 라벨·하단 고정 막대를 쓴다 ── */
+@media (max-width: 53.75rem) {
+  .hero-activity {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
   }
 
-  /* 상태 배지(표시 전용, 버튼 아님). 색은 controls.css 전역 규칙과
-     겹치므로 여기서는 기하값(radius/padding 등)만 둔다. */
-  .status {
-    border-radius: var(--radius-chip);
-    padding: 0.25rem 0.5625rem;
-    font-size: var(--fs-xs);
-    font-weight: 700;
-    white-space: nowrap;
+  .hero-activity h1 {
+    font-size: var(--fs-4);
   }
-  /* 방문 완료 카드의 '기록' 작성 바로가기 — home의 컬렉션 스냅샷 패널도
-     재사용하는 공유 클래스. */
-  .record-action-link {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    text-decoration: none;
-    border: 1px solid var(--brand);
-    border-radius: 8px;
-    background: var(--brand);
-    color: #fff;
-    padding: 0.375rem 0.625rem;
-    min-height: 44px;
-    font-size: var(--fs-sm);
-    font-weight: 700;
+
+  .hero-lead {
+    grid-column: 1 / -1;
   }
-  .mobile-cta {
+
+  .hero-activity .summary-grid {
+    max-width: none;
+  }
+
+  .hero-activity .activity-view-toggle {
+    grid-column: 1;
+    justify-self: start;
+  }
+
+  .hero-action {
+    grid-column: 2;
+  }
+
+  /* 서브탭 1행 + 찜 우측, 그 아래 검색 전체 폭 행. DOM 순서(탭 → 검색 → 찜)는
+     그대로 두고 영역 이름으로 시각 순서만 바꾼다 — `order`는 탭 순서를
+     어긋나게 해 WCAG 2.4.3을 위반한다. */
+  .activity-toolbar {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "tabs interest"
+      "search search";
+    row-gap: var(--space-2);
+    margin-bottom: var(--space-3);
+  }
+
+  .activity-toolbar .sub-nav {
+    grid-area: tabs;
+  }
+
+  .activity-toolbar .nav-interest {
+    grid-area: interest;
+    justify-self: end;
+    align-self: center;
+  }
+
+  /* 검색창은 2행 전체 폭을 쓴다. 아래 여백은 절대 위치 지우기 링크가 쓸 자리다. */
+  .activity-toolbar .archive-search {
+    grid-area: search;
+    width: auto;
+    max-width: none;
+    justify-self: stretch;
+    margin-bottom: 1.75rem;
+  }
+
+  .activity-toolbar .nav-interest-full {
     display: none;
   }
-  /* 색을 여기서 미리 선언해둔다 — 없으면 데스크톱 폭에서 숨겨진 링크가
-     브라우저 기본 링크색으로 계산돼 있다가 모바일에서 그대로 드러난다. */
+
+  .activity-toolbar .nav-interest-short {
+    display: inline;
+  }
+
+  .nav-links {
+    justify-content: flex-start;
+  }
+
+  .activity-page:has(.mobile-cta) {
+    padding-bottom: calc(6rem + var(--site-tabbar-h, 0px));
+  }
+
+  /* 고정 막대가 푸터 끝을 덮지 않게 문서 끝에 막대 높이만큼 여백을 둔다. */
+  body:has(.activity-page .mobile-cta:not([hidden])) {
+    padding-bottom: calc(6rem + var(--site-tabbar-h, 0px));
+  }
+  /* 포커스가 고정 막대 뒤로 들어가지 않게 스크롤 여백을 막대 높이만큼 둔다. */
+  html:has(.activity-page .mobile-cta:not([hidden])) {
+    scroll-padding-bottom: calc(4.5rem + var(--site-tabbar-h, 0px));
+  }
+
+  /* 탭 바 위에 붙는 고정 막대: 표면 + 위쪽 2px 테두리, 전폭 주 버튼. */
+  .mobile-cta {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: var(--site-tabbar-h, 0px);
+    z-index: 20;
+    padding: var(--space-2) var(--space-3) calc(var(--space-2) + env(safe-area-inset-bottom));
+    background: var(--surface);
+    border-top: var(--bw-2) solid var(--ink);
+  }
+
+  .mobile-cta[hidden] {
+    display: none;
+  }
+
   .mobile-cta a,
   .mobile-cta button {
-    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: var(--hit-md);
+    padding: var(--space-1) var(--space-3);
+    background: var(--surface);
+    color: var(--ink);
+    border: var(--bw-2) solid var(--ink);
+    font-family: inherit;
+    font-size: var(--fs-2);
+    text-align: center;
     text-decoration: none;
-  }
-  @media (max-width: 53.75rem) {
-    .hero h1 {
-      font-size: var(--fs-xl-mobile);
-    }
-    /* `.hero-activity h1`은 `.hero h1`과 특이도가 같아 소스 순서가 이긴다 —
-       바로 다음에 오는 이 규칙이 최종 적용된다. */
-    .hero-activity h1 {
-      font-size: 1.1875rem;
-    }
-    /* DOM 순서를 그대로 세로로 쌓는다. `order`/`display:contents`는 쓰지
-       않는다 — 시각 순서가 탭 순서와 어긋나면 WCAG 2.4.3 위반이다. */
-    .hero-activity {
-      grid-template-columns: minmax(0, 1fr) auto;
-      align-items: center;
-      gap: 0.75rem;
-      padding-bottom: 0.875rem;
-      margin-bottom: 0.75rem;
-    }
-    .hero-lead {
-      grid-column: 1 / -1;
-    }
-    .hero-activity .activity-view-toggle {
-      grid-column: 1;
-      justify-self: start;
-    }
-    .hero-action {
-      grid-column: 2;
-      justify-self: end;
-      /* 모바일 사이즈·여백을 컬렉션 페이지와 통일 */
-      min-height: 2.125rem;
-      height: 2.125rem;
-      padding: 0 0.8125rem;
-      font-size: var(--fs-xs);
-    }
-    /* 서브탭 1행(가로) + ♥찜 우측, 그 아래 검색 전체 폭 행. DOM 순서(탭 →
-       검색 → 찜)는 그대로 두고 grid-template-areas로 시각 순서만
-       재배치한다 — `order`는 탭 순서를 어긋나게 해 WCAG 2.4.3을 위반한다. */
-    .activity-toolbar {
-      grid-template-columns: 1fr auto;
-      grid-template-areas:
-        "tabs interest"
-        "search search";
-      row-gap: 0.75rem;
-      /* 에러 메시지가 이제 in-flow 그리드 행이라 더 이상 예약 공간이
-         필요 없어, 컬렉션 페이지와 맞춘 평범한 값을 쓴다. */
-      margin-bottom: 0.75rem;
-    }
-    .activity-toolbar .sub-nav {
-      grid-area: tabs;
-    }
-    .activity-toolbar .nav-interest {
-      grid-area: interest;
-      justify-self: end;
-      align-self: center;
-    }
-    /* 검색창은 2행 전체 폭을 쓴다. */
-    .activity-toolbar .archive-search {
-      grid-area: search;
-      width: auto;
-      max-width: none;
-      justify-self: stretch;
-      /* 이 여백은 지우기 버튼(`.archive-search-clear`, 별개의 절대배치
-         오버레이) 전용 예약 공간이다. */
-      margin-bottom: 1.75rem;
-    }
-    /* 찜 짧은 라벨 — 데스크톱 기본값을 이 폭에서 뒤집는다. */
-    .activity-toolbar .nav-interest-full {
-      display: none;
-    }
-    .activity-toolbar .nav-interest-short {
-      display: inline;
-    }
-    .nav-links {
-      justify-content: flex-start;
-    }
-    .layout {
-      grid-template-columns: minmax(0, 1fr);
-      /* 시안 고유값(컬렉션 페이지는 1.75rem 유지) */
-      gap: 1rem;
-    }
-    .activity-page {
-      padding-bottom: 6rem;
-    }
-    /* 시안/컬렉션 모바일 사이즈·여백 통일; .layout gap은 시안 고유값 */
-    .activity-page .archive-search input[type="search"] {
-      height: 2.5rem;
-      border-radius: 0.625rem;
-    }
-    .activity-page .archive-search button[type="submit"] {
-      min-height: 2.5rem;
-      height: 2.5rem;
-      border-radius: 0.625rem;
-      padding: 0 0.9375rem;
-    }
-    .activity-page .side-list {
-      gap: 0.4375rem;
-    }
-    .activity-page .side-list li {
-      min-height: 1.5rem;
-    }
-    .activity-page .side-list a {
-      display: flex;
-      align-items: center;
-      min-height: 1.5rem;
-    }
-    .right-section {
-      margin-top: 0.5rem;
-      padding-top: 0.5rem;
-    }
-    .mobile-cta {
-      display: block;
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      padding: 0.625rem 0.875rem calc(10px + env(safe-area-inset-bottom));
-      background: var(--chrome-glass-cta);
-      border-top: 1px solid var(--line);
-      box-shadow: var(--shadow-cta);
-      z-index: 20;
-    }
-    .mobile-cta a,
-    .mobile-cta button {
-      display: block;
-      width: 100%;
-      text-align: center;
-      text-decoration: none;
-      border: none;
-      border-radius: 8px;
-      background: var(--brand);
-      color: #fff;
-      font-weight: 700;
-      font-family: inherit;
-      font-size: var(--fs-md);
-      padding: 0.6875rem;
-      cursor: pointer;
-    }
-    .mobile-cta button:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
-    }
-    .mobile-cta[hidden] {
-      display: none;
-    }
+    cursor: pointer;
   }
 
-  /* ── interests-page overrides: `/archive/interests/`만 이 클래스를 추가로
-     얹어 다른 아카이브 페이지에는 영향이 없다. `.interests-page`를 덧붙여
-     특이도를 높여 로드 순서와 무관하게 이긴다. */
-  .interests-page .hero-activity .summary-card:nth-child(1) .summary-value {
-    color: var(--pink-ink);
+  .mobile-cta a:focus-visible,
+  .mobile-cta button:focus-visible {
+    background: var(--select);
+    color: var(--on-select);
+    border-color: var(--select);
   }
-  .interests-page .hero-activity .summary-card:nth-child(2) .summary-value {
-    color: var(--mint-ink);
+
+  .mobile-cta button:disabled {
+    background: transparent;
+    color: var(--off);
+    border-color: var(--off);
+    cursor: not-allowed;
   }
-  .interests-page .hero-activity .summary-card:nth-child(3) .summary-value {
-    color: var(--up-ink);
+}
+
+/* ── 45rem 이하: 행 열을 줄이고 상태·동작을 본문 아래로 ──────────── */
+@media (max-width: 45rem) {
+  .record-row {
+    grid-template-columns: 2.75rem minmax(0, 1fr);
+    grid-template-areas:
+      "date body"
+      ".    end";
+    gap: var(--space-2);
+    align-items: start;
   }
-  .interests-page .results-count {
-    color: var(--pink-ink);
+
+  .record-row-end {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
   }
-  /* 위 `.nav-interest:hover/.active` 규칙이 box-shadow를 항상 none으로
-     되돌린다 — 이 페이지에서 처음 `.active`가 실사용돼, 특이도를 올려 그
-     box-shadow만 되짚는다(다른 속성은 원본 값을 그대로 물려받는다). */
-  .interests-page .activity-toolbar .nav-interest.active {
-    box-shadow: inset 0 -2px 0 var(--pink-ink);
+
+  /* 상태 배지와 버튼을 한 줄에 놓고, 모자라면 버튼 줄만 아래로 내려간다. */
+  .record-row-actions {
+    flex: 1 1 auto;
+    justify-content: flex-end;
   }
+
+  .record-row--personal {
+    grid-template-columns: 2.75rem minmax(0, 1fr);
+    grid-template-areas:
+      "photo body"
+      ".     end";
+  }
+
+  .record-row-photo-cell {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .record-row--interest {
+    grid-template-columns: 4rem minmax(0, 1fr) auto;
+    grid-template-areas:
+      "dday body body"
+      ".    end  end";
+  }
+
+  .record-row-dday-value {
+    font-size: var(--fs-2);
+  }
+
+  .record-row-photo,
+  .record-row-photo-more {
+    width: 2.625rem;
+    height: 2.625rem;
+  }
+}

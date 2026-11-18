@@ -10,6 +10,7 @@ from django.db import connection
 from django.test.utils import CaptureQueriesContext
 import pytest
 
+from events.models import Event
 from staff.models import StaffActionLog
 
 
@@ -60,6 +61,46 @@ def test_이벤트_수정_페이지_GET은_현재_필드_값을_렌더링한다(
     content = resp.content.decode()
     assert "기존 제목" in content
     assert "https://example.com/get-edit" in content
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("publish_status", "shown", "hidden"),
+    [
+        pytest.param(
+            Event.PublishStatus.PUBLISHED,
+            (
+                'events-status-badge--published">게시</span>',
+                "현재 게시 중입니다",
+                ">게시 내리기</button>",
+            ),
+            ("현재 비공개(초안)입니다", ">다시 게시</button>"),
+            id="게시_행사",
+        ),
+        pytest.param(
+            Event.PublishStatus.DRAFT,
+            (
+                'events-status-badge--draft">비공개</span>',
+                "현재 비공개(초안)입니다",
+                ">다시 게시</button>",
+            ),
+            ("현재 게시 중입니다", ">게시 내리기</button>"),
+            id="초안_행사",
+        ),
+    ],
+)
+def test_수정_화면은_행사의_게시_상태에_맞는_배지와_안내와_버튼을_보여준다(
+    staff_client, make_event, publish_status, shown, hidden
+):
+    staff, client = staff_client()
+    event = make_event(publish_status=publish_status)
+
+    content = client.get(_edit_url(event)).content.decode()
+
+    for text in shown:
+        assert text in content
+    for text in hidden:
+        assert text not in content
 
 
 @pytest.mark.django_db

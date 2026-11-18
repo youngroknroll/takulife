@@ -56,6 +56,7 @@ def test_라벨이_중복되면_카테고리_생성이_거부된다():
         pytest.param("Concert", id="대문자"),
         pytest.param("con cert", id="공백"),
         pytest.param("con-cert", id="하이픈"),
+        pytest.param("", id="빈_문자열"),
     ],
 )
 def test_슬러그에_허용되지_않은_문자가_있으면_거부된다(slug):

@@ -11,10 +11,13 @@ from html import unescape
 import re
 from urllib.parse import parse_qs, quote, urlparse
 
+from django.db import connection
 from django.test import Client
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 import pytest
 
+from core.models import Category
 from core.vocab import EVENT_SORT, EVENT_SORT_LABELS
 
 pytestmark = pytest.mark.web
@@ -33,6 +36,7 @@ class TestEventListInvalidFilters:
         body = resp.content.decode()
         assert "조건에 맞는 이벤트가 없어요" in body
         assert "잘못된 필터 값" not in body
+        assert resp.context["total_count"] == 0
 
     def test_존재하지_않는_카테고리_값으로_필터링하면_빈_상태_문구를_보여준다(self, make_event):
         make_event(title="Live event")
@@ -172,6 +176,43 @@ class TestEventListActiveFilterChips:
         assert resp.status_code == 200
         assert "전체" in resp.context["active_filter_chips"]
         assert "all" not in resp.context["active_filter_chips"]
+
+
+@pytest.mark.django_db
+class TestEventListNewCategoryLabel:
+    def test_새_카테고리로_목록을_거르면_행과_적용_필터_칩이_슬러그가_아니라_카테고리_라벨을_보여준다(
+        self, make_event
+    ):
+        category = Category.objects.create(slug="night_market", label="나이트 마켓")
+        make_event(title="야시장 행사", category=category.slug)
+
+        resp = Client().get("/events/", {"category": category.slug})
+
+        assert resp.status_code == 200
+        assert resp.context["event_rows"][0]["category_label"] == category.label
+        assert category.label in resp.context["active_filter_chips"]
+        assert category.slug not in resp.context["active_filter_chips"]
+
+    def test_새_카테고리_행사가_여러_개여도_목록_조회_쿼리_수는_행_수에_비례하지_않는다(
+        self, make_event
+    ):
+        first = Category.objects.create(slug="night_market", label="나이트 마켓")
+        for i in range(2):
+            make_event(title=f"첫째 묶음 {i}", category=first.slug)
+        with CaptureQueriesContext(connection) as few:
+            Client().get("/events/")
+
+        for slug, label in (("pop_up_store", "팝업 스토어"), ("fan_cafe", "팬 카페")):
+            extra = Category.objects.create(slug=slug, label=label)
+            for i in range(2):
+                make_event(title=f"{label} {i}", category=extra.slug)
+        with CaptureQueriesContext(connection) as many:
+            resp = Client().get("/events/")
+
+        assert len(resp.context["event_rows"]) == 6
+        assert len(many) == len(few), (
+            f"행 2건일 때 쿼리 {len(few)}건, 행 6건일 때 쿼리 {len(many)}건"
+        )
 
 
 @pytest.mark.django_db
@@ -424,3 +465,39 @@ def test_비공개_직접_등록_항목은_공개_행사_목록_페이지에_노
 
     assert browse.status_code == 200
     assert "PRIVATE_LEAK_CANARY" not in browse.content.decode()
+
+
+@pytest.mark.django_db
+class TestEventListTotalCount:
+    """total_count는 페이지네이션 건수가 아니라 필터에 일치하는 전체 건수여야 한다."""
+
+    @pytest.mark.contract
+    def test_페이지_크기를_넘는_12건에서_total_count는_전체_건수를_반환한다(self, make_event):
+        """페이지 크기(10)보다 많을 때 total_count는 이번 페이지 건수(10)가
+        아니라 전체 일치 건수(12)여야 한다."""
+        for i in range(12):
+            make_event(title=f"행사 {i:02d}")
+
+        resp = Client().get("/events/")
+
+        assert resp.status_code == 200
+        assert resp.context["total_count"] == 12
+        assert resp.context["page_obj"].paginator.count == 12
+        assert len(resp.context["page_obj"].object_list) == 10
+
+    @pytest.mark.contract
+    def test_이벤트_목록_조회는_COUNT를_한_번만_실행한다(
+        self, make_event, django_assert_max_num_queries
+    ):
+        """전체 건수를 따로 세지 않고, 페이지 나누기가 이미 센 값을 다시
+        쓴다."""
+        for i in range(12):
+            make_event(title=f"행사 {i:02d}")
+
+        # 병합 전 5회에서 중복된 전체 건수 COUNT 1회가 빠진 값이다.
+        with django_assert_max_num_queries(4):
+            resp = Client().get("/events/")
+
+        assert resp.status_code == 200
+        assert resp.context["total_count"] == 12
+        assert len(resp.context["page_obj"].object_list) == 10

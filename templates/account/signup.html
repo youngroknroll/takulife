@@ -12,7 +12,7 @@
 {% block content %}
 <main class="page auth-page" id="content">
   <div class="auth-shell">
-    <aside class="auth-panel-declare">
+    <aside class="auth-panel-declare window">
       <span class="auth-glyph" aria-hidden="true">✦</span>
       <p class="auth-kicker">TAKULIFE ACCOUNT</p>
       <h2>{% translate "그대들의" %}<br>{% translate "덕질 라이프를" %}<br>{% translate "위하여" %}</h2>
@@ -35,9 +35,9 @@
         </li>
       </ul>
     </aside>
-    <div class="auth-panel-form">
+    <div class="auth-panel-form window">
       <p class="auth-kicker">{% translate "계정" %}</p>
-      <h1 class="auth-title">{% translate "회원가입" %}</h1>
+      <h1 class="auth-title window-title">{% translate "회원가입" %}</h1>
       {% comment %}D9 우선(오류를 h1 직후에) — 시안은 규칙선/설명문 다음에 오류를
          두지만 접근성 가드가 우선한다(coordinator 결정 2026-07-31).{% endcomment %}
       {% include "core/partials/_auth_form_errors.html" with errors=form.non_field_errors %}

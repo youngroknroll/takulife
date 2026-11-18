@@ -26,7 +26,8 @@ class EventQuerySerializer(serializers.Serializer):
     STATUS_CHOICES = ("upcoming", "ongoing", "closing_soon", "ended", "all")
     SORT_CHOICES = ("closing_soon", "start_asc", "newest")
 
-    q = serializers.CharField(required=False, allow_blank=True)
+    # 로그인 화면 검색어 상한(web/views/_helpers.py:27)과 같은 100자.
+    q = serializers.CharField(required=False, allow_blank=True, max_length=100)
     # region/category는 다중값이다: ?region=seoul&region=gyeonggi → OR 필터.
     region = serializers.ListField(child=serializers.CharField(), required=False)
     category = serializers.ListField(child=serializers.CharField(), required=False)

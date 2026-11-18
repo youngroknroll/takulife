@@ -1,143 +1,110 @@
-/* ── 404 / 429 / 500 ──────────────────────────────────────────── */
-/* 좌우 여백은 base.css의 .page가 이미 맡고 있어 여기선 상하 패딩만 추가한다.
-   가로 패딩을 새로 넣지 않는 이유는 다른 페이지의 여백과 어긋나지 않기 위해서다. */
+/* 404 / 429 / 500 — <main>이 제목 없는 창 1개이고 안에 숫자·h1·메시지·링크 행이 있다.
+   좌우 여백과 폭은 공용 .page.window가 정하고, 여기서는 안쪽 배치만 맡는다. */
 
-.error-page {
-  position: relative;
-  overflow: hidden;
-  padding-top: 2.625rem;
-  padding-bottom: 3.5rem;
-}
-
-@media (min-width: 64rem) {
-  .error-page {
-    padding-top: 4.375rem;
-    padding-bottom: 4.875rem;
-  }
+.page.error-page {
+  padding-top: var(--space-4);
+  padding-bottom: var(--space-4);
 }
 
 .error-page-body {
-  position: relative; /* DOM 순서상 배경보다 뒤라 겹쳐도 본문 글자가 위에 오게 보장한다 */
   max-width: 38.75rem;
 }
 
-/* 배경 상태코드는 장식용(aria-hidden)이다. 시안 기준 45rem에서 꺾으면
-   태블릿 폭에서 본문과 겹쳐, 64rem을 실측으로 확인해 예외로 뒀다. */
+/* 큰 상태코드는 장식(aria-hidden)이지만 문구이므로 지우지 않는다.
+   숫자를 장식으로 키우지 않는 원칙에 따라 5단 글자 크기 안에서 흐름대로 둔다. */
 .error-page-bg {
   display: block;
-  font-weight: 800;
-  font-size: 5.25rem;
-  line-height: 0.92;
-  letter-spacing: -0.04em;
-  color: var(--line);
-  margin-bottom: 0.875rem;
-  pointer-events: none;
+  margin-bottom: var(--space-2);
+  color: var(--ink-2);
+  font-size: var(--fs-5);
+  font-weight: 400;
+  line-height: var(--lh-tight);
   user-select: none;
   font-variant-numeric: tabular-nums;
 }
 
-@media (min-width: 64rem) {
-  .error-page-bg {
-    position: absolute;
-    top: -0.375rem;
-    right: var(--page-pad-x);
-    margin-bottom: 0;
-    font-size: 11.875rem;
-    line-height: 1;
-    opacity: 0.55;
-  }
-}
-
 .error-page-label {
-  margin: 0 0 0.75rem;
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  color: var(--brand-ink);
+  margin: 0 0 var(--space-2);
+  color: var(--ink-2);
+  font-size: var(--fs-1);
+  font-weight: 400;
 }
 
+/* h1은 쪽 제목이라 base.css의 700을 그대로 받는다. */
 .error-page-title {
-  margin: 0 0 0.875rem;
-  font-size: 1.4375rem;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  line-height: 1.25;
-  color: var(--text);
+  margin: 0 0 var(--space-3);
+  color: var(--ink);
+  font-size: var(--fs-4);
+  line-height: var(--lh-tight);
 }
 
 .error-page-message {
-  margin: 0 0 1.375rem;
-  padding-top: 1rem;
-  border-top: 2px solid var(--text);
-  font-size: 0.78125rem;
-  color: var(--muted);
-  line-height: 1.7;
+  margin: 0 0 var(--space-4);
+  padding-top: var(--space-3);
+  border-top: var(--bw-1) solid var(--rule);
+  color: var(--ink-2);
+  font-size: var(--fs-2);
+  line-height: var(--lh-base);
 }
 
-/* 이 45rem 기준은 .error-page-body의 38.75rem 컬럼폭이 아니라
-   --page-pad-x의 태블릿 단계 경계(tokens.css)에 맞춘 것이다. */
-@media (min-width: 45rem) {
+@media (min-width: 45.01rem) {
   .error-page-title {
-    font-size: 2.125rem;
-    letter-spacing: -0.015em;
+    font-size: var(--fs-5);
   }
 
   .error-page-message {
-    margin-bottom: 1.875rem;
-    font-size: 0.96875rem;
+    font-size: var(--fs-3);
   }
 }
 
+/* 링크 행: 첫 링크(홈·로그인)가 주 버튼(2px), 나머지는 보조(1px)다. */
 .error-page-links {
+  display: grid;
+  gap: var(--space-2);
   margin: 0;
   padding: 0;
   list-style: none;
-  border-top: 1px solid var(--line);
-}
-
-.error-page-link-row {
-  border-bottom: 1px solid var(--line);
 }
 
 .error-page-link {
   display: flex;
   align-items: center;
-  padding: 0.75rem 0.125rem;
-  font-size: 0.78125rem;
-  font-weight: 700;
-  color: inherit;
+  box-sizing: border-box;
+  min-height: var(--hit-lg);
+  padding: var(--space-2) var(--space-3);
+  border: var(--bw-1) solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-2);
+  font-weight: 400;
+}
+
+.error-page-link-row:first-child .error-page-link {
+  border-width: var(--bw-2);
+}
+
+@media (hover: hover) {
+  .error-page-link:hover {
+    background: var(--select);
+    color: var(--on-select);
+  }
 }
 
 .error-page-link:focus-visible {
-  outline: 2px solid var(--focus);
+  background: var(--select);
+  color: var(--on-select);
   outline-offset: 2px;
-  border-radius: 6px;
-}
-
-.error-page-link.is-brand {
-  color: var(--brand-ink);
-}
-
-.error-page-link.is-teal {
-  color: var(--teal-ink);
 }
 
 .error-page-arrow {
   margin-left: auto;
-  font-size: 0.8125rem;
-  color: var(--muted);
+  padding-left: var(--space-2);
   flex: none;
+  color: inherit;
 }
 
-/* 이 45rem 기준은 .error-page-body의 38.75rem 컬럼폭이 아니라
-   --page-pad-x의 태블릿 단계 경계(tokens.css)에 맞춘 것이다. */
-@media (min-width: 45rem) {
+@media (min-width: 45.01rem) {
   .error-page-link {
-    padding: 0.875rem 0.125rem;
-    font-size: 0.9375rem;
-  }
-
-  .error-page-arrow {
-    font-size: 0.9375rem;
+    font-size: var(--fs-3);
   }
 }

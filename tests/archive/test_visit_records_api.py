@@ -15,6 +15,7 @@ import pytest
 
 from archive.models import UserEventStatus, VisitRecord, VisitRecordPhoto
 from archive.services import MAX_PHOTOS_PER_RECORD
+from events.models import Event
 
 pytestmark = pytest.mark.web
 
@@ -63,12 +64,31 @@ def test_방문_기록을_생성하면_요청한_사용자_소유로만_저장�
     assert VisitRecord.objects.filter(user=other_user, event=event).count() == 0
 
 
+def _post_visit_record(client, event_id, **extra):
+    return client.post(
+        "/api/visit-records/",
+        {"event": event_id, "visited_on": "2026-05-26"},
+        content_type="application/json",
+        **extra,
+    )
+
+
+def _normalized_errors(response, event_id):
+    """오류 메시지 속 행사 id를 "<id>"로 바꿔 서로 비교할 수 있게 한다."""
+    return {
+        field: [message.replace(f'"{event_id}"', '"<id>"') for message in messages]
+        for field, messages in response.json().items()
+    }
+
+
 @pytest.mark.django_db
-def test_미게시_행사를_대상으로_방문_기록을_생성하면_요청이_거부된다(
-    client, make_user, make_draft_event
+def test_본인이_방문_완료로_표시한_비공개_행사에_방문_기록을_생성하면_기록만_추가되고_상태_행은_그대로다(
+    client, make_user, make_draft_event, make_status
 ):
     user = make_user()
     draft_event = make_draft_event()
+    status = make_status(user, event=draft_event, status="visited")
+    updated_at_before = status.updated_at
 
     client.force_login(user)
     response = client.post(
@@ -77,8 +97,83 @@ def test_미게시_행사를_대상으로_방문_기록을_생성하면_요청�
         content_type="application/json",
     )
 
-    assert response.status_code == 400
+    assert response.status_code == 201
+    assert response.json()["event"] == draft_event.id
+    assert VisitRecord.objects.filter(user=user, event=draft_event).count() == 1
+    status_after = UserEventStatus.objects.get(user=user, event=draft_event)
+    assert status_after.pk == status.pk
+    assert status_after.status == UserEventStatus.Status.VISITED
+    assert status_after.updated_at == updated_at_before
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("own_status", "other_status"),
+    [
+        pytest.param(None, None, id="상태_없음"),
+        pytest.param(None, "visited", id="타인_방문_완료만"),
+        pytest.param("planned", "visited", id="본인_예정_타인_방문_완료"),
+    ],
+)
+def test_방문_완료_표시가_없는_비공개_행사의_기록_요청은_존재하지_않는_행사와_같은_거부_응답을_받는다(
+    client, make_user, make_draft_event, make_status, own_status, other_status
+):
+    user = make_user()
+    other = make_user()
+    draft_event = make_draft_event(title="숨겨야 하는 비공개 제목")
+    missing_id = 987654321
+    if own_status is not None:
+        make_status(user, event=draft_event, status=own_status)
+    if other_status is not None:
+        make_status(other, event=draft_event, status=other_status)
+    status_count = UserEventStatus.objects.count()
+
+    client.force_login(user)
+    draft_response = _post_visit_record(client, draft_event.id)
+    missing_response = _post_visit_record(client, missing_id)
+    assert draft_response.status_code == 400
+    assert missing_response.status_code == 400
+    draft_errors = _normalized_errors(draft_response, draft_event.id)
+    missing_errors = _normalized_errors(missing_response, missing_id)
+
+    assert draft_errors == missing_errors
+    assert "숨겨야 하는 비공개 제목" not in draft_response.content.decode()
     assert VisitRecord.objects.count() == 0
+    assert UserEventStatus.objects.count() == status_count
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("language", ["ko", "en"])
+def test_검증_뒤_저장_전에_방문_완료_표시가_지워지면_존재하지_않는_행사와_같은_400_응답이_나온다(
+    client, make_user, make_draft_event, make_status, monkeypatch, language
+):
+    # 계층 규약 유지를 위해 서비스 모듈을 직접 임포트하지 않고 뷰 네임스페이스로 우회한다.
+    from archive import views as archive_views
+
+    user = make_user()
+    draft_event = make_draft_event()
+    make_status(user, event=draft_event, status="visited")
+    original_complete_visit_with_record = archive_views.complete_visit_with_record
+
+    def status_removing_complete_visit_with_record(**kwargs):
+        UserEventStatus.objects.filter(user=user, event=draft_event).delete()
+        return original_complete_visit_with_record(**kwargs)
+
+    monkeypatch.setattr(
+        archive_views, "complete_visit_with_record", status_removing_complete_visit_with_record
+    )
+
+    client.force_login(user)
+    raced_response = _post_visit_record(client, draft_event.id, HTTP_ACCEPT_LANGUAGE=language)
+    missing_response = _post_visit_record(client, 987654321, HTTP_ACCEPT_LANGUAGE=language)
+    assert raced_response.status_code == 400
+    assert missing_response.status_code == 400
+    raced_errors = _normalized_errors(raced_response, draft_event.id)
+    missing_errors = _normalized_errors(missing_response, 987654321)
+
+    assert raced_errors == missing_errors
+    assert VisitRecord.objects.count() == 0
+    assert UserEventStatus.objects.count() == 0
 
 
 @pytest.mark.django_db
@@ -192,6 +287,29 @@ def test_같은_클라이언트_토큰으로_방문_기록_생성_POST를_두_�
     assert VisitRecord.objects.filter(user=user, client_token=client_token).count() == 1
     record = VisitRecord.objects.get(user=user, client_token=client_token)
     assert record.short_review == "first"
+
+
+@pytest.mark.django_db
+def test_공개_중에_생성한_방문_기록을_비공개로_바꾼_뒤_같은_토큰으로_재전송하면_201과_같은_id가_반환된다(
+    client, make_user, make_event
+):
+    user = make_user()
+    event = make_event()
+    payload = {
+        "event": event.id,
+        "visited_on": "2026-05-26",
+        "client_token": str(uuid.uuid4()),
+    }
+
+    client.force_login(user)
+    first_response = client.post("/api/visit-records/", payload, content_type="application/json")
+    Event.objects.filter(pk=event.pk).update(publish_status=Event.PublishStatus.DRAFT)
+    second_response = client.post("/api/visit-records/", payload, content_type="application/json")
+
+    assert first_response.status_code == 201
+    assert second_response.status_code == 201
+    assert first_response.json()["id"] == second_response.json()["id"]
+    assert VisitRecord.objects.filter(user=user, event=event).count() == 1
 
 
 # ---------------------------------------------------------------------------
@@ -441,6 +559,25 @@ def test_본인_방문_기록에_사진을_업로드하면_사진이_저장된�
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
+    record = make_visit(user, event=event, visited_on="2026-05-26")
+
+    client.force_login(user)
+    response = client.post(
+        f"/api/visit-records/{record.id}/photos/",
+        {"image": SimpleUploadedFile("photo.png", png_bytes(), content_type="image/png")},
+    )
+
+    assert response.status_code == 201
+    assert VisitRecordPhoto.objects.filter(visit_record=record).count() == 1
+
+
+@pytest.mark.django_db
+def test_본인의_비공개_행사_방문_기록에_사진을_업로드하면_사진이_저장된다(
+    client, make_user, make_draft_event, png_bytes, settings, tmp_path, make_visit
+):
+    settings.MEDIA_ROOT = str(tmp_path)
+    user = make_user()
+    event = make_draft_event()
     record = make_visit(user, event=event, visited_on="2026-05-26")
 
     client.force_login(user)

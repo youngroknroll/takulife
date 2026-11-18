@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n category_lang %}
 {% load static %}
 {% load vocab_labels %}
 {% block title %}{{ project_name }} | {% translate "다녀온 기록" %}{% endblock %}
@@ -12,7 +12,7 @@
   <main class="page visit-detail-page" id="content">
     <a class="visit-detail-back-link" href="/archive/visits/">{% translate "← 다녀온 기록으로" %}</a>
     <div id="visit-global-error" class="visit-detail-global-error" aria-live="polite"></div>
-    <div class="visit-detail-grid">
+    <div class="visit-detail-grid window">
       <div class="visit-detail-gallery">
         <div class="visit-detail-cover">
           {% if photos %}{% blocktranslate trimmed asvar cover_alt with title=subject.title n=1 %}{{ title }} 사진 {{ n }}{% endblocktranslate %}<img src="{{ photos.0.image.url }}" alt="{{ cover_alt }}">
@@ -35,7 +35,7 @@
       </div>
       <div class="visit-detail-main">
         <div class="visit-detail-badges">
-          {% if subject.category_slug %}<span class="visit-detail-cat" style="color: var(--cat-{{ subject.category_slug }}-ink, var(--brand-ink));">{{ subject.category_label }}</span><span class="visit-detail-dot" aria-hidden="true">·</span>
+          {% if subject.category_slug %}<span class="visit-detail-cat" data-category="{{ subject.category_slug|slugify }}"{% category_lang_attr subject.category_label %}>{{ subject.category_label }}</span><span class="visit-detail-dot" aria-hidden="true">·</span>
           {% elif subject.category_label %}<span class="visit-detail-cat visit-detail-cat--muted">{{ subject.category_label }}</span><span class="visit-detail-dot" aria-hidden="true">·</span>{% endif %}
           <span class="visit-detail-origin">{% if subject.is_official %}{% translate "공식 행사" %}{% else %}{% translate "직접 등록" %}{% endif %}</span>
           <span class="status visited">{% translate "방문 완료" %}</span>
@@ -49,7 +49,7 @@
           <div class="visit-detail-meta-row"><dt>{% translate "방문일" %}</dt><dd>{{ visited_on|date:"DATE_FORMAT" }}</dd></div>
           <div class="visit-detail-meta-row"><dt>{% translate "대상" %}</dt><dd{% if subject.is_official %} lang="ko"{% endif %}>{{ subject.title }}</dd></div>
           {% if subject.location %}<div class="visit-detail-meta-row"><dt>{% translate "장소" %}</dt><dd{% if subject.is_official %} lang="ko"{% endif %}>{{ subject.location }}</dd></div>{% endif %}
-          {% if subject.category_label %}<div class="visit-detail-meta-row"><dt>{% translate "카테고리" %}</dt><dd>{{ subject.category_label }}</dd></div>{% endif %}
+          {% if subject.category_label %}<div class="visit-detail-meta-row"><dt>{% translate "카테고리" %}</dt><dd{% if subject.is_official %}{% category_lang_attr subject.category_label %}{% endif %}>{{ subject.category_label }}</dd></div>{% endif %}
           <div class="visit-detail-meta-row"><dt>{% translate "사진" %}</dt><dd>{% blocktranslate trimmed count counter=photos|length %}{{ counter }}장{% plural %}{{ counter }}장{% endblocktranslate %}</dd></div>
         </dl>
         {% if short_review %}
@@ -91,5 +91,6 @@
 {% endblock %}
 
 {% block extra_js %}
+  <script defer src="{% static 'js/components/form_feedback.js' %}"></script>
   <script defer src="{% static 'js/pages/visit_detail.js' %}"></script>
 {% endblock %}

@@ -8,7 +8,7 @@
 
 {% block content %}
   <main class="page mypage-page" id="content">
-    <header class="mypage-header">
+    <header class="mypage-header window">
       <span class="mypage-avatar" aria-hidden="true">{{ request.user.nickname|first|upper }}</span>
       <div class="mypage-header-body">
         <p class="mypage-nickname" title="{{ request.user.nickname }}">{{ request.user.nickname }}</p>
@@ -20,7 +20,7 @@
       </p>
     </header>
 
-    <div class="mypage-index">
+    <div class="mypage-index window">
       {% for row in index_rows %}
         <a class="mypage-index-row is-{{ row.ink }}" href="{{ row.url }}">
           <span class="mypage-index-tick" aria-hidden="true"></span>
@@ -42,8 +42,8 @@
       {% endfor %}
     </div>
 
-    <section class="mypage-account">
-      <h2>{% translate "계정" %}</h2>
+    <section class="mypage-account window">
+      <h2 class="window-title">{% translate "계정" %}</h2>
 
       <div class="mypage-account-row">
         <span class="mypage-account-field">

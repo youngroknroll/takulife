@@ -12,7 +12,7 @@
   <main class="page collection-detail-page" id="content">
     <a class="collection-detail-back-link" href="/collection/">{% translate "← 내 컬렉션으로" %}</a>
     <div id="collection-global-error" class="collection-detail-global-error" aria-live="polite"></div>
-    <div class="collection-detail-grid">
+    <div class="collection-detail-grid window">
       <div class="collection-detail-gallery">
         <div class="collection-detail-cover">
           {% if item.image %}
@@ -81,5 +81,6 @@
 {% endblock %}
 
 {% block extra_js %}
+  <script defer src="{% static 'js/components/form_feedback.js' %}"></script>
   <script defer src="{% static 'js/pages/collection_detail.js' %}"></script>
 {% endblock %}

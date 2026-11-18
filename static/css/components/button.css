@@ -1,66 +1,70 @@
-/* ── .btn — canonical generic button component ──────────────────── */
-/* 포커스 아웃라인은 base.css의 전역 a:focus/button:focus 규칙을 그대로
-   물려받으므로 여기서 다시 선언하지 않는다. */
+/* ── .btn — 공용 버튼 (DOS 모양) ───────────────────────────────── */
+/* 위계는 색이 아니라 테두리로 나눈다: 주 버튼 2px, 보조 1px, 삭제는 1px 오류색.
+   hover·포커스·눌림은 배경과 글자색을 함께 바꾸는 반전이다.
+   포커스 링은 base.css의 전역 :focus-visible 규칙을 그대로 쓴다. */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.375rem;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  padding: 0.6875rem 0.75rem;
-  /* §5.4 44px 터치 타깃: padding+line-height+border만으로는 ~42.24px
-     (실측)였음. .btn-sm은 min-height를 재정의하지 않아(패딩·폰트만
-     축소) 이 44px을 그대로 물려받음 — 축소는 시각 크기만이고 터치
-     타깃은 모든 변형이 동일하게 44px. */
-  min-height: 44px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  line-height: 1.2;
+  gap: var(--space-1);
+  min-height: var(--hit-md);
+  padding: var(--space-1) var(--space-3);
+  border: var(--bw-1) solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-3);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-tight);
+  text-align: center;
   text-decoration: none;
+  white-space: nowrap;
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease,
-    color 0.15s ease, filter 0.15s ease;
+}
+
+/* 좁은 화면에서는 긴 번역 라벨이 넘치지 않게 줄바꿈을 허용한다. */
+@media (max-width: 45rem) {
+  .btn {
+    white-space: normal;
+  }
 }
 
 .btn-primary {
-  border-color: var(--brand);
-  background: var(--brand);
-  color: #fff;
-  font-weight: 700;
-}
-
-.btn-primary:hover {
-  filter: brightness(1.05);
+  border-width: var(--bw-2);
 }
 
 .btn-secondary {
-  border-color: var(--line);
-  background: var(--surface);
-  color: var(--muted);
-  font-weight: 400;
+  border-width: var(--bw-1);
 }
 
-.btn-secondary:hover {
-  background: var(--brand-soft);
-  border-color: var(--brand);
-}
-
-/* 탈퇴 등 파괴적 동작용 배색. staff console의 .action-button.danger와 톤을 맞췄다. */
+/* 탈퇴 등 파괴적 동작용. 라벨 동사와 함께 오류색 테두리·글자로 구분한다. */
 .btn-danger {
-  border-color: var(--rose-ink);
-  background: var(--rose-soft);
-  color: var(--rose-ink);
+  border-color: var(--error);
+  color: var(--error);
 }
 
-.btn-danger:hover {
-  filter: brightness(0.97);
+@media (hover: hover) {
+  .btn:not(:disabled):hover {
+    background: var(--select);
+    color: var(--on-select);
+    border-color: var(--select);
+  }
+}
+
+.btn:focus-visible {
+  background: var(--select);
+  color: var(--on-select);
+  border-color: var(--select);
+}
+
+.btn:disabled:not(.is-loading) {
+  background: transparent;
+  color: var(--off);
+  border-color: var(--off);
+  cursor: not-allowed;
 }
 
 .btn-sm {
-  padding: 0.5rem 0.625rem;
-  font-size: 0.82rem;
-  font-weight: 600;
+  font-size: var(--fs-2);
 }
 
 .btn-block {

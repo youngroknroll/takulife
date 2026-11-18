@@ -1,139 +1,123 @@
-/* archive_personal_create.css — /archive/personal/new/ 전용 작성
-   페이지. `.personal-create-page` 스코프에서만 동작하며
-   archive_visits.css / archive_collection.css는 로드하지 않는다 — 두
-   시트의 클래스가 이 페이지에, 이 페이지의 `.personal-form-*` 클래스가
-   두 시트에 각각 나타나지 않으므로 절반만 바꾸면 폼이 조용히
-   스타일을 잃는다(과거 사례로 확인된 함정).
+/* archive_personal_create.css — /archive/personal/new/ 전용 작성 페이지(수정
+   페이지도 이 파일을 함께 읽는다). `.personal-create-page` 스코프에서만
+   동작하며 archive_visits.css / archive_collection.css는 로드하지 않는다 —
+   두 시트의 클래스가 이 페이지에, 이 페이지의 `.personal-form-*` 클래스가
+   두 시트에 각각 나타나지 않으므로 절반만 바꾸면 폼이 조용히 스타일을
+   잃는다(과거 사례로 확인된 함정).
 
-   TOKEN NOTE: 시안이 요구하는 `--border-strong`은 tokens.css에 없어
-   `--muted`로 대체(prompt_plan.md 확정 결정).
-   ACCENT NOTE: "teal" 역할은 이 저장소의 `--teal`/`--teal-soft`/
-   `--teal-ink` 토큰에 매핑한다(별도 --accent* 계열 없음). */
-
-/* ── global error banner ───────────────────────────────────────── */
-/* 다른 등록 페이지와 관례를 맞추려고 남겨 뒀다. 지금 이 페이지의 등록
-   오류는 여기가 아니라 폼 안 `#personal-create-error`에 표시된다. */
-.personal-create-page {
-  max-width: 56.25rem;
-  margin: 0 auto;
-}
+   DOS 형태: <main> 전체가 주 창 1개(3px 이중선)이고 h1이 창 제목이다.
+   부 구획은 창 안 1px 단선 + 소제목, 입력은 1px 테두리, 주 버튼은 2px
+   테두리, 삭제는 오류색 테두리다. 포커스는 전역 링(base.css)을 쓴다. */
 
 .personal-create-page .personal-form-back-link {
   display: inline-block;
-  margin-bottom: 0.875rem;
-  font-size: var(--fs-md);
-  font-weight: 600;
-  color: var(--brand-ink);
-  text-decoration: none;
-}
-.personal-create-page .personal-form-back-link:hover {
+  margin-bottom: var(--space-3);
+  font-size: var(--fs-2);
+  color: var(--link);
   text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 
-/* ── header: title + "＊ 표시는 필수" legend, heavy hairline rule ──────── */
+/* ── 머리: 제목(.window-title) + "＊ 표시는 필수" 안내 ─────────────── */
 .personal-create-page .personal-form-head {
-  padding-bottom: 1.125rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 2px solid var(--text);
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-3);
+  border-bottom: var(--bw-1) solid var(--rule);
 }
 .personal-create-page .personal-form-head-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-}
-.personal-create-page .personal-form-head h1 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: var(--text);
+  gap: var(--space-3);
 }
 .personal-create-page .personal-form-legend {
   flex: none;
-  color: var(--muted);
-  font-size: 0.78rem;
+  color: var(--ink-2);
+  font-size: var(--fs-1);
 }
 .personal-create-page .personal-form-subtitle {
-  margin: 0.5rem 0 0;
-  color: var(--muted);
-  font-size: 0.875rem;
+  margin: var(--space-2) 0 0;
+  color: var(--ink-2);
+  font-size: var(--fs-2);
 }
 
-/* ── privacy banner — neutral tone, distinct from the teal promote banner
-   further down (WED: two banners must read as different weight/intent). ── */
+/* ── 프라이버시 안내 — 1px 테두리 상자 ─────────────────────────────── */
 .personal-create-page .personal-form-privacy-banner {
   display: flex;
   align-items: flex-start;
-  gap: 0.75rem;
-  margin-bottom: 1.75rem;
-  padding: 0.875rem 1rem;
-  border: 1px solid var(--border-soft);
-  border-radius: 0.6875rem;
-  background: var(--bg-soft);
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  border: var(--bw-1) solid var(--ink);
+  background: var(--surface);
 }
 .personal-create-page .personal-form-banner-glyph {
   flex: none;
-  font-size: 1.125rem;
-  line-height: 1.4;
+  font-size: var(--fs-3);
+  line-height: var(--lh-base);
 }
 .personal-create-page .personal-form-banner-title {
-  margin: 0 0 0.1875rem;
-  color: var(--text);
-  font-size: 0.8125rem;
-  font-weight: 700;
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--fs-2);
 }
 .personal-create-page .personal-form-banner-note {
   margin: 0;
-  color: var(--muted);
-  font-size: 0.78rem;
-  line-height: 1.45;
+  color: var(--ink-2);
+  font-size: var(--fs-1);
+  line-height: var(--lh-base);
 }
 
-/* ── two-column grid: 300px image/benefits column, flexible fields column ── */
+/* ── 2열 그리드: 사진 열 | 입력 열(열 사이 세로 단선) ─────────────── */
 .personal-create-page .personal-form-grid {
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
-  gap: 2.375rem;
+  grid-template-columns: 18.75rem minmax(0, 1fr);
   align-items: start;
 }
 .personal-create-page .personal-form-image {
   grid-column: 1;
   grid-row: 1;
+  padding-right: var(--space-4);
 }
 .personal-create-page .personal-form-fields {
   grid-column: 2;
   grid-row: 1;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: var(--space-3);
+  padding-left: var(--space-4);
+  border-left: var(--bw-1) solid var(--rule);
 }
 
-/* 드롭존: 4:3 비율(WED 확정 — 모바일에서도 150px 상한 없음). 파일
-   input은 실제로 포커스/키보드 접근 가능한 상태를 유지한다(opacity:0 +
-   absolute로 덮되 display:none은 쓰지 않음 — display:none은 탭 순서에서
-   완전히 빠진다, BIR 기준). */
+/* 드롭존: 4:3 비율. 파일 input은 투명하게 덮어 키보드 포커스를 그대로
+   받는다(display:none은 탭 순서에서 빠진다). 포커스는 input이 아니라
+   드롭존 상자에 전역 링으로 그린다. */
 .personal-create-page .personal-form-dropzone {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   aspect-ratio: 4 / 3;
-  border: 1px dashed var(--muted);
-  border-radius: 0.8125rem;
-  background: var(--bg-soft);
+  border: var(--bw-1) solid var(--ink);
+  background: var(--surface);
+  color: var(--ink-2);
   cursor: pointer;
   overflow: hidden;
 }
-.personal-create-page .personal-form-dropzone:focus-within {
-  border-color: var(--brand);
-  border-style: solid;
-  box-shadow: 0 0 0 3px var(--brand-soft);
+/* 파일 입력은 투명이라 오류 표시가 안 보이므로 드롭존 테두리를 2px로 알린다. */
+.personal-create-page .personal-form-dropzone:has(input[aria-invalid="true"]) {
+  border-width: var(--bw-2);
+}
+.personal-create-page .personal-form-dropzone:has(:focus-visible) {
+  outline: var(--bw-2) solid var(--select);
+  outline-offset: 2px;
+}
+@media (hover: hover) {
+  .personal-create-page .personal-form-dropzone:hover {
+    background: var(--select);
+    color: var(--on-select);
+  }
 }
 .personal-create-page .personal-form-dropzone-placeholder {
-  padding: 0 1rem;
-  color: var(--muted);
-  font-size: 0.8125rem;
-  font-weight: 600;
+  padding: 0 var(--space-3);
+  font-size: var(--fs-2);
   text-align: center;
 }
 .personal-create-page .personal-form-dropzone img {
@@ -152,43 +136,41 @@
   cursor: pointer;
 }
 .personal-create-page .personal-form-hint {
-  margin: 0.5625rem 0 0;
-  color: var(--muted);
-  font-size: 0.72rem;
+  margin: var(--space-2) 0 0;
+  color: var(--ink-2);
+  font-size: var(--fs-1);
 }
 
 .personal-create-page .personal-form-benefits {
-  margin-top: 1.5rem;
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: var(--bw-1) solid var(--rule);
 }
 .personal-create-page .personal-form-benefits-label {
-  margin: 0 0 0.5625rem;
-  font-size: 0.6875rem;
-  font-weight: 800;
-  letter-spacing: 0.07em;
-  color: var(--muted);
+  margin: 0;
+  font-size: var(--fs-3);
+  color: var(--ink);
 }
 .personal-create-page .personal-form-benefits .rule-list li {
-  font-size: 0.8125rem;
+  font-size: var(--fs-2);
 }
 
-/* ── field groups + section headings ───────────────────────────────────── */
+/* ── 필드 묶음 + 구획 소제목(1px 단선 위) ──────────────────────────── */
 .personal-create-page .personal-form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.4375rem;
+  gap: var(--space-1);
 }
 .personal-create-page .personal-form-group label {
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: var(--text);
+  font-size: var(--fs-2);
+  color: var(--ink);
 }
 .personal-create-page .personal-form-fields h2 {
-  margin: 0.5rem 0 0;
-  padding-top: 1rem;
-  border-top: 1px solid var(--line);
-  font-size: 0.9375rem;
-  font-weight: 700;
-  color: var(--text);
+  margin: var(--space-2) 0 0;
+  padding-top: var(--space-3);
+  border-top: var(--bw-1) solid var(--rule);
+  font-size: var(--fs-3);
+  color: var(--ink);
 }
 .personal-create-page .personal-form-fields h2:first-child {
   margin-top: 0;
@@ -198,212 +180,211 @@
 
 .personal-create-page .personal-form-row {
   display: grid;
-  gap: 1rem;
+  gap: var(--space-3);
 }
 .personal-create-page .personal-form-row--location {
-  grid-template-columns: minmax(0, 1fr) 200px;
+  grid-template-columns: minmax(0, 1fr) 12.5rem;
 }
 
-/* ── shared input skin ─────────────────────────────────────────────────── */
+/* ── 입력 — 1px 테두리, 표면 바탕, 반경 0 ──────────────────────────── */
 .personal-create-page .personal-form input[type="text"],
 .personal-create-page .personal-form input[type="url"],
 .personal-create-page .personal-form textarea {
-  padding: 0 0.8125rem;
-  border: 1px solid var(--border-soft);
-  border-radius: 0.5625rem;
-  background: var(--surface);
-  color: var(--text);
-  font: inherit;
   width: 100%;
+  padding: 0 var(--space-2);
+  border: var(--bw-1) solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
 }
 .personal-create-page .personal-form input[type="text"],
 .personal-create-page .personal-form input[type="url"] {
-  height: 2.625rem;
+  min-height: var(--hit-md);
 }
 .personal-create-page .personal-form textarea {
-  padding-top: 0.6875rem;
-  padding-bottom: 0.6875rem;
+  padding-top: var(--space-2);
+  padding-bottom: var(--space-2);
   min-height: 6.25rem;
   resize: vertical;
 }
-.personal-create-page .personal-form input[type="text"]:focus-visible,
-.personal-create-page .personal-form input[type="url"]:focus-visible,
-.personal-create-page .personal-form textarea:focus-visible {
-  outline: none;
-  border-color: var(--brand);
-  box-shadow: 0 0 0 3px var(--brand-soft);
+.personal-create-page .personal-form input::placeholder,
+.personal-create-page .personal-form textarea::placeholder {
+  color: var(--ink-2);
+}
+/* 오류 입력은 2px --ink 테두리로 알린다(색에만 기대지 않는다). */
+.personal-create-page .personal-form input[aria-invalid="true"],
+.personal-create-page .personal-form textarea[aria-invalid="true"] {
+  border-width: var(--bw-2);
+  border-color: var(--ink);
+}
+/* 줄 수로 높이가 정해지는 입력이라 테두리가 1px 늘면 높이도 늘므로 안쪽 여백을 그만큼 줄인다. */
+.personal-create-page .personal-form textarea[aria-invalid="true"] {
+  padding: calc(var(--space-2) - 1px);
 }
 
-/* ── category chips (goods create의 bindTypeChips 패턴 미러 — 별도 클래스,
-   목록 필터칩/유형 칩과 격리) ──────────────────────────────────────────── */
+/* ── 카테고리 칩 — 선택(눌림)은 반전 ───────────────────────────────── */
 .personal-create-page .personal-form-category-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 0.625rem;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
 }
 .personal-create-page .personal-form-category-chip {
   display: inline-flex;
   align-items: center;
-  min-height: 2.25rem;
-  padding: 0 0.9375rem;
-  border: 1px solid var(--border-soft);
-  border-radius: 999px;
+  min-height: var(--hit-md);
+  padding: var(--space-1) var(--space-3);
+  border: var(--bw-1) solid var(--rule);
   background: var(--surface);
-  color: var(--text);
-  font-size: 0.8125rem;
-  font-weight: 600;
+  color: var(--ink);
+  font-size: var(--fs-2);
+  line-height: var(--lh-tight);
   cursor: pointer;
 }
-.personal-create-page .personal-form-category-chip:hover {
-  border-color: var(--teal);
-  background: var(--bg-soft);
+@media (hover: hover) {
+  .personal-create-page .personal-form-category-chip:hover {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
 }
-.personal-create-page .personal-form-category-chip:focus-visible {
-  outline: none;
-  border-color: var(--teal);
-  box-shadow: 0 0 0 3px var(--teal-soft);
-}
+.personal-create-page .personal-form-category-chip:focus-visible,
 .personal-create-page .personal-form-category-chip.is-active,
 .personal-create-page .personal-form-category-chip[aria-pressed="true"] {
-  border-color: var(--teal);
-  background: var(--teal);
-  color: #fff;
-  font-weight: 700;
+  border-color: var(--select);
+  background: var(--select);
+  color: var(--on-select);
 }
 
-/* ── 공식 등록 제안 배너 — teal, 프라이버시 배너와 명확히 구분되는 톤. ──── */
+/* ── 공식 등록 제안 — 상자 없이 단선 위 안내 문단 ──────────────────── */
 .personal-create-page .personal-form-promote-banner {
-  margin-top: 1.75rem;
-  padding: 0.875rem 1rem;
-  border: 1px solid var(--teal);
-  border-radius: 0.6875rem;
-  background: var(--teal-soft);
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: var(--bw-1) solid var(--rule);
 }
 .personal-create-page .personal-form-promote-banner p {
   margin: 0;
-  color: var(--teal-ink);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  line-height: 1.5;
+  color: var(--ink-2);
+  font-size: var(--fs-2);
+  line-height: var(--lh-base);
 }
 
-/* ── error banner — hidden entirely while empty ─────────────────────────── */
+/* ── 오류 줄 — 낭독 영역이라 숨기지 않고, 비면 높이 0이 된다 ────────── */
 .personal-create-page .personal-form-error {
-  margin: 1.25rem 0 0;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--rose-border);
-  border-radius: 0.5625rem;
-  background: var(--rose-soft);
-  color: var(--rose-ink);
-  font-size: 0.8125rem;
-  font-weight: 600;
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-3);
+  border: var(--bw-1) solid var(--error);
+  background: var(--surface);
+  color: var(--error);
+  font-size: var(--fs-2);
 }
 .personal-create-page .personal-form-error:empty {
-  display: none;
   margin: 0;
   padding: 0;
   border: 0;
 }
 
-/* ── actions row — teal submit (this design's accent CTA, distinct from the
-   shared brand-red .hero-action used on the list shell) ─────────────────── */
+/* ── 액션 줄 — 저장 = 주 버튼(2px), 취소 = 링크 ────────────────────── */
 .personal-create-page .personal-form-actions {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-top: 1.75rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid var(--line);
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: var(--bw-1) solid var(--rule);
 }
 .personal-create-page .personal-form-submit {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
-  padding: 0 1.5rem;
-  border: 0;
-  border-radius: 10px;
-  background: var(--teal);
-  color: #fff;
-  font-weight: 700;
-  font-size: 0.875rem;
+  min-height: var(--hit-lg);
+  min-width: 6rem;
+  padding: var(--space-1) var(--space-4);
+  border: var(--bw-2) solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-3);
+  line-height: var(--lh-tight);
   cursor: pointer;
 }
-.personal-create-page .personal-form-submit:hover {
-  background: var(--teal-ink);
+@media (hover: hover) {
+  .personal-create-page .personal-form-submit:not(:disabled):hover {
+    border-color: var(--select);
+    background: var(--select);
+    color: var(--on-select);
+  }
+}
+.personal-create-page .personal-form-submit:focus-visible {
+  border-color: var(--select);
+  background: var(--select);
+  color: var(--on-select);
+}
+/* 제출 중이 아닌 비활성 모양. 제출 중(.is-loading)은 원래 모양에 스피너만 얹는다. */
+.personal-create-page .personal-form-submit:disabled:not(.is-loading) {
+  background: transparent;
+  border-color: var(--off);
+  color: var(--off);
+  cursor: not-allowed;
 }
 .personal-create-page .personal-form-cancel {
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
-  padding: 0 0.375rem;
-  border: 0;
-  color: var(--muted);
-  font-size: 0.875rem;
-  font-weight: 600;
-  text-decoration: none;
-}
-.personal-create-page .personal-form-cancel:hover {
+  min-height: var(--hit-md);
+  padding: 0 var(--space-1);
+  color: var(--link);
+  font-size: var(--fs-2);
   text-decoration: underline;
   text-underline-offset: 0.2em;
 }
 .personal-create-page .personal-form-note {
   margin: 0 0 0 auto;
-  color: var(--muted);
-  font-size: 0.78rem;
+  color: var(--ink-2);
+  font-size: var(--fs-1);
 }
 
-/* 스크린리더 전용 보조 텍스트(이 페이지 자체 복제본 — 저장소 전역
-   `.sr-only` 유틸리티가 없다; clip 기법은 components/text.css의
-   `.archive-search-status`와 동일). */
-.personal-create-page .sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-/* ── narrow (≤45rem): single column, full-width 4/3 dropzone, fixed bottom
-   action bar ─────────────────────────────────────────────────────────────── */
+/* ── 좁은 화면(≤45rem): 1열, 4:3 드롭존 전폭, 하단 고정 액션 막대 ───── */
 @media (max-width: 45rem) {
-  .personal-create-page {
-    padding-bottom: 5rem;
+  /* 고정 바가 푸터 끝을 덮지 않게 문서 끝에 바 높이만큼 여백 */
+  body:has(.personal-create-page .personal-form-actions) {
+    padding-bottom: calc(5rem + var(--site-tabbar-h, 0px));
+  }
+  /* 포커스가 고정 막대 뒤로 들어가지 않게 스크롤 여백을 막대 높이만큼 둔다. */
+  html:has(.personal-create-page .personal-form-actions) {
+    scroll-padding-bottom: calc(4.5rem + var(--site-tabbar-h, 0px));
   }
   .personal-create-page .personal-form-grid {
     grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-4);
   }
   .personal-create-page .personal-form-image {
     grid-column: 1;
     grid-row: 1;
+    padding-right: 0;
   }
   .personal-create-page .personal-form-fields {
     grid-column: 1;
     grid-row: 2;
+    padding-left: 0;
+    border-left: 0;
   }
   .personal-create-page .personal-form-row--location {
     grid-template-columns: 1fr;
   }
   .personal-create-page .personal-form-head-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.25rem;
+    gap: var(--space-1);
   }
   .personal-create-page .personal-form-actions {
     position: fixed;
     left: 0;
     right: 0;
-    bottom: 0;
+    bottom: var(--site-tabbar-h, 0px);
     z-index: 20;
     margin-top: 0;
-    padding: 0.625rem var(--page-pad-x) calc(0.625rem + env(safe-area-inset-bottom));
-    border-top: 1px solid var(--line);
-    background: var(--chrome-glass-cta, var(--surface));
+    padding: var(--space-2) var(--page-pad-x) calc(var(--space-2) + env(safe-area-inset-bottom));
+    border-top: var(--bw-2) solid var(--ink);
+    background: var(--surface);
+  }
+  .personal-create-page .personal-form-submit {
+    padding: var(--space-1) var(--space-3);
   }
   .personal-create-page .personal-form-note {
     display: none;

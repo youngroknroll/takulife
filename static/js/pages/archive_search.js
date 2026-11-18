@@ -10,8 +10,8 @@
  * 갈아끼우는 HTML은 서버가 이스케이프해 렌더링한 것이라 검색어를 직접
  * 마크업에 끼워넣지 않는다. 교체 후에는 `archive:listswapped` 이벤트를
  * 보내 status.js 등이 새로 삽입된 컨트롤을 다시 연결하게 한다.
- * 정렬 메뉴는 #archive-results 밖에 있어 교체되지 않으므로, 매 교체 후
- * 그 링크들의 `q` 파라미터만 직접 갱신해 검색어가 사라지지 않게 한다.
+ * 정렬 메뉴와 `data-search-links` 묶음처럼 #archive-results 밖에서 `q`를 싣는
+ * 링크는 교체되지 않으므로, 매 교체 후 그 링크들의 `q`만 직접 갱신한다.
  */
 (function () {
   "use strict";
@@ -29,17 +29,19 @@
   var path = window.location.pathname;
   var controller = null;
   var timer = null;
+  // 마지막으로 요청한 검색어. 같은 검색어의 중복 요청·히스토리 쌓임을 막는다.
+  var lastTerm = (new URLSearchParams(window.location.search).get("q") || "").trim();
 
   // 현재 URL에서 쿼리 파라미터를 만들어 활성 필터를 유지한다. 새 검색어는
-  // 페이지를 1로 되돌린다.
-  function buildParams(term) {
+  // 페이지를 1로 되돌리고, 뒤로/앞으로가기(keepPage)만 주소의 페이지를 지킨다.
+  function buildParams(term, keepPage) {
     var params = new URLSearchParams(window.location.search);
     if (term) {
       params.set("q", term);
     } else {
       params.delete("q");
     }
-    params.delete("page");
+    if (!keepPage) { params.delete("page"); }
     params.delete("partial");
     return params;
   }
@@ -47,6 +49,13 @@
   function userUrl(params) {
     var qs = params.toString();
     return qs ? path + "?" + qs : path;
+  }
+
+  // 주소 비교용 쿼리. page=1은 page가 없는 것과 같은 1쪽이라 뺀다.
+  function comparableQuery(params) {
+    var copy = new URLSearchParams(params);
+    if (copy.get("page") === "1") { copy.delete("page"); }
+    return copy.toString();
   }
 
   // "지우기" 링크는 서버가 전체 페이지 로드 시에만 렌더링하므로, 실시간
@@ -58,26 +67,34 @@
 
   function setLoading(on) {
     results.classList.toggle("is-loading", on);
+    if (on) {
+      results.setAttribute("aria-busy", "true");
+    } else {
+      results.removeAttribute("aria-busy");
+    }
   }
 
-  // 정렬 메뉴는 #archive-results 밖에 있어 처음 로드될 때 한 번만
-  // 렌더링된다. 그대로 두면 검색어를 새로 입력했을 때 링크에 박힌 `q`가
-  // 낡아져, 정렬을 누르면 방금 검색한 내용이 조용히 사라진다. 그래서
-  // `q`만 갱신하고 `sort` 등 나머지 값은 그대로 둔다. 정렬 메뉴가 없는
-  // 페이지에서는 아무 동작도 하지 않는다.
-  var sortMenu = document.querySelector("[data-sort-menu]");
-  var sortLinks = sortMenu ? sortMenu.querySelectorAll("a[href]") : [];
+  // #archive-results 밖 링크는 처음 한 번만 렌더링돼 `q`가 낡아진다. 서버가 `q`를
+  // 싣는 정렬 메뉴와 `data-search-links` 묶음만 골라 `q`만 갱신한다. 지우기 링크,
+  // 활동 쪽 보기 전환·구역 탭은 서버가 검색어를 빼므로 표식이 없다.
+  var syncLinks = [];
+  var markedLinks = document.querySelectorAll(
+    "[data-sort-menu] a[href], [data-search-links] a[href]"
+  );
+  for (var n = 0; n < markedLinks.length; n++) {
+    if (!results.contains(markedLinks[n])) { syncLinks.push(markedLinks[n]); }
+  }
 
-  function syncSortLinks(term) {
-    for (var i = 0; i < sortLinks.length; i++) {
-      var link = sortLinks[i];
+  function syncSearchLinks(term) {
+    for (var i = 0; i < syncLinks.length; i++) {
+      var link = syncLinks[i];
       var url = new URL(link.getAttribute("href"), window.location.href);
       if (term) {
         url.searchParams.set("q", term);
       } else {
         url.searchParams.delete("q");
       }
-      link.setAttribute("href", url.pathname + url.search);
+      link.setAttribute("href", url.pathname + url.search + url.hash);
     }
   }
 
@@ -122,10 +139,23 @@
     });
   }
 
-  // `term`에 대한 결과 조각을 받아 교체한다. `push`는 새 히스토리 항목을
-  // 만들지 여부(popstate 재실행 시에는 false).
-  function runSearch(term, push) {
-    var params = buildParams(term);
+  // 건수 제목은 #archive-results 밖에 있어 교체되지 않는다. 서버가 조각에
+  // 실어 보낸 제목 마크업(번역·단복수 처리 끝난 것)을 그대로 옮긴다. 제목이나
+  // 운반 요소를 못 찾으면 아무것도 하지 않는다.
+  var titleTarget = document.querySelector("[data-results-title-target]");
+
+  function syncResultsTitle() {
+    if (!titleTarget) { return; }
+    var carrier = results.querySelector("template[data-results-title]");
+    if (!carrier) { return; }
+    titleTarget.innerHTML = carrier.innerHTML.trim();
+  }
+
+  // `term`에 대한 결과 조각을 받아 교체한다. `fromHistory`는 뒤로/앞으로가기
+  // 재실행인지 여부로, 참이면 새 히스토리 항목을 만들지 않고 주소의 페이지를 유지한다.
+  function runSearch(term, fromHistory) {
+    var params = buildParams(term, fromHistory);
+    lastTerm = term;
 
     if (controller) { controller.abort(); }
     controller = new AbortController();
@@ -149,6 +179,7 @@
         }
         if (!response.ok) {
           setSearchError(gettext("검색 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."));
+          lastTerm = null; // 같은 검색어를 다시 입력하면 재시도되게 한다
           return null;
         }
         return response.text();
@@ -159,9 +190,13 @@
         setLoading(false);
         if (html === null) { return; }
         results.innerHTML = html;
+        syncResultsTitle();
         announceResultCount(term);
-        syncSortLinks(term);
-        if (push) {
+        syncSearchLinks(term);
+        // 서버 주소와 URLSearchParams는 인코딩이 달라, 쿼리를 정규화해 비교한다.
+        // 의미가 같은 주소로 Enter를 눌러도 히스토리에 쌓지 않는다.
+        var currentQuery = comparableQuery(new URLSearchParams(window.location.search));
+        if (!fromHistory && comparableQuery(params) !== currentQuery) {
           window.history.pushState({ q: term }, "", userUrl(params));
         }
         // 교체된 컨트롤(상태/찜/삭제/제보/캐러셀 등)을 다시 연결한다.
@@ -173,22 +208,32 @@
         // 네트워크 실패 시 로딩 상태만 해제하고 기존 결과는 그대로 둔다.
         setLoading(false);
         setSearchError(gettext("검색 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."));
+        lastTerm = null;
       });
   }
 
-  input.addEventListener("input", function (evt) {
-    // 한글 등 조합 입력 중에는 글자가 완성되기 전에도 input 이벤트가
-    // 계속 발생한다. 그 중간 상태로 검색하면 요청이 낭비되고 화면이
-    // 깜빡인다. 조합이 끝나면 브라우저가 isComposing:false인 input을
-    // 한 번 더 보내주므로 이 검사만으로 충분하다.
-    if (evt.isComposing) { return; }
+  function scheduleSearch() {
     if (timer) { window.clearTimeout(timer); }
     var term = input.value.trim();
     syncClearLink(term);
     timer = window.setTimeout(function () {
-      runSearch(term, true);
+      if (term === lastTerm) { return; }
+      runSearch(term, false);
     }, DEBOUNCE_MS);
+  }
+
+  input.addEventListener("input", function (evt) {
+    // 조합 중에도 입력창에 글자가 보이므로 지우기 링크는 바로 맞춘다.
+    syncClearLink(input.value.trim());
+    // 한글 등 조합 입력 중에는 글자가 완성되기 전에도 input 이벤트가
+    // 계속 발생한다. 그 중간 상태로 검색하면 요청이 낭비되고 화면이 깜빡인다.
+    if (evt.isComposing) { return; }
+    scheduleSearch();
   });
+
+  // Chromium은 조합 확정 때 isComposing:false인 input을 따로 보내지 않는다.
+  // 확정은 compositionend에서 잡고, input이 또 오는 브라우저는 같은 타이머를 갈아끼운다.
+  input.addEventListener("compositionend", scheduleSearch);
 
   // Enter(폼 제출)는 전체 새로고침 대신 즉시 검색한다.
   form.addEventListener("submit", function (evt) {
@@ -196,14 +241,16 @@
     if (timer) { window.clearTimeout(timer); }
     var term = input.value.trim();
     syncClearLink(term);
-    runSearch(term, true);
+    runSearch(term, false);
   });
 
   // 뒤로/앞으로가기: URL에서 입력값을 다시 맞추고 새 히스토리 없이 검색을 재실행한다.
   window.addEventListener("popstate", function () {
+    // 대기 중이던 입력 검색이 뒤로가기 결과를 덮어쓰지 않게 취소한다.
+    if (timer) { window.clearTimeout(timer); timer = null; }
     var term = new URLSearchParams(window.location.search).get("q") || "";
     input.value = term;
     syncClearLink(term);
-    runSearch(term, false);
+    runSearch(term, true);
   });
 })();

@@ -16,8 +16,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
-  gap: 0.5rem;
-  margin-top: 0.25rem;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
 }
 .photo-add-tile {
   display: flex;
@@ -26,24 +26,28 @@
   width: 6rem;
   height: 6rem;
   flex: 0 0 auto;
-  border: 2px dashed var(--line);
-  border-radius: 8px;
-  background: transparent;
-  color: var(--muted);
-  font-size: 2rem;
-  font-weight: 300;
+  border: var(--bw-1) solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-5);
+  font-weight: var(--fw-regular);
   line-height: 1;
   cursor: pointer;
   padding: 0;
-  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
 }
-.photo-add-tile:hover {
-  border-color: var(--brand);
-  color: var(--brand-ink);
-  background: var(--brand-soft);
+@media (hover: hover) {
+  .photo-add-tile:hover {
+    background: var(--select);
+    color: var(--on-select);
+    border-color: var(--select);
+  }
 }
+/* 반전된 타일에서도 바깥 링이 바탕 위에 보이도록 기존 outline을 유지한다. */
 .photo-add-tile:focus-visible {
-  outline: 2px solid var(--brand);
+  background: var(--select);
+  color: var(--on-select);
+  border-color: var(--select);
+  outline: var(--bw-2) solid var(--select);
   outline-offset: 2px;
 }
 .photo-add-tile[hidden] {

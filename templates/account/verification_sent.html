@@ -10,7 +10,7 @@
 {% block content %}
 <main class="page auth-page" id="content">
   <div class="auth-shell">
-    <aside class="auth-panel-declare">
+    <aside class="auth-panel-declare window">
       <span class="auth-glyph" aria-hidden="true">✦</span>
       <p class="auth-kicker">TAKULIFE ACCOUNT</p>
       <h2>{% translate "그대들의" %}<br>{% translate "덕질 라이프를" %}<br>{% translate "위하여" %}</h2>
@@ -33,17 +33,17 @@
         </li>
       </ul>
     </aside>
-    <div class="auth-panel-form">
+    <div class="auth-panel-form window">
       <p class="auth-kicker">{% translate "계정" %}</p>
       {% if email_delivery_enabled %}
-      <h1 class="auth-title">{% translate "이메일을 확인해주세요" %}</h1>
+      <h1 class="auth-title window-title">{% translate "이메일을 확인해주세요" %}</h1>
       <hr class="auth-rule">
       <p class="auth-description">{% translate "가입하신 이메일 주소로 인증 링크를 보냈습니다. 메일의 링크를 클릭하면 로그인됩니다." %}</p>
       <ul class="rule-list">
         <li>{% translate "메일이 보이지 않으면 스팸함을 확인해주세요." %}</li>
       </ul>
       {% else %}
-      <h1 class="auth-title">{% translate "이메일 인증 메일을 보낼 수 없습니다" %}</h1>
+      <h1 class="auth-title window-title">{% translate "이메일 인증 메일을 보낼 수 없습니다" %}</h1>
       <hr class="auth-rule">
       <p class="auth-description">{% translate "takulife는 아직 베타 서비스 준비 중이라 인증 메일이 자동으로 발송되지 않습니다. 가입 정보는 저장되어 있으니, 서비스가 정식으로 열리면 로그인을 다시 시도해주세요." %}</p>
       {% endif %}

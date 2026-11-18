@@ -71,11 +71,11 @@
 
     <div class="activity-layout">
       {% translate "활동 종류 범례 및 빠른 이동" as aside_label %}
-      <aside class="activity-aside" aria-label="{{ aside_label }}">
+      <aside class="activity-aside window" aria-label="{{ aside_label }}">
         {% comment %}
         범례 행은 곧 필터 링크다. 앵커에는 유효한 pressed 상태가 없어 aria-pressed
-        대신 aria-current를 쓰고, 활성 상태는 색상만이 아니라 배경 채움과 굵게로도
-        함께 표시한다.
+        대신 aria-current를 쓰고, 활성 상태는 색이 아니라 배경·글자 반전으로
+        표시한다.
         {% endcomment %}
         <div class="legend-caption-row">
           <h2 class="aside-label legend-caption">{% translate "종류" %}</h2>
@@ -110,7 +110,7 @@
         </div>
       </aside>
 
-      <div class="activity-calendar-col">
+      <div class="activity-calendar-col window">
         {% comment %}
         월 표시는 항상 화면에 보여주는 달(selected_date) 기준이다. "이번달" 링크는
         다른 달을 보고 있을 때 글자만으로는 뜻이 모호해 aria-label="오늘로 이동"을
@@ -118,12 +118,12 @@
         둔다.
         {% endcomment %}
         {% translate "월 이동" as month_nav_label %}{% translate "이전 달" as prev_label %}{% translate "오늘로 이동" as today_label %}{% translate "다음 달" as next_label %}
-        <nav class="calendar-month-nav" aria-label="{{ month_nav_label }}">
-          <h2 class="calendar-month-label">{{ selected_date|date:"Y" }} <span class="calendar-month-sep">·</span> {{ selected_date|date:"F" }}</h2>
+        <nav class="calendar-month-nav window-head" aria-label="{{ month_nav_label }}">
+          <h2 class="calendar-month-label window-title" id="calendar-month" tabindex="-1">{{ selected_date|date:"Y" }} <span class="calendar-month-sep">·</span> {{ selected_date|date:"F" }}</h2>
           <div class="calendar-month-controls">
-            <a class="calendar-month-glyph" href="?month={{ prev_month }}{{ extra_query }}" aria-label="{{ prev_label }}">‹</a>
-            <a class="calendar-month-today" href="?{{ extra_query }}" aria-label="{{ today_label }}">{% translate "이번달" %}</a>
-            <a class="calendar-month-glyph" href="?month={{ next_month }}{{ extra_query }}" aria-label="{{ next_label }}">›</a>
+            <a class="calendar-month-glyph" href="?month={{ prev_month }}{{ extra_query }}#calendar-month" aria-label="{{ prev_label }}">‹</a>
+            <a class="calendar-month-today" href="?{{ extra_query }}#calendar-month" aria-label="{{ today_label }}">{% translate "이번달" %}</a>
+            <a class="calendar-month-glyph" href="?month={{ next_month }}{{ extra_query }}#calendar-month" aria-label="{{ next_label }}">›</a>
           </div>
         </nav>
 
@@ -131,7 +131,7 @@
           <div class="empty-state calendar-error-panel">
             <p class="empty-title">{% translate "요청한 날짜를 확인할 수 없어요" %}</p>
             <p class="empty-note">{% translate "주소의 월 또는 날짜 값이 올바르지 않습니다." %}</p>
-            <a class="empty-action" href="?{{ extra_query }}">{% translate "이번 달 보기" %}</a>
+            <a class="empty-action" href="?{{ extra_query }}#calendar-month">{% translate "이번 달 보기" %}</a>
           </div>
         {% elif calendar_error == "query_failed" %}
           <div class="empty-state calendar-error-panel">
@@ -148,7 +148,7 @@
 
         {% include "core/partials/_archive_calendar_grid.html" with weeks=weeks extra_query=extra_query %}
 
-        <section class="date-detail-section" id="selected-date" tabindex="-1">
+        <section class="date-detail-section window-section" id="selected-date" tabindex="-1">
           <div class="date-detail-head">
             <h2>{{ selected_date|date:"MONTH_DAY_FORMAT" }} <span class="date-detail-weekday">{{ selected_date|date:"l" }}</span></h2>
             {% if has_any_items %}<span class="date-detail-count">{% blocktranslate trimmed count counter=selected_items|length %}활동 {{ counter }}건{% plural %}활동 {{ counter }}건{% endblocktranslate %}</span>{% endif %}

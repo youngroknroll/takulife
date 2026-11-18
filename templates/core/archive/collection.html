@@ -11,7 +11,7 @@
 
 {% block content %}
   <main class="page collection-page" id="content">
-    <div id="collection-global-error" class="form-error" style="margin-bottom:8px;" aria-live="polite"></div>
+    <div id="collection-global-error" class="form-error" aria-live="polite"></div>
 
     <section class="collection-head">
       <div class="collection-head-title">
@@ -27,7 +27,7 @@
       {# 둘이 한 칸(auto)을 나눠 써서 토글이 가운데로 가지 않고 3열이 빈다.   #}
       {# 열 번호를 CSS에서 명시하므로 has_items가 false여도 버튼은 3열 유지.  #}
       {% if has_items %}
-        <div class="collection-view-toggle" role="group" aria-label="{% translate "보기 방식" %}">
+        <div class="collection-view-toggle" role="group" data-search-links aria-label="{% translate "보기 방식" %}">
           <a
             class="collection-view-btn{% if view_mode == "list" %} is-active{% endif %}"
             href="?view=list{% if is_wanted_value %}&is_wanted={{ is_wanted_value }}{% endif %}{% if duplicate_value %}&duplicate={{ duplicate_value }}{% endif %}{% if tradeable_value %}&tradeable={{ tradeable_value }}{% endif %}{% if owned_value %}&owned={{ owned_value }}{% endif %}{% if work_title %}&work_title={{ work_title|urlencode }}{% endif %}{% if character_name %}&character_name={{ character_name|urlencode }}{% endif %}{% if item_type %}&item_type={{ item_type|urlencode }}{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}"
@@ -52,7 +52,7 @@
       {# (archive_search.js 가 첫 매치만 잡는다) 툴바는 form 을 감싸지 않고     #}
       {# nav 와 form 을 형제로 두는 순수 레이아웃 컨테이너다.                  #}
       <div class="collection-toolbar">
-      <nav class="collection-tabs" aria-label="{% translate "컬렉션 하위 보기" %}">
+      <nav class="collection-tabs" data-search-links aria-label="{% translate "컬렉션 하위 보기" %}">
         <a
           class="collection-tab{% if not is_wanted_value and not duplicate_value and not tradeable_value and not owned_value %} is-active{% endif %}"
           href="?{{ chip_query_suffix|slice:"1:" }}"
@@ -117,9 +117,9 @@
       {# 없으면 "전체" 칩 하나만 남는 껍데기 "유형" 제목이 될 뿐이라, 아무것도 #}
       {# 걸러주지 못하는 빈 장식을 렌더하지 않는다.                          #}
       {% if filter_values.item_type %}
-        <aside class="collection-facet-group collection-facet-group--type" aria-label="{% translate "유형 필터" %}">
+        <aside class="collection-facet-group collection-facet-group--type window" aria-label="{% translate "유형 필터" %}">
           <h2>{% translate "유형" %}</h2>
-          <div class="collection-type-chips">
+          <div class="collection-type-chips" data-search-links>
             <a
               class="collection-type-chip{% if not item_type %} is-active{% endif %}"
               href="?item_type={% if is_wanted_value %}&is_wanted={{ is_wanted_value }}{% endif %}{% if duplicate_value %}&duplicate={{ duplicate_value }}{% endif %}{% if tradeable_value %}&tradeable={{ tradeable_value }}{% endif %}{% if owned_value %}&owned={{ owned_value }}{% endif %}{% if work_title %}&work_title={{ work_title|urlencode }}{% endif %}{% if character_name %}&character_name={{ character_name|urlencode }}{% endif %}{% if view_mode == "list" %}&view=list{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}"
@@ -142,7 +142,7 @@
       {% if work_title_counts %}
         {# 작품별 필터가 걸려 있으면 펼친 채로 연다 — 접힌 토글 뒤에 활성 필터가 #}
         {# 숨으면 왜 목록이 걸러졌는지 알 수 없다(달력 필터 패널 선례).        #}
-        <aside class="collection-facet-group collection-facet-group--work" aria-label="{% translate "작품별 필터" %}"
+        <aside class="collection-facet-group collection-facet-group--work window" aria-label="{% translate "작품별 필터" %}"
                data-disclosure data-expanded="{% if work_title %}true{% else %}false{% endif %}">
           <h2>{% translate "작품별" %}</h2>
           {# 좁은 폭 전용 접기 토글. disclosure.js 의 범용 계약을 그대로 쓴다 — #}
@@ -155,7 +155,7 @@
             <span class="series-toggle-arrow" aria-hidden="true" data-state="closed">▾</span>
             <span class="series-toggle-arrow" aria-hidden="true" data-state="open">▴</span>
           </button>
-            <ul id="series-facet-list" class="collection-work-list">
+            <ul id="series-facet-list" class="collection-work-list" data-search-links>
               {% for facet in work_title_counts|slice:":8" %}
                 <li>
                   <a
@@ -174,7 +174,7 @@
         </aside>
       {% endif %}
 
-      <div id="archive-results" data-archive-results>
+      <div id="archive-results" data-archive-results class="window">
         {% include "core/partials/_archive_results_collection.html" %}
       </div>
     </div>
@@ -182,6 +182,7 @@
 {% endblock %}
 
 {% block extra_js %}
+  <script defer src="{% static 'js/components/form_feedback.js' %}"></script>
   <script defer src="{% static 'js/pages/collection.js' %}"></script>
   <script defer src="{% static 'js/pages/archive_search.js' %}"></script>
   <script defer src="{% static 'js/shared/disclosure.js' %}"></script>

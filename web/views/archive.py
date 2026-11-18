@@ -23,6 +23,7 @@ from archive.queries import (
     list_user_planned_events,
     list_user_statuses,
     list_user_visit_records,
+    list_user_visit_target_events,
     list_visit_records_for_personal_entry,
     user_interest_summary_counts,
     user_personal_entry_counts,
@@ -32,6 +33,7 @@ from archive.queries import (
     user_visit_category_values,
     user_visit_record_counts,
 )
+from core.categories import category_display_labels, category_label_lang
 from core.query_params import is_safe_pk_string
 from core.vocab import (
     ARCHIVE_INTEREST_SORT,
@@ -49,8 +51,13 @@ from core.vocab import (
     archive_status_label,
     personal_category_label,
 )
-from events.models import Event
-from web.views._helpers import _archive_query, _attach_display, _render_archive_list, _subject_view
+from web.views._helpers import (
+    _archive_query,
+    _attach_display,
+    _render_archive_list,
+    _subject_category_labels,
+    _subject_view,
+)
 from web.views.collection import _collection_item_row, _series_ink_classes
 
 
@@ -61,9 +68,11 @@ def _build_archive_status_rows(user_statuses):
     방식으로 렌더링할 수 있도록 균일하고 null 안전한 ``subject`` 뷰
     (비공식은 표시가 붙는다)를 담은 dict를 반환한다.
     """
+    user_statuses = list(user_statuses)
+    category_labels = _subject_category_labels(user_statuses)
     rows = []
     for us in user_statuses:
-        subject = _subject_view(us)
+        subject = _subject_view(us, category_labels=category_labels)
         rows.append(
             {
                 "status_id": us.pk,
@@ -234,26 +243,33 @@ def archive_visits(request):
     # 안정적으로 유지된다. 라벨은 여기서 해석해 archive/queries.py가
     # core.vocab을 임포트하지 않게 한다(순환 의존 방지).
     pairs = user_visit_category_values(user)
-    # 토큰은 한국어 원문(저장값과 맞대는 값)이고 표시 라벨만 요청 언어로 옮긴다.
+    # 토큰은 고정 7종이면 한국어 원문, 새 카테고리면 DB 라벨이다. 표시 라벨만 요청 언어로 옮긴다.
     label_by_token = {
         CATEGORY_SOURCE_LABELS[slug]: CATEGORY_LABELS[slug] for slug in CATEGORY_SOURCE_LABELS
     }
+    event_category_labels = category_display_labels(event_cat for event_cat, _ in pairs)
     categories = []
     category_chips = []
     seen_labels: set = set()
     for event_cat, personal_cat in pairs:
+        is_new_category = False
         if event_cat:
-            token = CATEGORY_SOURCE_LABELS.get(event_cat, event_cat)
+            # 새 카테고리는 슬러그가 아니라 DB 라벨을 토큰으로 쓴다.
+            token = CATEGORY_SOURCE_LABELS.get(event_cat) or str(event_category_labels[event_cat])
+            is_new_category = event_cat not in CATEGORY_SOURCE_LABELS
         elif personal_cat:
             token = personal_cat
         else:
             continue
         if token not in seen_labels:
             categories.append(token)
+            label = label_by_token.get(token) or personal_category_label(token)
             category_chips.append(
                 {
                     "token": token,
-                    "label": label_by_token.get(token) or personal_category_label(token),
+                    "label": label,
+                    # 개인 항목 칩은 사용자 입력이라 새 카테고리 칩에만 붙인다.
+                    "lang": category_label_lang(label) if is_new_category else "",
                 }
             )
             seen_labels.add(token)
@@ -279,6 +295,10 @@ def archive_visits(request):
             category_label = label
             category_codes = tuple(
                 code for code, lbl in CATEGORY_SOURCE_LABELS.items() if lbl == label
+            ) + tuple(
+                slug
+                for slug, lbl in event_category_labels.items()
+                if slug not in CATEGORY_SOURCE_LABELS and str(lbl) == label
             )
         # else: 라벨이 비었거나 화이트리스트에 없음 → 필터 없음으로 대체
 
@@ -308,7 +328,7 @@ def archive_visits(request):
             "record_id": record.pk,
             "visited_on": record.visited_on,
             "short_review": record.short_review,
-            "subject": _subject_view(record),
+            "subject": _subject_view(record, category_labels=event_category_labels),
             "photos": list(record.photos.all()),
         }
         for record in page_obj.object_list
@@ -362,19 +382,21 @@ def _parse_visit_preselect(request):
     """방문 기록 작성 폼을 위해, 선택적인 ?subject=event:<id> / personal:<id>를
     잠긴 대상으로 해석한다.
 
-    파라미터가 공개된 행사나 요청자 본인의 비공식 등록을 가리키면
-    ``{"value": "event:5", "label": "이벤트명"}``을, 아니면 ``None``을
-    반환한다(그러면 폼이 선택 드롭다운으로 대체된다). 이미 방문한
-    행사(예정 전용 드롭다운엔 없다)의 '기록' 버튼으로도 기록을 남길 수
-    있게 해준다 — 방문 API는 공개된 어떤 행사든 받아준다. id는 여기서
-    검증하므로 템플릿은 이를 신뢰된 잠금 필드로 렌더링할 수 있다.
+    파라미터가 방문 기록을 남길 수 있는 행사나 요청자 본인의 비공식
+    등록을 가리키면 ``{"value": "event:5", "label": "이벤트명"}``을, 아니면
+    ``None``을 반환한다(그러면 폼이 선택 드롭다운으로 대체된다). 남길 수
+    있는 행사는 게시된 행사이거나 요청자가 방문 완료로 표시해 둔 행사이며,
+    규칙은 ``archive.queries.list_user_visit_target_events``가 갖는다.
+    이미 방문한 행사(예정 전용 드롭다운엔 없다)의 '기록' 버튼으로도 기록을
+    남길 수 있게 해준다. id는 여기서 검증하므로 템플릿은 이를 신뢰된 잠금
+    필드로 렌더링할 수 있다.
     """
     kind, _, ident = request.GET.get("subject", "").partition(":")
     if not is_safe_pk_string(ident):
         return None
     pk = int(ident)
     if kind == "event":
-        event = Event.objects.published().filter(pk=pk).first()
+        event = list_user_visit_target_events(request.user).filter(pk=pk).first()
         if event is not None:
             # is_official: 템플릿이 공식 행사 제목만 lang="ko"로 표시하게 하는 값.
             return {
@@ -639,6 +661,12 @@ def archive_interests(request):
         display["event"].id: display for display in _attach_display(official_events, user=user)
     }
 
+    # _attach_display가 이미 푼 라벨로 맵을 만들어 추가 조회를 막는다.
+    category_labels = {
+        display["category_slug"]: display["category_label"]
+        for display in display_by_event_id.values()
+    }
+
     interest_rows = []
     for interest in page_interests:
         if interest.event_id:
@@ -647,7 +675,7 @@ def archive_interests(request):
             interest_rows.append(
                 {
                     "interest_id": interest.pk,
-                    "subject": _subject_view(interest),
+                    "subject": _subject_view(interest, category_labels=category_labels),
                     "status": display["status_slug"],
                     "dday": display["dday"],
                     "user_status": user_status,

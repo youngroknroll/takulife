@@ -34,6 +34,29 @@ def test_상태_행의_공식_이벤트_subject에_category_slug가_원본_카�
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize(
+    "게시됨",
+    [
+        pytest.param(True, id="게시_행사"),
+        pytest.param(False, id="비공개_행사"),
+    ],
+)
+def test_내_활동_상태_행의_행사_상세_주소는_게시된_행사에만_있다(
+    user_client, make_event, make_draft_event, make_status, 게시됨
+):
+    user, client = user_client()
+    행사 = make_event(title="행사") if 게시됨 else make_draft_event(title="행사")
+    make_status(user, event=행사, status="visited")
+
+    resp = client.get("/archive/statuses/")
+
+    assert resp.status_code == 200
+    rows = resp.context["status_rows"]
+    assert len(rows) == 1
+    assert rows[0]["subject"]["detail_url"] == (f"/events/{행사.id}/" if 게시됨 else "")
+
+
+@pytest.mark.django_db
 def test_상태_행에_updated_at이_담긴다(user_client, make_event, make_status):
     user, client = user_client()
     event = make_event(title="행사")

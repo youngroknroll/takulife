@@ -356,10 +356,6 @@ msgid "주 메뉴"
 msgstr "主菜单"
 
 #: templates/500.html templates/core/partials/_site_header.html
-msgid "다크모드 전환"
-msgstr "切换深色模式"
-
-#: templates/500.html templates/core/partials/_site_header.html
 msgid "홈"
 msgstr "首页"
 
@@ -2264,8 +2260,8 @@ msgid "기간"
 msgstr "时间"
 
 #: templates/core/events/detail.html
-msgid "공식 페이지로 ↗"
-msgstr "前往官方页面 ↗"
+msgid "공식 페이지로"
+msgstr "前往官方页面"
 
 #: templates/core/events/detail.html
 msgid "참여 상태"
@@ -2320,8 +2316,8 @@ msgid "행사 목록 →"
 msgstr "活动列表 →"
 
 #: templates/core/events/detail.html
-msgid "공식 페이지에서 보기 ↗"
-msgstr "在官方页面查看 ↗"
+msgid "공식 페이지에서 보기"
+msgstr "在官方页面查看"
 
 #: templates/core/events/list.html
 msgctxt "페이지 제목"
@@ -2395,18 +2391,6 @@ msgstr "查看全部（含已结束）"
 #: templates/core/home.html
 msgid "굿즈 컬렉션·서브컬처 이벤트 기록"
 msgstr "周边收藏与二次元活动记录"
-
-#: templates/core/home.html
-msgid "서브컬처 이벤트 티켓부스"
-msgstr "二次元活动售票亭"
-
-#: templates/core/home.html
-msgid "내가 원하는 이벤트를"
-msgstr "找找你想要的"
-
-#: templates/core/home.html
-msgid "찾아봐요!"
-msgstr "活动吧！"
 
 #: templates/core/home.html
 #, python-format
@@ -2844,14 +2828,6 @@ msgid "최근 등록한 굿즈"
 msgstr "最近登记的周边"
 
 #: templates/core/partials/_home_collection_snapshot.html
-msgid "최근 등록한 굿즈, 이전"
-msgstr "最近登记的周边，上一个"
-
-#: templates/core/partials/_home_collection_snapshot.html
-msgid "최근 등록한 굿즈, 다음"
-msgstr "最近登记的周边，下一个"
-
-#: templates/core/partials/_home_collection_snapshot.html
 msgid "다가오는 일정"
 msgstr "即将到来的日程"
 
@@ -2901,10 +2877,6 @@ msgstr "前进5页"
 #: templates/core/partials/_site_footer.html
 msgid "타쿠라이프 — 그대들의 오타쿠 라이프를 위하여."
 msgstr "takulife —— 为你们的宅文化生活干杯。"
-
-#: templates/core/partials/_site_footer.html
-msgid "이벤트·컬렉션·활동 기록을 한곳에."
-msgstr "活动·收藏·动态记录，一站管理。"
 
 #: templates/core/partials/_site_footer.html
 msgid "바닥글 링크"
@@ -3117,3 +3089,18 @@ msgstr "关联的到访记录"
 #, python-format
 msgid "검색: %(q)s"
 msgstr "搜索：%(q)s"
+
+#: templates/core/events/list.html
+msgctxt "목록 열 머리"
+msgid "날짜"
+msgstr "日期"
+
+#: templates/core/events/list.html
+msgctxt "목록 열 머리"
+msgid "작품 · 제목"
+msgstr "作品 · 标题"
+
+#: templates/core/events/list.html
+msgctxt "목록 열 머리"
+msgid "방문"
+msgstr "到访"

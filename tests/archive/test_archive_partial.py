@@ -257,3 +257,36 @@ class TestArchivePartialBranch:
         assert "제보가 승인되면 이 항목의 메모가 공개 이벤트의 요약으로 함께 공개됩니다." in body
         assert 'id="promote-note-%d"' % entry.id in body
         assert 'aria-describedby="promote-note-%d"' % entry.id in body
+
+
+@pytest.mark.django_db
+class TestArchivePartialPage:
+    @pytest.mark.parametrize(
+        "url",
+        ["/archive/statuses/", "/archive/visits/"],
+        ids=["나의_일정", "다녀온_기록"],
+    )
+    def test_조각_요청도_page를_받아_그_쪽의_행만_돌려준다(
+        self, user_client, make_statuses, make_visits, url
+    ):
+        user, client = user_client()
+        # Given: 쪽 크기는 응답에서 읽는다(행이 없어도 page_obj는 컨텍스트에 있다).
+        page_size = client.get(f"{url}?partial=1").context["page_obj"].paginator.per_page
+        # 먼저 만든 행("매칭 00")이 가장 오래돼 정렬(-updated_at / -visited_on,-id)상 2쪽 끝에 간다.
+        if "statuses" in url:
+            rows = make_statuses(user, page_size + 1, title_prefix="매칭")
+            for index, row in enumerate(rows):
+                type(row).objects.filter(pk=row.pk).update(
+                    updated_at=f"2026-01-01T00:00:{index:02d}+00:00"
+                )
+        else:
+            make_visits(user, page_size + 1, title_prefix="매칭")
+
+        resp = client.get(f"{url}?partial=1&q=매칭&page=2")
+
+        assert resp.status_code == 200
+        assert resp.context["page_obj"].number == 2
+        content = resp.content.decode()
+        assert "매칭 00" in content
+        assert "매칭 01" not in content
+        assert "<html" not in content.lower()

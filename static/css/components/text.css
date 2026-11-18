@@ -1,31 +1,29 @@
 /* 이벤트/아카이브 목록·카드가 공유하는 텍스트 스타일 모음이다. */
 .meta {
   margin: 0;
-  color: var(--muted);
-  font-size: 0.84rem;
+  color: var(--ink-2);
+  font-size: var(--fs-2);
 }
 .period {
-  margin: 0.25rem 0 0;
-  color: var(--text);
-  font-size: var(--fs-md);
+  margin: var(--space-1) 0 0;
+  color: var(--ink);
+  font-size: var(--fs-2);
 }
 
-/* ── monospace numerals ──────────────────────────────────────────── */
-/* 숫자가 가변폭 글꼴에서 흔들리지 않도록 모노스페이스 + tabular-nums를 쓴다. */
+/* ── tabular numerals ──────────────────────────────────────────── */
+/* 숫자가 흔들리지 않도록 본문 글꼴 그대로 tabular-nums만 쓴다(모노스페이스 없음). */
 .mono-num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.01em;
 }
 
 /* ── emphasis ──────────────────────────────────────────────────── */
-/* 홈 히어로의 강조 문구 전용이다. 카드·버튼 배경으로는 확장하지 않는다.
+/* 강조·경고 문구 전용 반전 블록이다(배경과 글자색을 함께 바꾼다).
    box-decoration-break는 줄바꿈이 생겨도 블록이 자연스럽게 이어지게 한다. */
 .emphasis {
-  background: var(--emphasis-bg);
-  color: var(--emphasis-ink);
+  background: var(--select);
+  color: var(--on-select);
+  font-weight: var(--fw-regular);
   padding: 0 0.25em;
-  border-radius: 0.2em;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }
@@ -33,15 +31,34 @@
 /* ── shared inline error line ────────────────────────────────────── */
 /* 컨트롤 아래 오류 한 줄을 표시하는 공용 스타일이다. auth.css의 .field-error와 같은 토큰을 쓴다. */
 .inline-error {
-  color: var(--rose-ink);
-  font-size: var(--fs-xs);
-  margin: 0.25rem 0 0;
+  color: var(--error);
+  font-size: var(--fs-1);
+  margin: var(--space-1) 0 0;
+}
+
+/* JS가 글자를 채우는 빈 오류 줄은 숨기지 않고(낭독 유지) 여백만 없앤다. */
+.inline-error:empty {
+  margin: 0;
 }
 
 /* ── live search result summary (screen-reader only) ─────────────── */
 /* 검색 결과 개수는 화면에는 안 보이고 스크린리더에만 알린다(archive_search.js).
    숨김 기법은 photo-upload.css의 .photo-upload-native-input과 같다. */
 .archive-search-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* 화면에는 안 보이고 스크린리더에만 읽히는 글자. 쪽마다 복제하면 빠진 쪽에서
+   숨김 글자가 그대로 드러나므로 한 벌만 둔다. */
+.sr-only {
   position: absolute;
   width: 1px;
   height: 1px;

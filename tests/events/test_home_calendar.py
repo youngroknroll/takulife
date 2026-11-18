@@ -11,6 +11,8 @@ from unittest.mock import patch
 from django.test import Client
 import pytest
 
+from core.models import Category
+
 pytestmark = pytest.mark.web
 
 
@@ -73,7 +75,8 @@ def test_month_파라미터로_다른_달을_열면_그_달_1일이_선택된다
 @pytest.mark.django_db
 def test_홈_달력_컨텍스트는_표시_월의_1일을_month_start로_담는다():
     """템플릿이 언어별 월 이름을 표시하려면 연·월 정수가 아니라 날짜 객체가 필요하다."""
-    resp = Client().get("/", {"month": "2026-03"})
+    with patch("web.views.events.timezone.localdate", return_value=date(2026, 3, 15)):
+        resp = Client().get("/", {"month": "2026-03"})
 
     calendar = resp.context["home_calendar"]
     assert calendar["month_start"] == date(2026, 3, 1)
@@ -296,6 +299,44 @@ def test_범례는_표시_달에_실제로_있는_카테고리만_어휘_순서�
 
 
 @pytest.mark.django_db
+def test_범례는_표시_달의_새_카테고리를_고정_카테고리_뒤에_카테고리_순서로_카테고리_라벨과_함께_담는다(
+    make_event,
+):
+    today = date(2026, 9, 16)
+    # id·행사 날짜 순서는 정렬_뒤 -> 정렬_앞(9/10, 9/25)이고 sort_order는 반대(901, 900)라서,
+    # 범례가 id·날짜 순서가 아니라 sort_order를 따르는지 구별된다.
+    정렬_뒤 = Category.objects.create(slug="zz_legend_back", label="범례뒤", sort_order=901)
+    정렬_앞 = Category.objects.create(slug="zz_legend_front", label="범례앞", sort_order=900)
+    make_event(
+        title="전시",
+        category="exhibition",
+        start_date=date(2026, 9, 3),
+        end_date=date(2026, 9, 3),
+    )
+    make_event(
+        title="정렬 뒤 행사",
+        category=정렬_뒤.slug,
+        start_date=date(2026, 9, 10),
+        end_date=date(2026, 9, 10),
+    )
+    make_event(
+        title="정렬 앞 행사",
+        category=정렬_앞.slug,
+        start_date=date(2026, 9, 25),
+        end_date=date(2026, 9, 25),
+    )
+    with patch("web.views.events.timezone.localdate", return_value=today):
+        resp = Client().get("/")
+
+    calendar = resp.context["home_calendar"]
+    assert calendar["legend"] == [
+        {"slug": "exhibition", "label": "전시"},
+        {"slug": 정렬_앞.slug, "label": 정렬_앞.label},
+        {"slug": 정렬_뒤.slug, "label": 정렬_뒤.label},
+    ]
+
+
+@pytest.mark.django_db
 def test_홈_응답의_달력_전체_보기_링크는_표시_달로_이동한다():
     today = date(2026, 9, 16)
     with patch("web.views.events.timezone.localdate", return_value=today):
@@ -370,3 +411,157 @@ def test_카테고리가_없는_행사는_건수와_아젠다에는_남고_점�
     assert calendar["selected_count"] == 1
     assert [row["event"].title for row in calendar["selected_rows"]] == ["미분류 행사"]
     assert calendar["legend"] == []
+
+
+@pytest.mark.django_db
+@pytest.mark.contract
+@pytest.mark.parametrize(
+    "month_param, expected_prev, expected_next",
+    [
+        ("2024-06", None, "2024-07"),
+        ("2027-06", "2027-05", None),
+    ],
+    ids=["하한", "상한"],
+)
+def test_홈_경계_달에서는_범위_밖_쪽_이전_다음_달이_비어_있다(
+    month_param, expected_prev, expected_next
+):
+    fixed_today = date(2026, 6, 26)
+
+    with patch("web.views.events.timezone.localdate", return_value=fixed_today):
+        resp = Client().get("/", {"month": month_param})
+
+    assert resp.status_code == 200
+    calendar = resp.context["home_calendar"]
+    assert calendar["prev_month"] == expected_prev
+    assert calendar["next_month"] == expected_next
+    assert "month=None" not in resp.content.decode()
+
+
+@pytest.mark.django_db
+@pytest.mark.contract
+def test_홈_범위_중간_달은_이전_다음_달이_모두_있다():
+    fixed_today = date(2026, 6, 26)
+
+    with patch("web.views.events.timezone.localdate", return_value=fixed_today):
+        resp = Client().get("/", {"month": "2026-01"})
+
+    assert resp.status_code == 200
+    calendar = resp.context["home_calendar"]
+    assert calendar["prev_month"] == "2025-12"
+    assert calendar["next_month"] == "2026-02"
+
+
+@pytest.mark.django_db
+@pytest.mark.contract
+def test_홈_경계_달의_범위_밖_채움_칸은_링크가_아니다():
+    fixed_today = date(2026, 6, 26)
+
+    with patch("web.views.events.timezone.localdate", return_value=fixed_today):
+        resp = Client().get("/", {"month": "2024-06"})
+
+    assert resp.status_code == 200
+    cells = [day for week in resp.context["home_calendar"]["weeks"] for day in week]
+    may_cells = [cell for cell in cells if cell["date"].month == 5]
+    june_cells = [cell for cell in cells if cell["date"].month == 6]
+    july_cells = [cell for cell in cells if cell["date"].month == 7]
+    assert may_cells, "2024년 5월 채움 칸이 없음"
+    assert all(cell["linkable"] is False for cell in may_cells)
+    assert all(cell["linkable"] is True for cell in june_cells)
+    assert all(cell["linkable"] is True for cell in july_cells)
+
+    body = resp.content.decode()
+    assert 'href="?month=2024-05' not in body
+
+
+@pytest.mark.django_db
+@pytest.mark.contract
+def test_홈_달력의_month가_들어간_모든_링크에는_nofollow가_붙는다(make_event):
+    """ "모두 보기" 링크(href에 /events/calendar/?month=...가 들어감)가 렌더되도록
+    선택일(오늘)에 공개 행사를 최소 1건 둔다."""
+    fixed_today = date(2026, 6, 26)
+    make_event(
+        title="아젠다모두보기행사",
+        start_date=fixed_today,
+        end_date=fixed_today,
+    )
+
+    with patch("web.views.events.timezone.localdate", return_value=fixed_today):
+        resp = Client().get("/", {"month": "2026-06"})
+
+    assert resp.status_code == 200
+    body = resp.content.decode()
+    assert "home-cal-agenda-more" in body, "Given이 의도대로 '모두 보기' 링크를 만들지 못함"
+
+    tags = re.findall(r'<a[^>]*href="[^"]*month=[^"]*"[^>]*>', body)
+    assert tags, "month= 링크를 찾을 수 없음"
+    assert all('rel="nofollow"' in tag for tag in tags)
+
+
+@pytest.mark.django_db
+@pytest.mark.contract
+@pytest.mark.parametrize(
+    "query_params",
+    [
+        {"month": "2024-05"},
+        {"month": "2027-07", "date": "2027-07-01"},
+    ],
+    ids=["하한_바로_밖", "상한_바로_밖"],
+)
+def test_홈_범위_밖_달_요청은_쿼리_없이_month와_date를_뺀_홈으로_보낸다(
+    make_event, query_params, django_assert_num_queries
+):
+    """범위 밖 달은 조회 전에 돌려보내 크롤러가 끝없는 달 주소를 따라가지 못하게 한다."""
+    fixed_today = date(2026, 6, 26)
+    make_event()
+
+    with patch("web.views.events.timezone.localdate", return_value=fixed_today):
+        with django_assert_num_queries(0):
+            resp = Client().get("/", query_params)
+
+    assert resp.status_code == 302
+    assert resp["Location"] == "/"
+
+
+@pytest.mark.django_db
+@pytest.mark.contract
+@pytest.mark.parametrize(
+    "query_params",
+    [
+        {"month": "٢٠٢٦-07"},
+        {"month": "２０２６-07"},
+        {"month": "2026-06", "date": "٢٠٢٦-06-10"},
+    ],
+    ids=["월_아랍_숫자", "월_전각_숫자", "날짜_아랍_숫자"],
+)
+def test_홈_달력은_ASCII가_아닌_숫자를_이번_달로_되돌린다(query_params):
+    """홈은 달력 전용 화면이 아니라 형식 오류를 알리지 않고 이번 달·오늘로 되돌린다."""
+    fixed_today = date(2026, 6, 26)
+
+    with patch("web.views.events.timezone.localdate", return_value=fixed_today):
+        resp = Client().get("/", query_params)
+
+    assert resp.status_code == 200
+    calendar = resp.context["home_calendar"]
+    assert calendar["month"] == 6
+    assert calendar["selected_date"] == fixed_today
+
+
+@pytest.mark.django_db
+@pytest.mark.contract
+@pytest.mark.parametrize(
+    "month_param",
+    ["2024-06", "2027-06"],
+    ids=["하한", "상한"],
+)
+def test_홈_달력은_허용_범위_경계_달을_그대로_보여준다(month_param):
+    fixed_today = date(2026, 6, 26)
+    year, month = (int(part) for part in month_param.split("-"))
+
+    with patch("web.views.events.timezone.localdate", return_value=fixed_today):
+        resp = Client().get("/", {"month": month_param})
+
+    assert resp.status_code == 200
+    calendar = resp.context["home_calendar"]
+    assert calendar["year"] == year
+    assert calendar["month"] == month

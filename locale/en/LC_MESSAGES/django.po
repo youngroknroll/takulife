@@ -355,10 +355,6 @@ msgid "주 메뉴"
 msgstr "Main menu"
 
 #: templates/500.html templates/core/partials/_site_header.html
-msgid "다크모드 전환"
-msgstr "Toggle dark mode"
-
-#: templates/500.html templates/core/partials/_site_header.html
 msgid "홈"
 msgstr "Home"
 
@@ -2274,8 +2270,8 @@ msgid "기간"
 msgstr "Dates"
 
 #: templates/core/events/detail.html
-msgid "공식 페이지로 ↗"
-msgstr "Official page ↗"
+msgid "공식 페이지로"
+msgstr "Official page"
 
 #: templates/core/events/detail.html
 msgid "참여 상태"
@@ -2330,8 +2326,8 @@ msgid "행사 목록 →"
 msgstr "All events →"
 
 #: templates/core/events/detail.html
-msgid "공식 페이지에서 보기 ↗"
-msgstr "View on official page ↗"
+msgid "공식 페이지에서 보기"
+msgstr "View on official page"
 
 #: templates/core/events/list.html
 msgctxt "페이지 제목"
@@ -2406,18 +2402,6 @@ msgstr "View all, including ended"
 #: templates/core/home.html
 msgid "굿즈 컬렉션·서브컬처 이벤트 기록"
 msgstr "Goods collection and fandom event records"
-
-#: templates/core/home.html
-msgid "서브컬처 이벤트 티켓부스"
-msgstr "Fandom event ticket booth"
-
-#: templates/core/home.html
-msgid "내가 원하는 이벤트를"
-msgstr "Find the event"
-
-#: templates/core/home.html
-msgid "찾아봐요!"
-msgstr "you want!"
 
 #: templates/core/home.html
 #, python-format
@@ -2860,14 +2844,6 @@ msgid "최근 등록한 굿즈"
 msgstr "Recently added goods"
 
 #: templates/core/partials/_home_collection_snapshot.html
-msgid "최근 등록한 굿즈, 이전"
-msgstr "Recently added goods, previous"
-
-#: templates/core/partials/_home_collection_snapshot.html
-msgid "최근 등록한 굿즈, 다음"
-msgstr "Recently added goods, next"
-
-#: templates/core/partials/_home_collection_snapshot.html
 msgid "다가오는 일정"
 msgstr "Upcoming schedule"
 
@@ -2918,10 +2894,6 @@ msgstr "Forward 5 pages"
 #: templates/core/partials/_site_footer.html
 msgid "타쿠라이프 — 그대들의 오타쿠 라이프를 위하여."
 msgstr "takulife — for your otaku life."
-
-#: templates/core/partials/_site_footer.html
-msgid "이벤트·컬렉션·활동 기록을 한곳에."
-msgstr "Events, collection, and activity records, all in one place."
 
 #: templates/core/partials/_site_footer.html
 msgid "바닥글 링크"
@@ -3140,3 +3112,18 @@ msgstr "Linked visit record"
 #, python-format
 msgid "검색: %(q)s"
 msgstr "Search: %(q)s"
+
+#: templates/core/events/list.html
+msgctxt "목록 열 머리"
+msgid "날짜"
+msgstr "Date"
+
+#: templates/core/events/list.html
+msgctxt "목록 열 머리"
+msgid "작품 · 제목"
+msgstr "Series · Title"
+
+#: templates/core/events/list.html
+msgctxt "목록 열 머리"
+msgid "방문"
+msgstr "Visit"
