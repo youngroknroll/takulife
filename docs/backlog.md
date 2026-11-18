@@ -1,10 +1,8 @@
 # takulife 백로그
 
-기준일: 2026-11-18 · 기준 브랜치: `main`(`8fa6a43f`, PR #421 반영). 백엔드 회귀
-기준선은 아래 "현재 상태" 표의 첫 행 하나로 통일한다 — **4,662 passed**(`uv run pytest
--q -n auto`, 73.99초) `[실측 2026-11-18, main 8fa6a43f]`, 직전 4,484 대비 +178건(트랙 59)
-`[계산 4,662 − 4,484]`. 2026-08-25 기준으로 적힌 항목의 브랜치(`fix/media-overwrite-lowrisk-sweep`,
-main `e3d3448` 분기)는 머지됐다.
+기준일: 2026-11-18 · 기준 브랜치: `main`(`93be2ca1`, PR #421 반영). 백엔드 회귀
+기준선은 아래 "현재 상태"의 기준선 표 첫 행 하나에만 적는다. 2026-08-25 기준으로
+적힌 항목의 브랜치(`fix/media-overwrite-lowrisk-sweep`, main `e3d3448` 분기)는 머지됐다.
 
 ## 이 문서에 대하여
 
@@ -24,41 +22,65 @@ main `e3d3448` 분기)는 머지됐다.
 
 ## 현재 상태 (신선 실행 기준)
 
+행 하나는 한 줄이다(2026-11-18 사용자 승인). 상세·이연·검증 수치는 오른쪽 칸의
+정본 문서와 `docs/plan-archive/`가 갖고, PR별 이력은 `docs/pr-log.md`가 갖는다.
+이 표에 문단을 다시 쌓지 않는다.
+
+### 기준선
+
 | 항목 | 값 |
 |---|---|
-| 백엔드 회귀 | **4,662 passed**, `uv run pytest -q -n auto`, 73.99초 `[실측 2026-11-18, main 8fa6a43f]`(위 기준일 문장과 같은 값, 중복 기재하지 않음). 직전 4,484 대비 +178건(트랙 59) `[계산 4,662 − 4,484]`. e2e 10 passed / 10.67초 `[실측 2026-11-18, uv run pytest -q -m e2e tests/e2e, main 8fa6a43f]` |
-| Django check | 0 issues |
-| 마이그레이션 드리프트 | 없음 |
-| 배포 차단 | **0건**(G1 해결 — 배포 시점 버킷 확인은 `docs/deploy-runbook.md` §3 체크리스트 ⑦-2로 이관) |
-| 실행 순서 | 2·3·4단계 완료 / **5단계는 배포 이후로 연기**(C1, 실코호트 없음 — "미착수"가 아니라 사용자 결정이다) / 6단계 정상 미착수 / 1단계(배포) 완료(2026-08-31, takulife.kr), 실코호트 대기 |
-| 행사 카탈로그 | `[실측 2026-08-24]` 게시 169건 중 **146건 종료(86%)**, 진행·예정 23건, 검증 완료 0건 — 2026-08-24 스냅샷이며 현재값 아님(재측정은 운영 DB) |
-| OAuth 활성화 | **활성화 완료**(B2 코드 해소=트랙 11, GCP 클라이언트·env 설정 및 실 OAuth 왕복 검증=사용자, 2026-08-26) |
-| e2e 여정 스위트 | `[코드] [실측 2026-09-09]` 트랙 27로 재도입, `tests/e2e/` 8파일·10건, 명령 `uv run pytest -q -m e2e tests/e2e`. 기본 `uv run pytest -q`는 `addopts`의 `-m "not e2e"`로 e2e 제외. CI `e2e` 잡은 `continue-on-error: true`(관측 기간) |
-| 요청 중 피드백(전역) | `[실측 gh]` PR #366 머지 완료(2026-09-15, merge commit `568a6192`) — POST 폼 34/34 제출 가드, 스피너 공용 규칙(`currentColor`), 페이지별 우회 6곳 제거, 말줄임 제목 `title` 84곳. 가드레일 정본 `docs/FE/loading-feedback.md` |
-| 카테고리 어휘 스태프 CRUD | `[실측 gh]` PR #365 머지 완료(2026-09-15, merge commit `ec8deaca`) — 어휘가 상수에서 `core.models.Category`로 이동, 팔레트 12슬롯 자동 배정·반납, 슈퍼유저 전용 관리 화면 4개, 감사 로그 액션 4종. 가드레일 정본 `docs/BE/category-vocabulary.md`. **남은 간극 없음**: 공개 화면의 점 색, 행사 목록·상세·홈 범례 라벨, 내 활동·컬렉션 행과 스태프 화면의 새 카테고리 라벨, 비한국어 화면의 `lang="ko"`는 트랙 59에서 모두 닫혔다(PR #421, 2026-11-18 머지). 현재 사실은 `docs/BE/category-vocabulary.md` |
-| 스태프 이벤트 목록 필터(트랙 26) | `[실측 gh]` PR #364 머지 완료(2026-09-15, merge commit `cda6e127`) — 정렬·기간·카테고리 단일 선택 링크 필터 3축, `q` 소실 결함(F-A)·0건 복구 링크(F-B) 동반 수정 |
-| 회원 닉네임(트랙 29) | `[실측 gh]` PR #358 머지 완료(2026-09-10, merge commit `3ca5d184`, 커밋 10개) — 가입 필수 입력·헤더/마이페이지 표시·기존 회원 백필(`회원<pk>`)·변경 화면(`/accounts/settings/nickname/`, 5회/3600초 빈도 제한). 가드레일 정본 `docs/BE/account-identity.md` |
-| DB 락·트랜잭션 검수(트랙 32) | `[실측 gh]` PR #367 머지 완료(2026-09-15 `4c8ab746` → #366 `568a6192`로 main 도달) — 결함 7건(팔레트 슬롯 세이브포인트·삭제 뷰 잠금 순서·상태 PATCH 원자성·탐색 감사로그 원자성·러너 중복 정규화·HomeConfig 잠금·컬렉션 PATCH 스로틀) 수정, 신규 테스트 10건. 이연: 락 안 이미지 저장 근본 해법(트리거 S3 지연 실측)·타임아웃 설정·교착 관측 지표 |
-| 키워드 탐색(트랙 30) | `[실측 gh]` PR #361 머지 완료(2026-09-12, main `cfd69d3a`) — 검색어 탐색 → 결정론 읽기 → 해석 → 승인 가능한 드래프트·소스 등록 3단 분리. 가드레일 정본 `docs/BE/draft-source-agent-discovery.md`. 이연 항목은 G6 |
-| 국내·미종료 필터(트랙 33) | `[실측 gh 2026-09-17]` PR #370 머지 완료(2026-09-16 07:52Z, merge commit `ed95a91f`). 러너·서버 양쪽 종료일·개최지 필터, 소스 후보 개최지 국가 규칙(`not_domestic`), 서버 수집 경로 한글·최신 날짜 필터, 승격 직후 초기 드래프트의 수집 규칙 결합, 실행 기록 `events_excluded` 저장. 마이그레이션 2개(`0010_sourcediscoveryrun_events_excluded`, `0011_alter_sourcecandidate_failure_stage`). 실기동 재현 완료(실행 14: 드래프트 2건 모두 국내, 제외 1건 저장) `[실측 2026-09-16]`. 기존 드래프트·소스 소급 정리는 범위 밖(로컬 해외 소스 2건은 비활성화 완료, 운영 DB는 수동 확인 필요). 회귀 수치는 PR #370 본문 참조. 가드레일 정본 `docs/BE/draft-source-agent-discovery.md` "트랙 33" 절 |
-| 홈 이벤트 달력(트랙 34) | `[실측 gh 2026-09-17]` PR #373 머지 완료(2026-09-17 06:03Z, merge commit `716fe90d`) — 홈 히어로 바로 아래에 월 격자(카테고리 점, 칸당 최대 4종)와 선택일 아젠다(최대 3건, 2026-09-17 사용자 지시로 5→3)를 서버 렌더로 표시, `?month=`·`?date=`는 행사 달력 파서 재사용·잘못된 값은 이번 달·오늘로 조용히 복귀, 56.25rem 1열·45rem 모바일, 다크는 토큰 상속. 로그인 홈은 히어로 → 내 컬렉션 현황 → 이벤트 달력 순서(컬렉션 현황을 먼저 보여달라는 사용자 지시). 같은 트랙에서 행사 달력 페이지의 선택일 포커스 이동(tabindex·scroll-margin)과 콘서트 색 누락도 수정. 홈 비로그인 GET 쿼리 7→8건 `[실측 CaptureQueriesContext]`. 신규 테스트 22건, 전체 회귀 2927 passed / 10 deselected `[실측 uv run pytest -q]`; 머지 후 main 재측정 2927 passed / 10 deselected / 84.81초 `[실측]`. 가드레일 정본 `docs/FE/home-event-calendar.md`. 이연: 날짜 전개 규칙의 events 도메인 이관(트리거: 세 번째 호출부), `web/views/events.py` 분리(트리거: 700줄 초과, 현재 665줄 `[실측 wc -l 2026-10-27]`(작성 당시 627줄)), `.agenda-*` 스킨 공용화(트리거: 세 번째 소비처) |
-| 드래프트 실행 결과 기록·대시보드(트랙 35) | `[실측 gh]` PR #376 머지 완료(2026-09-18 08:34Z, merge commit `8ee32d40`). 전체 회귀 3009 passed / 10 deselected `[실측 2026-09-18]`. 러너가 행사별 결과(`{url, outcome, reason}`)를 완료 보고에 실어 서버가 `SourceDiscoveryRun.event_outcomes`(마이그레이션 `0012_sourcediscoveryrun_event_outcomes`)에 항목 단위 검증 후 저장, 대시보드가 결과별 건수와 행사 단위 상세를 표시. 같은 트랙에서 2026-09-17 실기동 검토가 찾은 결함 5건을 함께 해소했다 — 러너가 서버 판정을 무시하던 것을 `SKIPPABLE_AGENT_REASONS`(ended·overseas만 코드 재확인)로, 탐색 프롬프트에 오늘·국내 조건이 없던 것을 `today`·"대한민국만" 지시로, X 게시물 읽기 미구현을 `cdn.syndication.twimg.com/tweet-result` 고정 호스트 읽기로, 사유 로그 없음을 결과별 INFO 로그로, 실패 소스 무조건 재검증을 robots·sample_mismatch·listing_extraction 3종·7일 재사용으로, robots 라벨 미분리를 `FailureStage.ROBOTS_FETCH_FAILED`(마이그레이션 `0013_alter_sourcecandidate_failure_stage`)로 각각 고쳤다. 가드레일 정본 `docs/BE/draft-source-agent-discovery.md` "트랙 35" 절. 이연: `event_outcomes` 별도 모델 승격, 주관 사유 건너뛰기 평가셋, 캡션 경로 응답 크기 상한·DNS 리바인딩 |
-| 오류 묶음 기록(트랙 36, 사이트 로그 1단계) | `[실측 gh]` PR #377 머지 완료(2026-09-18 08:37Z, merge commit `0d4401b4`, 커밋 12개 `[실측 gh pr view 377 --json commits 2026-10-27]`(작성 당시 git log 기준 9개)). 전체 회귀 2987 passed / 10 deselected [실측 2026-09-18]. `core.ErrorGroup`(마이그레이션 `core/migrations/0007_errorgroup.py`)이 처리되지 않은 500 예외와 프론트 전역 오류/거부를 지문으로 묶어 출처별 최대 250행(합 500행)만 유지, `record_error`는 무예외·세이브포인트·정제(제어문자→시크릿 포함 시 전체 비움→이메일→URL 쿼리→500자)를 거친다. 수집 API `POST /api/client-errors/`는 첫 무인증 공개 쓰기 엔드포인트로 항상 204, 전역 스로틀 120/시간·새 묶음 20/시간. 대시보드 「시스템 오류」 패널 추가. 가드레일 정본 `docs/BE/error-groups.md`, 운영 확인 절차 `docs/operations-runbook.md` §9. 이연: 러너 실행 결과 보고, IP 보조 스로틀, 시크릿 스캐너 고도화, 폐기 요청 수 지표, 상한·스로틀 env화, 사이트 로그 4단계(보존 정리) |
-| 운영 데이터 보존 정리(트랙 37, 사이트 로그 4단계) | `[실측 gh]` PR #378 머지 완료(2026-09-18 08:39Z, merge commit `4f45cd6e`). 전체 회귀 3019 passed / 10 deselected [실측 2026-09-18]. `core.retention.prune_operational_data`(만료 세션·axes 로그·`ErrorGroup` 대상별 정리, 관리 명령 `prune_operational_data`)와 `core.db_stats.database_size_summary`(Postgres 전용 DB 용량 요약, 그 외 엔진·쿼리 실패는 `None`)를 추가하고 스태프 대시보드에 「저장소」 패널을 더했다. 로컬 실 DB 실측: 세션 294→28건 정리, `database_size_summary` 전체 13.8MB `[실측]`. 가드레일 정본 `docs/BE/data-retention.md`, 운영 확인 절차 `docs/operations-runbook.md` §7.2·§9. 이연: 대량 삭제 배치, `SourceDiscoveryRun`/`SourceCandidate` 정리, `AccessFailureLog` 활성화, 스케줄러 실제 등록(사용자 액션). C3 해소 |
-| 어댑터 얇게·규칙은 내부 서비스로(트랙 38) | `[실측 gh]` PR #380 머지 완료(2026-09-19 08:09Z, merge commit `6ddc7def`) — 트랙 38의 PR 0(승인 전 체크 드리프트 수정). 스태프 초안 인스펙터의 승인 전 체크가 승인 검증기(`events/services.py::_validate_publish_fields`)와 어긋나 기간 역전·제목=공식 URL 검사가 빠져 있던 결함을, 검증기 옆 dry-run 판정 함수 `events/services.py::publish_field_checks`(같은 순서, 7항목 전부 판정)로 고치고 `staff/views/drafts.py`의 뷰를 판정 없이 결과만 싣는 얇은 어댑터로 바꿨다. PR 1 #382 머지 완료(2026-09-19 11:37Z, merge commit `0c7cb3a0`) — 슬라이스 D. 익명 프론트 새 묶음 시간당 상한 규칙을 `core/client_error_views.py`에서 `core/error_groups.py::frontend_new_group_allowed`로 이동(행동 불변, 뷰의 `ErrorGroup`·`cache`·`timezone` 직접 참조 제거). 남은 슬라이스는 A(이벤트 품질 배지 → `events/queries.py`) → B(소스 신선도·초안 경고 배지 → `drafts/queries.py`) → C(`discover_drafts` 오케스트레이션 → `drafts/listing_discovery.py`) 순으로, 각각 별도 PR 1개·행동 불변 이동이며 `local_runner`는 이관 대상에서 제외한다. 계획서 `prompt_plan.md` 트랙 38 절 |
-| 보안 검토 반영(트랙 40) | `[실측 gh 2026-10-20]` PR #388 머지 완료(2026-10-04 11:19Z, merge commit `e02463e5`, 커밋 11개) — 2026-09-27 보안 검토의 F1(`official_url` 스킴·호스트)·F2(allauth 프록시 IP)·F3a(memo 상한)·F4(「지금 수집」 뮤텍스)·F5(비-global IP)·F7(known-urls 검증)·F9(`SECURE_COOKIES`) 수정, F3(b)는 실측으로 반박(핀 테스트만), F6·F8·F11 제외, F10 MFA는 기록된 보류. 상세는 J절, 정본 `docs/BE/security-review-2026-09-27.md` §8. 브랜치 회귀 3,211 passed / 10 deselected `[실측 2026-09-28]`. 후속: 새 어드바이저리로 실패한 CI 의존성 감사를 PR #390(`6c19c476`, `uv.lock`만 — allauth 65.19.7·oauthlib 4.0.0·pyjwt 2.15.1·urllib3 2.8.0)으로 해소, deploy PR #391(`562494b1`, 2026-10-06 08:36Z)로 production 반영(origin/production == origin/main). **사후 확인 미확인(사용자)**: `docs/deploy-runbook.md` §3 항목 8·16·17, 맥 러너 재시작(F5 복제본) |
-| 거버넌스 구조 동기화(트랙 41) | 범위 ①~⑥ — CLAUDE.md·AGENTS.md·어댑터 11개가 `web`·`local_runner` 패키지와 실측 임포트 방향·가드를 반영하도록 갱신(AGENTS.md 신설 절 `Repository Layout And Dependency Direction`·`Harness Enforcement (hooks)`), 훅 2개 신설(`plan-bash-write-guard.sh`·`git-stage-all-guard.sh`, `.claude/settings.json` 배선), `.dockerignore`에 `.claude`(F16), 러너 격리 가드 금지 집합에 `accounts`·`web` 추가. 상태: `[실측 gh 2026-10-20]` **PR #389 머지 완료(2026-10-06 08:34Z, merge commit `4ea3d78a`, 커밋 9개)**. 브랜치 회귀 3,181 passed `[실측 2026-09-28]`, 훅 케이스 52+20+10 전부 통과 `[실측 hookcheck 2026-09-28]`; 머지 후 main 재측정 3,211 passed `[실측 2026-10-20]`. F16 해소 |
-| UI 다국어(트랙 43-1) | PR #395 머지 완료 `[실측 gh 2026-10-21T13:02Z, main 8b7a9458]`(상세는 `docs/pr-log.md`, production 반영 완료(deploy PR #393·#398, production `443a7bed`)). 공개 셸·홈·계정(allauth)·공용 JS의 UI 문구를 Django gettext로 옮겼다(원문=한국어, en·ja·zh-hans 카탈로그 언어당 338건 `[실측 msgfmt --statistics 2026-10-21, django 311 + djangojs 27]`). 쿠키 기반 언어 전환(URL 접두사 없음), 스태프 화면·스태프 DRF API는 항상 한국어, 인증 403에 언어 무관 `code`. 전체 회귀 3,254 passed / 10 deselected `[실측 uv run pytest -q 2026-10-21, AI 검수 반영 후]`, e2e 10 passed `[실측]`. **번역 검수는 사람이 아니라 독립 AI 검수자가 했다(사용자 지시 2026-10-21). 원어민 사람 검수는 없다. deploy PR 조건은 `docs/BE/i18n.md` "AI 검수 기록"과 카탈로그 가드 통과다(`docs/deploy-runbook.md` §3-18).** 가드레일 정본 `docs/BE/i18n.md`, 계획 `docs/plan-archive/track-43.md`. 이연은 K절 |
-| UI 다국어(트랙 43-2) | PR #396 머지(2026-10-22, main `d8dee018`, 후속 `Collab café` 통일 커밋 2개를 main에 직접 추가). 이벤트 목록·달력·상세의 UI 문구를 gettext로 옮겼다(언어당 django 371건 + djangojs 27건 `[실측 msgfmt --statistics 2026-10-22]`, 43-1 대비 새 항목 60개 `[계산 56 + 4]`). 행사 제목·장소·요약·출처 이름은 원문 한국어 + `lang="ko"`, 카테고리 이름 7개는 번역. 전체 회귀 3419 passed / 10 deselected `[실측 uv run pytest -q 2026-10-22 main + 후속 2커밋]`, e2e 10 passed. 번역 검수는 독립 AI 검수자만 했다(원어민 검수 없음). 가드레일은 `docs/BE/i18n.md` 15~22. 이연은 K절 |
-| UI 다국어(트랙 43-3) | PR #397 머지(2026-10-23, main `8ca4c9f5`, 상세는 `docs/pr-log.md`). 아카이브·컬렉션·활동 달력·마이페이지의 UI 문구와 날짜 서식을 gettext로 옮겼다(언어당 새 항목 311개 `[계산 269+42]`, 합계 django 643 + djangojs 69 `[실측 msgfmt --statistics 2026-10-22]`). 개인 항목 카테고리·굿즈 유형 칩은 저장 시 한국어 원문으로 정규화한다(시리얼라이저, 기존 영어 칩 저장 결함 포함 수정). 머지 후 main 전체 회귀 3985 passed / 10 deselected `[실측 uv run pytest -q 2026-10-23, main 8ca4c9f5]`, e2e 10 passed. 번역은 AI 검수만(원어민 없음). 사후 판정 BIR `Unverified`·WED `Deviates`(경미), 완료 결정 = 조건부 완료. 가드레일은 `docs/BE/i18n.md` 23~30. production 반영: 의존성 감사 실패(DRF 3.17.2 high 권고 3건)를 `uv.lock` DRF 3.18.3 상향으로 해소(main `d1053427`, CI 4잡 success `[실측 gh 2026-10-24]`) → 배포 PR #398 머지(2026-10-24T09:01Z, production `443a7bed`) → 라이브 `/jsi18n/` djangojs 69키가 로컬 `.po`와 일치하고 런북 §3-18 네 항목 통과 `[실측 curl 2026-10-24T09:08Z]`. 배포 전 production DB 점검(`item_type`·`category`에서 번역·공백 차이로 저장된 값)은 0건 `[실측 production 셸 2026-10-24 18:06 KST, 사용자 실행]`이고 점검~웹 교체 사이 구간은 확인하지 못했다. 이연은 K절 |
-| 행사 콘텐츠 번역(트랙 44-1) | PR #399 머지 완료 `[실측 gh 2026-10-27T08:32Z, main e38a0db9]`(상세는 `docs/pr-log.md`; deploy PR #401 머지 2026-10-27T10:13Z, production `9c155a7c` `[실측 gh]`, 트랙 45 코드 포함 — **라이브 반영은 머지 후 55분까지 미관측**(회원가입 페이지 `auth.css` 해시 `4cb927693eb1` 그대로, 폴백 블록 잔존 `[실측 curl 2026-10-27T11:08Z]`; Render 배포 상태 확인은 사용자 몫). 게시 행사 4필드(제목·작품명·장소·요약)를 영어·일본어·중국어 간체로 로컬 러너가 번역해 `Event.text_translations`에 해시·언어별 저장, 서버는 러너 전용 API(`/api/translation/runner/`)로 큐 제공·검증·격리만 하고 LLM을 직접 호출하지 않는다. 마이그레이션 `0008`(AddField)·`0009`(RunSQL DB 기본값 `'{}'::jsonb`). 2026-10-26 전수검사(7역할)의 결함 35건을 같은 PR에서 수정. 머지 후 main 전체 회귀 4284 passed / 10 deselected / 152.46초 `[실측 uv run pytest -q 2026-10-27, main e38a0db9]`. 공개 화면은 바뀌지 않는다. 가드레일 정본 `docs/BE/i18n.md` "행사 콘텐츠 번역(트랙 44-1)" 절, 계획 `prompt_plan.md` 트랙 44 §10. **배포 뒤 남는 일(사용자)**: 러너 재시작(맥 저장소 main·`uv sync`), 런북 §3 항목 19(0009 기본값 확인) — 2026-10-27 배포 시점 기준 미수행. 다음 단계: 44-2(화면 노출, "AI 번역" 표시·원문 보기·노출 끄기 수단 필수)·44-3(스태프 상태·다시 번역)·44-4(새 카테고리 라벨) 모두 미착수. 44-2 착수 전 사용자 결정 5건("AI 번역" 표시 형태·노출 끄기 스위치·검색 확장 여부·외국어 SEO 이연·격리 임계)과 장식 유니코드 정규화 결정이 먼저다. 이연은 K절 |
-| 디자인 시스템 방향 문서(트랙 50) | 시안 A4 확정(2026-11-03 사용자 결정) → 정본 `docs/FE/design-principles.md`(PR #409 머지 완료 2026-11-03, main `ddda6586`; 형광 폐기 PR #408도 같은 날 머지 `a8a7fc3f`). 운영 코드 0파일. production 반영: deploy PR #402 머지(2026-11-05T04:20Z, production `a6f88be0`, 당시 main과 차이 0커밋 `[실측 gh·git]`; 트랙 45 잔여·46~50 포함), 라이브 홈에서 `class="emphasis"`와 새 `home.css` 해시 `38c6aa48ed98`을 04:24Z에 관측, `/api/health/`·`/`·`/events/` 200 `[실측 curl 2026-11-05]`. 시안 파일(`.docs/FE/design-samples/`)은 저장소에 보존하지 않고 로컬 파일 7개도 삭제했다(사용자 결정 2026-11-05, 문서 ⑬-13 해소); ⑬-14 성격 단어 4개는 사용자 확인 대기. 그 뒤 쌓인 docs 2건·`.gitignore`·oauthlib 4.0.1 감사 수정(`b89cae8c`) 4커밋은 deploy PR #410(머지 완료 2026-11-12T09:44:18Z, production merge commit `0b4f76cb`)로 반영했다 `[실측 gh]`. #410 머지 직후 `origin/production`과 `origin/main`은 차이 0커밋이었다 `[실측 git 2026-11-12]`(이후 deploy PR #412~#414가 #411과 선행 긴급 수정 2건을 반영했고 `[실측 gh]`, 2026-11-13 현재 main이 #415·#416으로 40커밋 앞선다 `[실측 git rev-list origin/production..origin/main]` — 다음 deploy PR 대상). 후속 예약: 트랙 B 토큰 재정립(⑩ 입력) → C 컴포넌트 카탈로그·스태프 전용 스타일가이드 → D 리터럴 가드·화면 마이그레이션(⑪, 320 en 달력 오버플로 포함) → E 소개 페이지·홈 히어로 |
-| 상태 문서 검토 잔여(트랙 55) | **PR #411 머지 완료(2026-11-12, merge commit `21a9e408`)** — 계획 `docs/plan-archive/track-55.md`. 2026-11-11 상태 문서 전수 검토가 찾은 잔여를 처리했다: 훅 빈틈 4개, 계획서 안 닫힌 절 40개를 `docs/plan-archive/`로 보관, 관련 규약 변경, 프론트 접근성 결함, 백엔드 상태 전환 잠금, README·backlog·pr-log의 문서 드리프트 정정. 이후 범위 추가: 프론트 F5~F7(스태프 큐 판정 공지·검색 빈 상태 공지·컬렉션 폼 포커스), 같은 유형 훅 결함 추가분, 55-6 gunicorn 접근 로그(사용자 지정 형식; allauth 키 경로 노출 위험은 사용자 결정 2026-11-12로 수용, `docs/operations-runbook.md` §9 참조) — production 반영은 deploy PR #412(2026-11-12T13:55:59Z, production `fac5bdad`) `[실측 gh]`. 남은 공백: `git-commit-style-guard`가 `commit` 앞 전역 `git` 옵션을 다른 세 훅과 달리 인식하지 못함, F5b 일부 성공 일괄 처리의 공지 잔여 위험 |
-| DB 연결 재사용·공개 캐시(트랙 17) | **PR #415 머지 완료(2026-11-13, merge commit `6628dee1`)** — 계획 `docs/plan-archive/track-17.md`. 커밋 36개 + main 합치기 1개 `[실측 git log]`. 묶음별 한 줄: DB 연결 재사용 기본 600초 `[코드 config/settings.py load_db_conn_max_age]`(`DB_CONN_MAX_AGE`), 헬스체크 DB 확인은 30분에 한 번 `[코드 core/views.py HEALTH_DB_CHECK_INTERVAL_SECONDS]`, 홈·목록 집계 쿼리 병합, 목록 COUNT 조회 1회로 축소 `[코드 web/views/events.py]`, 검색어(`q`) 100자 상한 `[코드 events/serializers.py EventQuerySerializer.q]`, 행사 상세 HEAD 요청의 조회수 증가 생략(`web/views/events.py` `event_detail`, 커밋 `105f0138`), 공개 행사 달력 37개월 범위(과거 24·미래 12개월) `[코드 web/views/_helpers.py PUBLIC_CALENDAR_PAST_MONTHS/PUBLIC_CALENDAR_FUTURE_MONTHS]`·범위 밖 302 `[코드 web/views/events.py _redirect_without_calendar_params]`·`rel="nofollow"`, 공개 캐시(`web/public_cache.py`, 별칭 `"public"` LocMem) 기본 유지 시간 60초 `[코드 config/settings.py load_public_cache_ttl_seconds]`(`PUBLIC_CACHE_TTL_SECONDS`)로 홈 공개 구간·홈 달력·행사 달력(무필터)·행사 목록과 달력의 카테고리 선택지를 담는다(행사 목록 행과 필터 있는 달력은 담지 않는다). SRR 사후 검토 결함 2건 수정: S1 인식되지 않는 필터 값은 그 달 전체 목록 대신 조회 없이 빈 달력으로 처리(`web/views/events.py` `event_calendar`), S2 유지 시간이 0보다 클 때 공개 캐시 저장소 `get`·`set` 예외는 `logger.exception`을 남기고 DB에서 읽은 값을 그대로 쓴다(`load()` 예외는 전파, `web/public_cache.py` `_cached`). 전체 회귀 4,483 passed·e2e 10 passed `[실측 2026-11-13]`. ClaudeBot 서버 차단(`core/middleware.py` `CrawlerQueryBlockMiddleware`)은 유지하기로 했다(사용자 결정 2026-11-13). 홈 구간 ORM 체인은 `events/queries.py`의 `list_closing_soon_events`·`list_latest_published_events`·`published_category_counts`로 옮겼다(같은 PR, `consumer_category_choices`도 같은 집계를 쓴다). 의존성 감사 실패(soupsieve 2.9.2 GHSA 2건)는 별도 PR #416(soupsieve 4.1, 머지 2026-11-13 `392d9f22`)으로 처리했고, #415에 main을 합친 커밋 `d5b623de`에서 CI 6잡이 모두 통과했다 `[실측 gh pr checks]`. production 반영: deploy PR #417 머지(2026-11-18T09:49:51Z, production `0c0ceed8`) `[실측 gh]`. 배포 뒤 확인(`docs/deploy-runbook.md` §3-20·§3-21) 가운데 밖에서 잴 수 있는 것은 통과했다 — `/api/health/` 200, `/events/calendar/?month=2040-01` 302에 `Location: /events/calendar/`(쿼리 없음), 경계 달 2024-11·2027-11 200 `[실측 curl 2026-11-18]`. Supabase 연결 수 그래프, 헬스 체크 5초 간격, 배포 뒤 7일 아웃바운드 기록은 사용자 확인이 필요하다(미확인). gthread 워커 전환은 계속 사용자 보류 |
-| 다크 모드 전면 삭제(트랙 56) | **PR #418 머지 완료(2026-11-16T18:35Z, merge commit `149ca3d9`)** — 계획 `docs/plan-archive/track-56.md`. 사용자 결정 2026-11-15 "다크모드는 전면 삭제. 라이트모드만 생성." → "오케이 적용하도록". 공개·스태프 셸에서 테마 버튼·첫 페인트 테마 스크립트·`static/js/shared/theme.js`·다크 토큰 블록·컴포넌트 다크 규칙을 지웠고, 카테고리 팔레트(`core/categories.py`)는 라이트 hex 두 키(`light_soft`·`light_ink`)만 남는다. 방문자 브라우저의 `takulife-theme` 저장값은 읽는 코드가 없어 무시된다. 디자인 정본 `docs/FE/design-principles.md`의 라이트·다크 쌍 규칙은 "색 토큰 규칙"으로 바뀌었고 링크 밑줄은 계속 항상 켠다(근거: 링크/본문 대비 3.42:1 `[계산 python]`). 같은 PR에 사용자 지시 "모바일에서 메뉴는 하단으로 이동. 클릭하기 쉽도록"으로 45rem 이하 주 내비를 ☰ 메뉴에서 화면 하단 고정 4칸 탭 바로 바꿨다(`nav_menu.js` 삭제, 현재 섹션 `aria-current="page"`, 하단 고정 액션 바 11곳·토스트를 탭 바 위로) — 가드레일 정본 `docs/FE/mobile-tab-bar.md`. ☰ 메뉴가 사라져 모바일 열린 메뉴의 내비/계정 탭 순서 차이(`docs/FE/design-principles.md` ⑬-1)도 없어졌다. 전체 회귀 4,483 passed·e2e 10 passed `[실측 2026-11-15]`. |
-| 간격 규칙을 역할 토큰으로 전환(트랙 57) | **PR #419 머지 완료(2026-11-16T18:35Z, merge commit `11a8aad5`; 스택 base 브랜치로 머지돼 main에는 2026-11-17 merge commit `3750d791`로 반영)** — 계획 `docs/plan-archive/track-57.md`. 사용자 결정 2026-11-15 "숫자 원칙은 자유도가 떨어지더라고" → "자동점검 기준을 추가하고 진행" → "정의 위치 점검만". 간격 숫자 단계(4px 배수 6단) 규칙을 폐기하고 역할 토큰 규칙으로 `docs/FE/design-principles.md`를 개정했다. 정의 위치 가드 `tests/core/test_role_token_contract.py`가 역할 토큰 3개(`--page-pad-x`·`--site-header-h`·`--site-tabbar-h` `[실측 python 2026-11-15]`)가 레지스트리에 적힌 파일 한 곳에서만 선언되는지 본다. 다른 폭에서 숫자로 덮어쓰는 것은 자동 점검으로 만들지 않고 리뷰에서 본다. CSS·템플릿 변경 없음. 다음 = 트랙 B가 역할 토큰 후보(섹션 사이 간격·목록 행 높이·컨트롤 높이) 값을 운영에서 재서 정하고 레지스트리에 추가한다. |
-| DOS 시안을 공개 화면 전체에 적용(트랙 58) | **PR #420 머지 완료(2026-11-17T06:56:24Z, merge commit `86d4ef33`) `[실측 gh]`** — 계획은 `docs/plan-archive/track-58.md`. 사용자 지시 2026-11-17 "시안대로 ui 전면 수정. 스태프 화면은 제외." 공개 CSS·템플릿 전부를 DOS 형태(3px 겹선 창·반전 강조·반경 0, 굵기 700은 쪽 h1과 로고뿐)로 바꿨고 스태프 경로·스태프와 공유하는 파일은 바꾸지 않았다. 사용자 결정 4건: 문구 유지 / 움직임 3곳 유지 / 시리즈 색 점 유지 / PR 1개·검수 2회. 검수 1에서 삭제한 것 4건: 홈 히어로 문구 2개·푸터 둘째 문장·외부 링크 `↗`. 슬러그 기반 `--cat-<slug>-soft`/`-ink` 14개를 지워 공개 카테고리 색은 점(`--dot-<slug>` 7개)뿐이다(`docs/BE/category-vocabulary.md`). 백엔드 동작 변경 없음, 테스트 추가 0건. 검증 `[실측 2026-11-17, 278a26de — 머지한 main 트리와 diff 0]`: `uv run pytest -q -n auto` 4,484 passed / 40.74초, `uv run pytest -q -m e2e tests/e2e` 10 passed / 9.46초. 디자인 정본 `docs/FE/design-principles.md`. 이 트랙에서 발견해 넘긴 프런트 잔여는 M절 |
-| 트랙 58이 넘긴 프런트 잔여(트랙 59) | **PR #421 머지 완료(2026-11-18T09:29:38Z, merge commit `8fa6a43f`) `[실측 gh]`** — 계획은 `docs/plan-archive/track-59.md`. 사용자 지시 2026-11-17 "머지 승인 후 백로그 진행", 이어서 "백로그 남기지 말고 모두 처리" — 처음 남겼던 잔여 10건과 그 과정에서 찾은 결함을 같은 PR에서 처리했다(M절). 처음 한 일 6가지: 복제 CSS 공용 한 벌, 로딩 중 버튼 크기 고정, 달력 월 이동 포커스·검색 뒤 제목 건수·하위 탭 `aria-current`, 기록 폼 검증 실패 표시, 활동 쪽 접힘 56.25rem, 스태프가 만든 카테고리의 공개 점 색과 공개 행사 화면 라벨. 사용자 결정 3건: "활동 쪽만 900px로" / "지금 위치 유지" / "새 카테고리에도 색 점". 가드레일 문서 `docs/FE/loading-feedback.md`, `docs/BE/category-vocabulary.md`, `docs/FE/design-principles.md`. 가드레일 문서에 `docs/BE/i18n.md` 가드레일 16이 더해졌다. 2026-11-17 시점 검증 `uv run pytest -q -n auto` 4,585 passed / 54.72초, e2e 10 passed / 9.78초 `[실측 2026-11-17, fix/dos-ui-residuals 92f9e0c1]`. **확장 2(2026-11-18, 같은 PR)**: 사용자 요청 "홈 화면의 내컬렉션 보유현황 리스트의 행을 클릭하면 해당 컬렉션의 상세페이지로…"와 결정 4건("'기록 대기' 목록의 행" / "휴대폰에서는 3개로, 섹션 너비 퍼센테이지의 1/3"(PC 5칸) / "'기록 대기' 행만" / "비공개 행사도 기록 허용"). 한 일: 홈 '기록 대기' 행 전체 링크, 최근 굿즈 격자(5칸, 45rem 이하 3칸, 칸 사이 선, 가운데 정렬), 가로 레일 삭제, 방문 완료로 표시한 비공개 행사의 방문 기록 허용. 같은 PR에서 찾아 고친 것은 M절 끝. 가드레일 문서 `docs/FE/design-principles.md`(행 전체 링크·격자), `docs/BE/visit-completion-concurrency.md`(방문 기록 대상 규칙), `docs/BE/activity-calendar-sources.md`(비공개 행사 링크). 검증 `uv run pytest -q -n auto` 4,662 passed / 53.05초(2026-11-17 시점보다 77건 많다 `[계산 4,662 − 4,585]`, main보다 178건 많다 `[계산 4,662 − 4,484]`), e2e 10 passed / 10.14초, `ruff format --check` 476개 파일 `[실측 2026-11-18, fix/dos-ui-residuals caeedf5e]`. 머지한 main `8fa6a43f`에서 다시 쟀다: `uv run pytest -q -n auto` 4,662 passed / 73.99초, e2e 10 passed / 10.67초 `[실측 2026-11-18]`(main 트리는 브랜치 끝 `4d746344`와 diff 0 `[실측 git diff --quiet]`). production 반영: deploy PR #417 머지(2026-11-18T09:49:51Z, production `0c0ceed8`) `[실측 gh]`, 라이브 홈 HTML에서 옛 테마 스크립트(`theme.js`) 참조 0건 `[실측 curl https://takulife.kr/ 2026-11-18]`. 운영 DB의 카테고리·슬롯 확인(`docs/deploy-runbook.md` §3-22)은 사용자 확인이 필요하다(미확인) |
+| 백엔드 회귀 | **4,662 passed** / 83.32초, `uv run pytest -q -n auto` `[실측 2026-11-18, main 93be2ca1]`. 앱 코드 커버리지 98%(8,266문 중 175문 미실행) `[실측 2026-11-18, --cov 앱 패키지 9개]` |
+| e2e 여정 | 10 passed / 10.67초, `uv run pytest -q -m e2e tests/e2e` `[실측 2026-11-18, main 8fa6a43f]`. 기본 실행은 `addopts`의 `-m "not e2e"`로 제외. CI `e2e` 잡은 `continue-on-error: true`(관측 기간) `[코드 .github/workflows/ci.yml]` |
+| Django check · 린트 | `manage.py check` 0 issues, `ruff check` 통과 `[실측 2026-11-18]` |
+| 마이그레이션 드리프트 | 없음 `[실측 2026-11-18, makemigrations --check --dry-run]` |
+| 배포 차단 | 0건(체크리스트는 `docs/deploy-runbook.md` §3) |
+| 실행 순서 | 1단계(배포) 완료(2026-08-31, takulife.kr) / 2·3·4단계 완료 / **5단계는 실코호트 대기**(C1) / 6단계 미착수 |
+| 행사 카탈로그 | 게시 169건 중 146건 종료(86%), 진행·예정 23건 `[실측 2026-08-24]` — 스냅샷이며 현재값 아님(재측정은 운영 DB) |
+| OAuth | 활성화 완료(2026-08-26, 실 OAuth 왕복은 사용자 검증) |
+| 열린 계획 | **없음**(2026-11-18). `prompt_plan.md`에 있던 절은 모두 `docs/plan-archive/`로 옮겼다. 폐기한 계획은 "착수하지 않는 것" 절 |
+
+### 머지된 트랙
+
+| 트랙 | 상태 | 정본 · 계획 |
+|---|---|---|
+| 요청 중 피드백(전역) | PR #366 머지(2026-09-15) | `docs/FE/loading-feedback.md` |
+| 카테고리 어휘 스태프 CRUD | PR #365 머지(2026-09-15). 공개 화면 잔여는 트랙 59에서 닫힘 | `docs/BE/category-vocabulary.md` |
+| 스태프 이벤트 목록 필터(트랙 26) | PR #364 머지(2026-09-15) | `docs/plan-archive/track-26.md` |
+| 회원 닉네임(트랙 29) | PR #358 머지(2026-09-10) | `docs/BE/account-identity.md` · `docs/plan-archive/track-29.md` |
+| 키워드 탐색(트랙 30) | PR #361 머지(2026-09-12). 이연은 G6 | `docs/BE/draft-source-agent-discovery.md` · `docs/plan-archive/track-30.md` |
+| DB 락·트랜잭션 검수(트랙 32) | PR #367 머지(2026-09-15) | `docs/plan-archive/track-32.md` |
+| 국내·미종료 필터(트랙 33) | PR #370 머지(2026-09-16) | `docs/BE/draft-source-agent-discovery.md` "트랙 33" 절 · `docs/plan-archive/track-33.md` |
+| 홈 이벤트 달력(트랙 34) | PR #373 머지(2026-09-17) | `docs/FE/home-event-calendar.md` · `docs/plan-archive/track-34.md` |
+| 드래프트 실행 결과 기록(트랙 35) | PR #376 머지(2026-09-18) | `docs/BE/draft-source-agent-discovery.md` "트랙 35" 절 · `docs/plan-archive/track-35.md` |
+| 오류 묶음 기록(트랙 36) | PR #377 머지(2026-09-18) | `docs/BE/error-groups.md` · `docs/operations-runbook.md` §9 · `docs/plan-archive/track-36.md` |
+| 운영 데이터 보존 정리(트랙 37) | PR #378 머지(2026-09-18) | `docs/BE/data-retention.md` · `docs/operations-runbook.md` §7.2 · `docs/plan-archive/track-37.md` |
+| 어댑터 얇게(트랙 38) | PR 0 #380·PR 1 #382 머지(2026-09-19). 슬라이스 A·B·C는 **폐기** | `docs/plan-archive/track-38.md` |
+| 보안 검토 반영(트랙 40) | PR #388 머지(2026-10-04). 상세는 J절 | `docs/BE/security-review-2026-09-27.md` §8 · `docs/plan-archive/track-40.md` |
+| 거버넌스 구조 동기화(트랙 41) | PR #389 머지(2026-10-06) | `AGENTS.md` · `docs/plan-archive/track-41.md` |
+| UI 다국어(트랙 43-1·43-2·43-3) | PR #395(2026-10-21)·#396(2026-10-22)·#397(2026-10-23) 머지. 번역 검수는 AI만 했고 원어민 검수는 없다. 이연은 K절 | `docs/BE/i18n.md` · `docs/plan-archive/track-43.md`·`track-43-2.md`·`track-43-3.md` |
+| 행사 콘텐츠 번역(트랙 44-1) | PR #399 머지(2026-10-27). 번역문은 저장만 되고 공개 화면은 바뀌지 않는다. 44-2·44-3·44-4는 **폐기** | `docs/BE/i18n.md` "행사 콘텐츠 번역(트랙 44-1)" 절 · `docs/plan-archive/track-44.md` |
+| 디자인 방향 문서(트랙 50) | PR #408·#409 머지(2026-11-03). 예약 트랙 B~E(51~54)는 **폐기** | `docs/FE/design-principles.md` · `docs/plan-archive/track-50.md` |
+| 상태 문서 검토 잔여(트랙 55) | PR #411 머지(2026-11-12). 남은 공백: `git-commit-style-guard`가 `commit` 앞 전역 `git` 옵션을 인식하지 못함, F5b 일부 성공 일괄 처리의 공지 | `docs/plan-archive/track-55.md` |
+| DB 연결 재사용·공개 캐시(트랙 17) | PR #415 머지(2026-11-13). gthread 워커 전환은 사용자 보류 | `docs/operations-runbook.md` §11 · `docs/deploy-runbook.md` §3-20·§3-21 · `docs/plan-archive/track-17.md` |
+| 다크 모드 삭제·모바일 하단 탭 바(트랙 56) | PR #418 머지(2026-11-16) | `docs/FE/design-principles.md` · `docs/FE/mobile-tab-bar.md` · `docs/plan-archive/track-56.md` |
+| 간격 역할 토큰(트랙 57) | PR #419 머지(2026-11-16). 가드 `tests/core/test_role_token_contract.py`. 후속으로 적혀 있던 트랙 B는 폐기 | `docs/FE/design-principles.md` · `docs/plan-archive/track-57.md` |
+| DOS 형태를 공개 화면 전체에 적용(트랙 58) | PR #420 머지(2026-11-17). 스태프 화면 제외. 잔여는 M절 | `docs/FE/design-principles.md` · `docs/plan-archive/track-58.md` |
+| 트랙 58 잔여(트랙 59) | PR #421 머지(2026-11-18). 처리 내역은 M절 | `docs/FE/loading-feedback.md` · `docs/BE/category-vocabulary.md` · `docs/plan-archive/track-59.md` |
+
+production 반영: deploy PR #417 머지(2026-11-18, production `0c0ceed8`)까지 `[실측 gh]`.
+
+### 사용자 확인 대기
+
+코드로 닫을 수 없고 사용자만 확인할 수 있는 항목이다. 확인하면 이 목록에서 지운다.
+
+- 트랙 59: 운영 DB의 카테고리·슬롯 확인(`docs/deploy-runbook.md` §3-22).
+- 트랙 17: Supabase 연결 수 그래프, 헬스 체크 간격, 배포 뒤 7일 아웃바운드 기록(`docs/deploy-runbook.md` §3-20·§3-21 가운데 밖에서 잴 수 없는 것).
+- 트랙 44-1: 맥 러너 재시작(저장소 main·`uv sync`), `docs/deploy-runbook.md` §3 항목 19(`0009` DB 기본값). 2026-10-27 배포 시점 기준 미수행.
+- 트랙 40: `docs/deploy-runbook.md` §3 항목 8·16·17, 맥 러너 재시작(F5 복제본).
+- 트랙 37: `prune_operational_data` 스케줄러 실제 등록(`docs/operations-runbook.md` §7.2).
+- 트랙 33: 운영 DB에 남은 해외 소스 수동 확인(로컬 2건은 비활성화 완료).
+- 트랙 50: `docs/FE/design-principles.md` ⑬-14 성격 단어 확인.
 
 핵심 루프(발견 → 상태 → 방문 기록 → 굿즈 → 의도)는 URL·뷰·서비스 계층에서
 끊긴 곳 없이 연결되어 있다. 교환(trade) 도메인은 존재하지 않으며, 이는 게이트
@@ -198,7 +220,10 @@ accounts.User"*) `accounts.User` 속성과의 조인이 불가능하다 — **�
 리텐션** 같은 전통적 코호트 표는 설계상 만들 수 없다. 또 탈퇴로 계정이 삭제돼도
 이벤트 행은 남아 과거 행동이 계속 집계된다. 둘 다 의도된 트레이드오프다.
 
-### C2 [문서] 소개(`/about/`) 페이지 신설 — 트랙 28 후속, 별도 트랙 **착수 승인, 미착수(2026-09-10 사용자 결정)**
+### C2 [문서] 소개(`/about/`) 페이지 신설 — 트랙 28 후속 — **폐기(2026-11-18 사용자 결정, 트랙 50의 E단계와 함께)**
+
+미착수인 채로 폐기했다(사용자 지시 2026-11-18 "열린 트랙 폐기. 작업 혼동 가능성.").
+아래는 2026-09-10 착수 승인 당시 기록이며 실행 지시가 아니다.
 
 **범위 요약**: 공개 URL·뷰·템플릿 신설, `web/sitemaps.py`의 `StaticPageSitemap`
 화이트리스트에 추가, `robots_meta` 블록의 noindex 해제, 본문 문안에 한글
@@ -594,19 +619,19 @@ F10 MFA(2026-07-01 `auth-hardening` 결정).
 - **`record-action-link` 접근 가능한 이름** — 해소(2026-11-18): 홈 '기록 대기' 행은 `aria-labelledby`(자기 id + 같은 행 제목 id, 새 번역 문자열 없음)로 행마다 이름이 다르다. 템플릿에서 이 클래스를 쓰는 곳은 `templates/core/partials/_home_collection_snapshot.html:77` 하나뿐이다 `[실측 rg 2026-11-18]`. 내 활동 목록에는 이 클래스가 없다.
 - **`static/js/shared/status.js:40` 죽은 `interested` 라벨** — 쓰이는 템플릿이 없다 `[코드 BIR 확인]`. 정리는 트리거 없음.
 - **AI 검수 후 보류한 용어 제안** — 낮은 확신이라 반영하지 않았다. 목록은 `docs/BE/i18n.md` "AI 검수 기록". 트리거: 원어민 검수 도입.
-- **스태프가 새로 만든 카테고리의 번역과 행·상세·칩 표시** — 새 카테고리도 자동으로 en·ja·zh-hans가 등록돼야 한다는 사용자 결정(2026-10-22)에 따라 트랙 44-4가 맡는다(`Category.label_translations` 초안, 러너 파이프라인). 슬러그가 그대로 나오던 행·상세·칩(`web/views/_helpers.py:67, :161` `[실측 rg 2026-10-27, 그 시점의 줄]`)은 트랙 59에서 DB 라벨 조회로 바뀌었다(`core.categories.category_display_labels` `[코드]`, 가드레일 `docs/BE/category-vocabulary.md`). 그 슬라이스에는 번역 등록만 남는다. 그 전까지 새 카테고리는 한국어 라벨이다.
+- **스태프가 새로 만든 카테고리의 번역과 행·상세·칩 표시** — 새 카테고리도 자동으로 en·ja·zh-hans가 등록돼야 한다는 사용자 결정(2026-10-22)에 따라 트랙 44-4가 맡기로 했으나 44-4는 폐기됐다(2026-11-18, `Category.label_translations` 초안은 `docs/plan-archive/track-44.md`). 슬러그가 그대로 나오던 행·상세·칩(`web/views/_helpers.py:67, :161` `[실측 rg 2026-10-27, 그 시점의 줄]`)은 트랙 59에서 DB 라벨 조회로 바뀌었다(`core.categories.category_display_labels` `[코드]`, 가드레일 `docs/BE/category-vocabulary.md`). 번역 등록은 하지 않으므로 새 카테고리는 한국어 라벨로 남는다.
 - **개인 항목 검색의 다국어 일치** — `archive/queries.py:341` `icontains`는 한국어 저장값만 맞춘다(영어 `exhibition` 검색은 안 걸린다). 트리거: 다국어 검색 요구.
 - **`lang="ko"`를 못 붙이는 곳** — 활동 달력 항목 라벨(출처 플래그 없음, `CalendarActivityItem` 변경 필요), `alt`, 제목+날짜 혼합 `<option>`·컬렉션 상세 연결 방문 값 문자열. 트리거: 스크린리더 사용자 피드백 또는 도메인 변경 시.
 - **테스트가 실제 `media/`에 쓴다** — `MEDIA_ROOT`를 테스트가 재정의하지 않아 사진 행 15개 대비 파일 8004개가 쌓여 있다 `[실측 2026-10-23]`. 43-3과 무관한 기존 문제. 트리거: 디스크 사용량 확인 시.
 - **브라우저 미확인 항목** — 라이트 테마, 중국어 하단 고정 CTA, `/jsi18n/` 차단의 브라우저 재현, 로그인 상태 해제 확인 모달·상태 패널의 영어·일본어·중국어 동작, 실제 터치·스크린리더, 폭 385~919px 전 구간, 일부 사진만 성공하는 부분 실패, ja·zh 링크 접근 가능한 이름(홈 '기록' 링크만 2026-11-18에 확인했다 — ko·en·ja·zh-hans × 3개 브라우저에서 계산된 이름이 `기록`의 번역 + 행 제목 `[실측 Playwright]`. 그 밖의 링크는 미확인). 미확인 상태로 두는 것을 사용자가 수용했다(2026-10-22, 43-3 범위는 최종 보고에서 재확인). 트리거: 다음 UI 트랙 브라우저 검증.
 - **영어 `참여 상태` 번역** — `Your status`(현재) vs `Attendance status`. 원문이 모호. 트리거: 원어민 검수 도입.
-- **트랙 44: 스태프 게시물(행사) 다국어 자동 등록** — 44-1(행사 콘텐츠 번역)은 PR #399 머지 완료(2026-10-27, main `e38a0db9`, `prompt_plan.md` 트랙 44 §10); deploy PR #401 머지(`9c155a7c`, 2026-10-27)했으나 라이브 반영은 55분까지 미관측(Render 확인 필요, 사용자 몫); 번역 시작은 맥 러너 재시작(저장소 main·`uv sync`)과 런북 §3 항목 19 확인이 남았다(사용자 몫). 공개 화면 노출(44-2)은 착수 가능하되 착수 전 사용자 결정 5건과 장식 유니코드 정규화 결정이 먼저다(현재 상태 표 44-1 행). 새 카테고리 자동 번역(44-4)은 사용자 결정(2026-10-22)으로 범위에 들어왔다. 서버 LLM API는 비용 정책상 쓰지 않고 로컬 러너로 번역한다.
-- **번역 큐 영구 실패 20건 초과** — 서버 큐는 가장 오래된 20건만 돌려주므로(`events/translation_queue.py::PENDING_LIMIT`), 시도 한도(`TRANSLATION_MAX_ATTEMPTS = 2`)에 도달한 이벤트가 20건을 넘으면 그보다 새 이벤트가 처리되지 않을 수 있다. 트리거: 실제 발생 또는 44-3 착수.
+- **트랙 44: 스태프 게시물(행사) 다국어 자동 등록** — 44-1(행사 콘텐츠 번역)은 PR #399 머지 완료(2026-10-27, main `e38a0db9`, 계획 `docs/plan-archive/track-44.md` §10). 번역 시작에 필요한 맥 러너 재시작과 런북 §3 항목 19 확인은 "사용자 확인 대기" 목록에 있다. 공개 화면 노출(44-2)·스태프 상태와 다시 번역(44-3)·새 카테고리 자동 번역(44-4)은 **폐기**했다(2026-11-18 사용자 결정). 번역문은 `Event.text_translations`에 저장만 되고 화면에는 나오지 않는다. 서버 LLM API는 비용 정책상 쓰지 않고 로컬 러너로 번역한다.
+- **번역 큐 영구 실패 20건 초과** — 서버 큐는 가장 오래된 20건만 돌려주므로(`events/translation_queue.py::PENDING_LIMIT`), 시도 한도(`TRANSLATION_MAX_ATTEMPTS = 2`)에 도달한 이벤트가 20건을 넘으면 그보다 새 이벤트가 처리되지 않을 수 있다. 트리거: 실제 발생(44-3은 폐기).
 - **단위 풀어쓰기 숫자 격리** — "5만원"→"KRW 50,000" 같은 단위 풀어쓰기는 지어낸 숫자로 격리된다(`number_invented`). 알려진 한계, 트리거 없음.
-- **`manual` 플래그는 이벤트 단위 하나** — 언어별로 쪼갤지는 44-3 착수 때 사용자 재확인한다.
+- **`manual` 플래그는 이벤트 단위 하나** — 언어별로 쪼갤지는 번역 관리 화면을 다시 계획할 때 사용자 재확인한다(44-3은 폐기).
 - **시각 의존 테스트 불안정** — `tests/drafts/test_discovery_runs.py::test_runner_is_online…` 3케이스가 파라미터 `timezone.now()`를 수집 시점에 한 번 계산해 하트비트 신선도 기준 120초(`[코드 drafts/discovery_runs.py:16]` `HEARTBEAT_FRESH_SECONDS`)를 넘겨 실행되면 실패하고, `tests/drafts/test_agent_drafts.py`의 모듈 상수 `_TODAY`는 자정을 넘기면 어긋난다. 전체 회귀가 152.46초 `[실측 2026-10-27 main e38a0db9]`(2026-10-26에는 128.91초)로 120초 기준을 넘었다 — 트리거 충족. 트리거: 다음에 이 테스트를 손댈 때 또는 CI 시간이 120초를 넘을 때(충족, 다음 백엔드 트랙에서 먼저 처리). → **해소(2026-10-27, 트랙 45)**: 파라미터를 초 단위 오프셋으로 바꿔 실행 시점에 `timezone.now()`를 계산하고, `test_agent_drafts.py`의 `_TODAY` 상수는 호출 시점 함수로 교체. 수집 후 121초 대기 플러그인으로 수정 전 2 failed → 수정 후 3 passed `[실측 2026-10-27]`.
 - **번역 의미 품질 사람 검수·표본 평가 없음** — 사용자 결정(AI 검증만). 트리거: 원어민 검수 도입.
-- **장식 유니코드가 판정은 통과하고 원형 그대로 저장될 수 있음** — 문자 판정·ASCII 우회·한글 잔존 검사는 NFKC로 접은 문자열에서 돌고 저장은 NFC라서, 수학 알파뉴메릭 기호(예: U+1D400 대역) 같은 장식 유니코드가 통과할 수 있다(XSS 아님, 표시 품질·눈속임 문제). 트리거: 44-2 착수 전.
+- **장식 유니코드가 판정은 통과하고 원형 그대로 저장될 수 있음** — 문자 판정·ASCII 우회·한글 잔존 검사는 NFKC로 접은 문자열에서 돌고 저장은 NFC라서, 수학 알파뉴메릭 기호(예: U+1D400 대역) 같은 장식 유니코드가 통과할 수 있다(XSS 아님, 표시 품질·눈속임 문제). 트리거: 번역문 화면 노출을 다시 계획할 때(44-2는 폐기).
 - **러너 배치가 통신·기타 예외에서 매번 같은 자리에서 멈출 수 있음** — `translate_pending_batch`는 4xx(429 제외)·`AdapterOutputError`·`ValueError`만 이벤트별 시도 횟수에 반영한다(전수검사 2026-10-26로 HTTP 상태 오류 분류는 해소). 5xx·429·`OSError` 등 통신·기타 예외는 의도적으로 전파되어 배치가 중단되고 횟수가 오르지 않으므로, 개별 이벤트 탓인 `OSError`가 나면 같은 자리에서 반복 중단될 수 있다. 트리거: 실제 발생 시.
 - **고유명사 라틴 예외 폭 축소** — 현재 최대 폭은 `min(400, max(40, 6 × 원문 길이))`자다. 더 좁히려면(예: 80자) 제품 결정 재확인이 필요하다. 트리거: 사용자 재확인.
 - **번역 전수검사(2026-10-26) 이연 항목** — 전부 트리거 없이는 착수하지 않는다.
@@ -715,6 +740,27 @@ F10 MFA(2026-07-01 `auth-hardening` 결정).
 - **폐기된 시안 기반 시각 작업** — 과거 시안에서 나온 항목은 계속 착수하지 않는다.
   새 행사 에디토리얼 방향은 D4와 `docs/FE/event-typography-editorial.md`만 따른다.
 - **데이터 내보내기(CSV/JSON)** — 어떤 구속 결정에도 없다. 요구가 생기면 그때.
+
+### 폐기한 계획 (2026-11-18 사용자 결정)
+
+사용자 지시 "열린 트랙 폐기. 작업 혼동 가능성."에 따라 아래 계획은 폐기했다.
+계획 원문은 `docs/plan-archive/`에 기록으로만 남고, 각 파일 첫 줄에 폐기 표시가
+있다. **이 파일들을 실행 계획으로 읽지 않는다.** 다시 하려면 사용자 승인과 새
+계획이 필요하고, 옛 계획의 `file:line` 근거는 모두 다시 재야 한다.
+
+| 계획 | 폐기 범위 | 그대로 유효한 것 | 원문 |
+|---|---|---|---|
+| 트랙 12 비밀번호 생성 경로 보안 | 전체(미착수) | 없음 | `docs/plan-archive/track-12.md` |
+| 트랙 31 인스타그램 계정 정기 수집 | 전체(미착수) | 선행 트랙 30(PR #361) | `docs/plan-archive/track-31.md` |
+| 트랙 38 어댑터 얇게 | 슬라이스 A·B·C | PR 0 #380·PR 1 #382 | `docs/plan-archive/track-38.md` |
+| 트랙 44 행사 다국어 자동 등록 | 44-2·44-3·44-4 | 44-1(PR #399) | `docs/plan-archive/track-44.md` |
+| 트랙 50 디자인 시스템 | 예약 트랙 B~E(51~54) | A단계 `docs/FE/design-principles.md` | `docs/plan-archive/track-50.md` |
+| C2 소개 페이지 | 전체(미착수, 트랙 50의 E단계) | 없음 | 이 문서 C2 |
+
+`docs/BE/i18n.md`, `docs/FE/design-principles.md`, 런북 등 가드레일 문서 본문에
+남은 "44-2", "44-3", "44-4", "트랙 B", "트랙 31" 언급은 폐기된 계획을 가리킨다.
+그 문장이 적은 조건(예: 화면 노출 전 정규화 통일)은 같은 일을 다시 계획할 때의
+조건으로만 읽는다.
 
 ---
 
