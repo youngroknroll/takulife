@@ -488,6 +488,9 @@ ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
 ACCOUNT_UNIQUE_EMAIL = True
+# 가입·비밀번호 재설정 화면이 계정 존재 여부를 드러내지 않게 한다.
+# allauth 기본값과 같은 값이지만 기본값에 기대지 않으려고 명시한다.
+ACCOUNT_PREVENT_ENUMERATION = True
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3

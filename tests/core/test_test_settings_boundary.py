@@ -69,6 +69,16 @@ def test_운영_설정은_argon2를_첫_해셔로_pbkdf2는_레거시_검증용�
 
 
 @pytest.mark.contract
+def test_운영_설정은_계정_열거_방지를_명시적으로_켠다():
+    # Given: 운영 설정 모듈(config.settings)을 독립적으로 로드한다.
+    운영_설정 = Settings(_PRODUCTION_SETTINGS_MODULE)
+
+    # When/Then: 가입·재설정 화면에서 계정이 있는지 드러내지 않는다.
+    # allauth 기본값에 기대지 않고 운영 설정에 직접 적는다.
+    assert 운영_설정.ACCOUNT_PREVENT_ENUMERATION is True
+
+
+@pytest.mark.contract
 @pytest.mark.parametrize(
     "relative_path",
     _ENTRY_POINTS_MUST_REFERENCE_PRODUCTION_SETTINGS,
