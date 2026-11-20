@@ -312,3 +312,15 @@ jobs:
           docker rm -f takulife-smoke
 
           exit "$status"
+
+      # 해셔는 처음 쓸 때 불러오므로 헬스 체크로는 해셔 설정 오류가 안 보인다.
+      # 운영 설정으로 비밀번호를 한 번 실제로 해시해 첫 해셔가 Argon2id인지 본다.
+      - name: Hash a password with the production hasher
+        run: |
+          SECRET_KEY="docker-smoke-$(printf '0123456789abcdef%.0s' 1 2 3 4)"
+          docker run --rm --entrypoint python \
+            -e DJANGO_SETTINGS_MODULE=config.settings \
+            -e SECRET_KEY="$SECRET_KEY" \
+            -e ALLOWED_HOSTS="localhost" \
+            -e DEBUG="false" \
+            takulife:ci -c "import django; django.setup(); from django.contrib.auth.hashers import make_password; h = make_password('x'); assert h.startswith('argon2\$argon2id\$'), h.split('\$')[0]; print(h.split('\$')[0], h.split('\$')[3])"
