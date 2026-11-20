@@ -426,6 +426,15 @@ CACHES = {
 # 공개 캐시 유지 시간(초). 0이면 캐시하지 않는다.
 PUBLIC_CACHE_TTL_SECONDS = load_public_cache_ttl_seconds()
 
+# 새 비밀번호는 첫 항목(Argon2)으로 저장한다. PBKDF2 두 항목은 예전 해시를
+# 확인해 로그인 때 Argon2로 바꾸는 데만 쓴다. Argon2를 빼거나 PBKDF2를 빼면
+# 해당 사용자가 로그인할 수 없다. 자세한 근거는 docs/BE/password-hashing.md.
+PASSWORD_HASHERS = [
+    "accounts.hashers.CalibratedArgon2PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher",
+]
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
