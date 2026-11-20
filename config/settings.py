@@ -507,6 +507,7 @@ ACCOUNT_ADAPTER = "accounts.adapters.AccountAdapter"
 ACCOUNT_FORMS = {
     "signup": "accounts.forms.SignupForm",
     "add_email": "accounts.forms.EmailChangeForm",
+    "change_password": "accounts.forms.PasswordChangeForm",
 }
 
 # django-allauth socialaccount: 구글 로그인. 자격 증명은 env로만 받고(절대

@@ -1,4 +1,5 @@
-from allauth.account.forms import AddEmailForm
+from allauth.account.adapter import get_adapter
+from allauth.account.forms import AddEmailForm, ChangePasswordForm
 from allauth.account.forms import SignupForm as AllauthSignupForm
 from allauth.socialaccount.forms import SignupForm as AllauthSocialSignupForm
 from django import forms
@@ -107,6 +108,18 @@ class EmailChangeForm(AddEmailForm):
         if not check_password(current_password, self.user.password):
             raise forms.ValidationError(_("비밀번호가 올바르지 않습니다."))
         return current_password
+
+
+class PasswordChangeForm(ChangePasswordForm):
+    """allauth 비밀번호 변경 폼에서 현재 비밀번호 확인만 바꾼다."""
+
+    def clean_oldpassword(self):
+        oldpassword = self.cleaned_data.get("oldpassword", "")
+        # 비밀번호만 확인하고 해시는 바꾸지 않는다. 새 비밀번호가 거부돼도
+        # 지금 로그인한 세션이 다음 요청에서 끊기지 않게 한다.
+        if not check_password(oldpassword, self.user.password):
+            raise get_adapter().validation_error("enter_current_password")
+        return oldpassword
 
 
 class NicknameChangeForm(forms.Form):
