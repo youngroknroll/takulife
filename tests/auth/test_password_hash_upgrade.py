@@ -2,8 +2,11 @@
 동작하는지 지킨다.
 """
 
+from datetime import timedelta
+
 from django.contrib.auth.hashers import make_password
 from django.test import override_settings
+from django.utils import timezone
 import pytest
 
 pytestmark = pytest.mark.web
@@ -72,3 +75,59 @@ def test_이메일_변경_화면에서_현재_비밀번호를_확인해도_다�
     # Then: 다음 요청에서도 같은 client로 로그인 상태가 유지된다.
     response = client.get("/accounts/settings/")
     assert response.status_code == 200
+
+
+@pytest.mark.django_db
+def test_틀린_비밀번호로_로그인하면_실패하고_해시는_그대로다(
+    client,
+    make_verified_user,
+    valid_password,
+    production_password_hashers,
+):
+    # Given: 운영 해셔 목록을 적용한 상태에서 사용자 비밀번호를 예전
+    # PBKDF2 해시로 바꿔 저장한다.
+    user = make_verified_user()
+    with override_settings(PASSWORD_HASHERS=production_password_hashers):
+        user.password = make_password(valid_password, hasher="pbkdf2_sha256")
+        user.save(update_fields=["password"])
+
+        # When: 틀린 비밀번호로 로그인을 시도한다.
+        response = client.post(
+            "/accounts/login/", {"login": user.email, "password": "definitely-wrong"}
+        )
+
+        # Then: 로그인은 거부되고 저장된 해시도 그대로다.
+        assert response.status_code == 200
+        user.refresh_from_db()
+        assert user.password.startswith("pbkdf2_sha256$")
+
+
+@pytest.mark.django_db
+def test_로그인_중_해시가_바뀌어도_password_changed_at은_그대로다(
+    client,
+    make_verified_user,
+    valid_password,
+    production_password_hashers,
+):
+    # Given: password_changed_at에 과거 시각을 심는다. 기본값 None이면
+    # 아무 경로도 안 건드린 것과 구별이 안 되기 때문이다.
+    user = make_verified_user()
+    심어둔_시각 = timezone.now() - timedelta(days=5)
+    user.password_changed_at = 심어둔_시각
+    user.save(update_fields=["password_changed_at"])
+    with override_settings(PASSWORD_HASHERS=production_password_hashers):
+        user.password = make_password(valid_password, hasher="pbkdf2_sha256")
+        user.save(update_fields=["password"])
+
+        # When: 올바른 비밀번호로 로그인한다.
+        response = client.post(
+            "/accounts/login/", {"login": user.email, "password": valid_password}
+        )
+
+        # Then: 로그인은 성공하고 해시도 Argon2id로 바뀐다(전제 확인).
+        assert response.status_code == 302
+        user.refresh_from_db()
+        assert user.password.startswith("argon2$argon2id$")
+
+    # Then: 해시 전환만으로는 password_changed_at이 바뀌지 않는다.
+    assert user.password_changed_at == 심어둔_시각
