@@ -22,7 +22,7 @@
 성공할 때 Argon2id로 바뀐다. Django 기본 동작이다
 `[코드 hashers.py:58-59, base_user.py:106-110]`.
 
-테스트 설정은 MD5 하나뿐이다 `[코드 config/settings_test.py:20]`. 그래서
+테스트 설정은 MD5 하나뿐이다 `[코드 config/settings_test.py:22]`. 그래서
 테스트에서 운영 해셔를 쓰려면 `tests/auth/conftest.py`의
 `production_password_hashers`와 `override_settings`를 쓴다.
 
@@ -45,12 +45,12 @@
 | 이전 PBKDF2 1,000,000회 | 0.209 s | 0.1 MiB | — | 0.418 s |
 | Django 기본(m=102,400 KiB, t=2, p=8) | 0.034 s | 100.3 MiB | 200.0 MiB·회 | 0.068 s |
 | OWASP 최소(m=19,456 KiB, t=2, p=1) | 0.017 s | 19.1 MiB | 38.0 MiB·회 | 0.034 s |
-| 채택(m=19,456 KiB, t=24, p=1) | 0.194 s | 19.7 MiB | 456.0 MiB·회 | 0.388 s |
+| 채택(m=19,456 KiB, t=24, p=1) | 0.197 s | 19.7 MiB | 456.0 MiB·회 | 0.394 s |
 
 해시 1회·최대 메모리 증가는 로컬 Apple M1에서 해셔 하나만 돌린
 프로세스의 5회 중앙값과 최대 RSS 증가다 `[실측 로컬 2026-11-20]`.
-채택 행 메모리는 구현한 `CalibratedArgon2PasswordHasher`로 따로 쟀다.
-2회 실행해 1회 시간 0.197 s·0.227 s, 메모리 19.7 MiB가 나왔다
+채택 행은 구현한 `CalibratedArgon2PasswordHasher`를 같은 방법으로 2회
+재 첫 회 값을 적었다(1회 0.197 s·0.227 s, 메모리는 두 번 모두 19.7 MiB)
 `[실측 로컬 2026-11-20]`. 메모리×반복과 실패 로그인은
 `[계산 m×t, 1회 시간×2]`이다. 실패 로그인의 실제 종단 시간은 (d)에
 있다.
@@ -98,11 +98,35 @@ t=24 결정 근거: PBKDF2 1,000,000회와 Argon2id를 번갈아 15쌍 잰 쌍�
    - 모델 메서드 `user.check_password`는 해시를 바꾼다. 해시가 바뀌면
      세션 해시가 달라져 다음 요청에서 로그아웃된다
      `[코드 django/contrib/auth/__init__.py:312-334]`.
-   - 현재 적용 위치: `accounts/forms.py`
-     `EmailChangeForm.clean_current_password`.
+   - 현재 적용 위치는 두 곳이다.
+     - `accounts/forms.py` `EmailChangeForm.clean_current_password`.
+     - `accounts/forms.py` `PasswordChangeForm.clean_oldpassword`.
+       allauth `ChangePasswordForm`을 `ACCOUNT_FORMS["change_password"]`로
+       교체한 것이다 `[코드 config/settings.py ACCOUNT_FORMS]`. 교체한
+       이유: 원본은 새 비밀번호를 검증하기 전에 해시를 바꾼다. 그래서
+       새 비밀번호가 거부되면 폼은 실패하는데 해시는 이미 바뀌어 다음
+       요청에서 로그아웃됐다
+       `[코드 allauth/account/forms.py:48-55,595-599]`.
    - 계정 삭제(`web/views/account.py`)는 확인 직후 로그아웃하므로
      해당하지 않는다.
    - 비밀번호를 다시 확인하는 화면을 새로 만들 때도 같은 규칙을 따른다.
+   - 라이브러리 코드도 대상이다. allauth 안에서 모델 `check_password`를
+     부르는 곳은 셋이다
+     `[실측 rg --no-ignore -n '\.check_password\(' .venv/lib/python3.13/site-packages/allauth, 테스트 제외]`.
+     - 로그인 백엔드 `allauth/account/auth_backends.py:108`: 해시가
+       바뀐 뒤에 같은 사용자 객체로 세션을 만들어 안전하다.
+     - 비밀번호 변경 폼 `allauth/account/forms.py:597`: 위에서
+       교체했다.
+     - headless 비밀번호 변경 입력
+       `allauth/headless/account/inputs.py:183`: 지금은
+       `INSTALLED_APPS`에 headless가 없어 닿지 않는다. headless를
+       켜면 같은 규칙을 적용해야 한다.
+   - 재인증 `allauth/account/adapter.py:827-843`(`reauthenticate`)도
+     `authenticate`를 거쳐 해시를 바꾼다. 다만
+     `ACCOUNT_REAUTHENTICATION_REQUIRED` 기본값이 False이고
+     `[코드 allauth/account/app_settings.py:549-550]` 저장소에 설정이
+     없어 지금은 닿지 않는다. 켜면 같은 확인이 필요하다.
+   - allauth를 올리거나 새 allauth 화면을 켤 때는 위 rg를 다시 돌린다.
 5. 해셔는 처음 쓸 때 불러온다 `[코드 hashers.py:116-127]`.
    - 그래서 `manage.py check`와 Docker 헬스 체크로는 해셔 설정 오류를
      잡지 못한다.
@@ -226,4 +250,6 @@ MiB로 바꾼다. 해셔마다 프로세스를 따로 띄운다.
 - `tests/core/test_test_settings_boundary.py`: 해셔 목록 계약, 열거 방지
 - `tests/auth/test_password_hashing.py`: 새 비밀번호 접두, 매개변수
 - `tests/auth/test_password_hash_upgrade.py`: 로그인 전환, 이메일 변경
-  세션, 틀린 비밀번호, `password_changed_at`
+  세션, 틀린 비밀번호, `password_changed_at`, 비밀번호 변경 거부 뒤 세션
+- `tests/auth/test_password_change.py`: 비밀번호 변경의 현재 비밀번호
+  확인
