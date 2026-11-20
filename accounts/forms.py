@@ -3,6 +3,7 @@ from allauth.account.forms import SignupForm as AllauthSignupForm
 from allauth.socialaccount.forms import SignupForm as AllauthSocialSignupForm
 from django import forms
 from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import check_password
 from django.forms import BooleanField, CharField, PasswordInput, TextInput
 from django.urls import reverse_lazy
 from django.utils import timezone
@@ -101,7 +102,9 @@ class EmailChangeForm(AddEmailForm):
 
     def clean_current_password(self):
         current_password = self.cleaned_data["current_password"]
-        if not self.user.check_password(current_password):
+        # 비밀번호만 확인하고 해시는 바꾸지 않는다. 여기서 해시가 바뀌면
+        # 지금 로그인한 세션이 다음 요청에서 끊긴다.
+        if not check_password(current_password, self.user.password):
             raise forms.ValidationError(_("비밀번호가 올바르지 않습니다."))
         return current_password
 
