@@ -38,7 +38,7 @@
 | 실행 순서 | 1단계(배포) 완료(2026-08-31, takulife.kr) / 2·3·4단계 완료 / **5단계는 실코호트 대기**(C1) / 6단계 미착수 |
 | 행사 카탈로그 | 게시 169건 중 146건 종료(86%), 진행·예정 23건 `[실측 2026-08-24]` — 스냅샷이며 현재값 아님(재측정은 운영 DB) |
 | OAuth | 활성화 완료(2026-08-26, 실 OAuth 왕복은 사용자 검증) |
-| 열린 계획 | **없음**(2026-11-18). `prompt_plan.md`에 있던 절은 모두 `docs/plan-archive/`로 옮겼다. 폐기한 계획은 "착수하지 않는 것" 절 |
+| 열린 계획 | **트랙 61**(비밀번호 Argon2id 전환) PR #424 머지 대기(2026-11-20). 계획 원문은 `docs/plan-archive/track-61.md`(`prompt_plan.md`를 아직 비우지 않아 바로 보관). 그 밖의 절은 모두 `docs/plan-archive/`로 옮겼고, 폐기한 계획은 "착수하지 않는 것" 절 |
 
 ### 머지된 트랙
 
@@ -74,6 +74,7 @@ production 반영: deploy PR #417 머지(2026-11-18, production `0c0ceed8`)까�
 
 코드로 닫을 수 없고 사용자만 확인할 수 있는 항목이다. 확인하면 이 목록에서 지운다.
 
+- 트랙 61(PR #424 배포 뒤): `docs/deploy-runbook.md` §3-23 — 저장 접두 `argon2` 확인, Render 로그 `Perhaps out of memory?` 검색, 선택으로 운영 CPU 시간 비율.
 - 트랙 59: 운영 DB의 카테고리·슬롯 확인(`docs/deploy-runbook.md` §3-22).
 - 트랙 17: Supabase 연결 수 그래프, 헬스 체크 간격, 배포 뒤 7일 아웃바운드 기록(`docs/deploy-runbook.md` §3-20·§3-21 가운데 밖에서 잴 수 없는 것).
 - 트랙 44-1: 맥 러너 재시작(저장소 main·`uv sync`), `docs/deploy-runbook.md` §3 항목 19(`0009` DB 기본값). 2026-10-27 배포 시점 기준 미수행.
@@ -336,6 +337,7 @@ M1~M11 전부 Red. 이관 중 발견한 이연 항목 4건(템플릿 `core→web
 | F16 | `.dockerignore`가 `.claude/`를 제외하지 않아 런타임 이미지에 하네스 파일(훅·에이전트 정의·settings)이 들어간다 | `[코드]` `Dockerfile:22` `COPY . .`, `.dockerignore` 제외 목록에 `.claude` 0건(트랙 18 DOR 발견, 2026-09-03) | 해소 `[실측 gh 2026-10-20]` — 트랙 41 커밋 `92a7cdda`(`.dockerignore`에 `.claude`), PR #389 머지 2026-10-06 |
 | F17 | CI `e2e` 잡의 `continue-on-error: true` 해제 시점 | `[문서]` 트랙 27 DOR 제안 기준 — main 연속 10회 `[문서 DOR 제안]` 비결함 그린 뒤 필수 게이트로 전환 | 미해결 사용자 결정. 롤백은 잡에 `if: false` 한 줄 |
 | F18 | 스태프 셸이 CSRF 쿠키를 새로 발급하지 않는다 | `[실측 2026-09-10 e2e E7]` `templates/staff/base_staff.html`은 `{% csrf_token %}` 0건이라 일반 셸(`templates/core/partials/_topbar.html:37` 로그아웃 폼)과 달리 `csrftoken` 쿠키를 심지 않는다. 로그인 폼을 거친 사용자는 쿠키가 있지만, 쿠키가 지워진 상태로 `/staff/events/`에 바로 들어오면 일괄 비공개·인라인 액션 fetch가 403("세션이 만료되었거나 보안 토큰…") | 후보 수정 = 스태프 목록 뷰에 `ensure_csrf_cookie` 또는 셸에 `{% csrf_token %}`. 트랙 27은 운영 코드 무변경 범위라 테스트 픽스처 `login_as`가 쿠키를 심는 것으로 대응했다 |
+| F20 | `-n auto` 전체 회귀에서 staff 카테고리 테스트가 간헐 실패한다(원인 미확인) | `[실측 2026-11-20, 브랜치 feat/argon2-password-hashing]` 6회 중 1회(65.79 s, Docker amd64 빌드 직후) 3건 실패: `tests/staff/test_staff_draft_views.py::TestEventDraftDetailView::test_존재하는_드래프트_상세는_카테고리_지역_라벨을_사람이_읽을_수_있게_보여준다`, `tests/staff/test_staff_events_views.py::test_카테고리_칩_건수의_합은_전체_칩_건수와_같다[필터_없음]`, 1건은 이름 미기록. 이후 전체 5회와 두 파일 직렬·xdist 각 3회는 통과 | 기록만(2026-11-20 사용자 결정). 다시 나면 실패 이름·트레이스백을 남긴다 |
 | F19 | 홈 스냅샷이 방문 기록 수를 활성 조건에 넣지 않는다 | `[코드 web/views/events.py:237, e2e E4에서 발견]` 방문 기록만 1건인 사용자에게도 홈 `snapshot_active`가 "아직 기록이 없어요"를 보여준다 | 제품 판단 필요(방문 기록 수를 활성 조건에 넣을지). 트랙 27은 E4의 Then을 방문 기록 목록으로 옮겨 대응했다 |
 
 **로컬 에이전트 수집처 탐색 — 구현됨(2026-08-20~24, PR #299·#301).** 서버

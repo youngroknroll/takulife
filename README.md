@@ -41,7 +41,7 @@
 |---|---|---|
 | 백엔드 | Python 3.13, Django 5.2, DRF | 인증·ORM·마이그레이션·어드민이 내장돼 1인 개발에서 도메인 설계에 집중할 수 있다. 관리자 검수 파이프라인이 핵심이라 SSR과 세션 인증 조합이 맞았다 |
 | DB | PostgreSQL(로컬은 SQLite 폴백) | 조건부 `UniqueConstraint`·`CheckConstraint`·`select_for_update`로 정합성을 DB에서 강제하는 것이 설계의 축이다 |
-| 인증 | django-allauth, django-axes | 이메일 인증, Google 로그인, 5회 실패 시 1시간 IP 잠금을 직접 구현하지 않았다 |
+| 인증 | django-allauth, django-axes | 이메일 인증, Google 로그인, 5회 실패 시 1시간 IP 잠금을 직접 구현하지 않았다. 비밀번호는 Argon2id(메모리 19,456 KiB·반복 24회 `[코드 accounts/hashers.py]`)로 저장하고, 기존 PBKDF2 해시는 로그인 때 바꾼다 |
 | 공유 캐시 | PostgreSQL `DatabaseCache` | 요청 제한·로그인 잠금 카운터를 Gunicorn 워커 간에 공유해야 했고, Redis를 추가하지 않고 DB를 썼다 |
 | 프런트엔드 | 순수 CSS(OOCSS/BEM), 바닐라 JS | SSR 중심이라 빌드 체인 없이 유지비를 낮췄다 |
 | 테스트 | pytest, pytest-xdist, pytest-playwright | 백엔드 전체 회귀는 `-n auto`로 병렬 실행한다(트랙 49, PR #407, 2026-10-30). 여정 e2e 10건은 `-m e2e`로만 직렬 실행한다 |
@@ -160,6 +160,7 @@ uv run pytest -q -m e2e tests/e2e   # 여정 e2e(Playwright, 별도 실행)
 | 테스트 실행시간 개선 | [docs/BE/test-suite-speed.md](docs/BE/test-suite-speed.md) |
 | 배포·운영 | [docs/deploy-runbook.md](docs/deploy-runbook.md), [docs/operations-runbook.md](docs/operations-runbook.md) |
 | 보안 검토 | [docs/BE/security-review-2026-09-27.md](docs/BE/security-review-2026-09-27.md), [docs/BE/draft-fetching-ssrf.md](docs/BE/draft-fetching-ssrf.md) |
+| 비밀번호 해시(Argon2id 전환) | [docs/BE/password-hashing.md](docs/BE/password-hashing.md) |
 | 수집처 탐색·검수 생명주기 | [docs/BE/draft-source-agent-discovery.md](docs/BE/draft-source-agent-discovery.md), [docs/BE/draft-review-lifecycle.md](docs/BE/draft-review-lifecycle.md) |
 | 다국어·OpenAPI·오류 묶음·보존 정리 | [docs/BE/i18n.md](docs/BE/i18n.md), [docs/BE/openapi-schema.md](docs/BE/openapi-schema.md), [docs/BE/error-groups.md](docs/BE/error-groups.md), [docs/BE/data-retention.md](docs/BE/data-retention.md) |
 | 백로그·머지 이력 | [docs/backlog.md](docs/backlog.md), [docs/pr-log.md](docs/pr-log.md) |

@@ -426,6 +426,16 @@ CACHES = {
 # 공개 캐시 유지 시간(초). 0이면 캐시하지 않는다.
 PUBLIC_CACHE_TTL_SECONDS = load_public_cache_ttl_seconds()
 
+# 비밀번호 해셔 목록(근거: docs/BE/password-hashing.md):
+# - 첫 항목 Argon2로 새 비밀번호를 저장한다.
+# - PBKDF2 두 항목은 예전 해시 확인용이며, 로그인 때 Argon2로 바뀐다.
+# - Argon2나 PBKDF2를 빼면 해당 사용자가 로그인할 수 없다.
+PASSWORD_HASHERS = [
+    "accounts.hashers.CalibratedArgon2PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher",
+]
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -479,6 +489,9 @@ ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
 ACCOUNT_UNIQUE_EMAIL = True
+# 가입·비밀번호 재설정 화면이 계정 존재 여부를 드러내지 않게 한다.
+# allauth 기본값과 같은 값이지만 기본값에 기대지 않으려고 명시한다.
+ACCOUNT_PREVENT_ENUMERATION = True
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3
@@ -494,6 +507,7 @@ ACCOUNT_ADAPTER = "accounts.adapters.AccountAdapter"
 ACCOUNT_FORMS = {
     "signup": "accounts.forms.SignupForm",
     "add_email": "accounts.forms.EmailChangeForm",
+    "change_password": "accounts.forms.PasswordChangeForm",
 }
 
 # django-allauth socialaccount: 구글 로그인. 자격 증명은 env로만 받고(절대

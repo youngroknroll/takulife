@@ -67,7 +67,7 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 | `DRAFT_FETCH_CONTACT` | 선택 | config/settings.py `load_draft_fetch_contact` | 크롤러 UA 연락처(`docs/operations-runbook.md` §8 참조) |
 | `PORT` | 선택 | `docker/entrypoint.sh` `--bind` | 기본값 `8000` |
 | `GUNICORN_TIMEOUT` | 선택 | `docker/entrypoint.sh` `--timeout`, `.env.example` | 워커 타임아웃(초). 기본값 `120` `[코드 docker/entrypoint.sh]`. `0`은 타임아웃 해제라 금지 |
-| `WEB_CONCURRENCY` | 선택 | `docker/entrypoint.sh` `--workers` | 워커 수. 기본값 `3` `[코드 docker/entrypoint.sh]`. Render는 `WEB_CONCURRENCY=1`을 넣어 운영 워커는 1개다 `[실측 Render 배포 로그 2026-11-12]` |
+| `WEB_CONCURRENCY` | 선택 | `docker/entrypoint.sh` `--workers` | 워커 수. 기본값 `3` `[코드 docker/entrypoint.sh]`. Render는 `WEB_CONCURRENCY=1`을 넣어 운영 워커는 1개다 `[실측 Render 배포 로그 2026-11-12]`. 워커 수나 스레드를 늘리면 동시 비밀번호 해시가 늘어 `docs/BE/password-hashing.md` (b)의 메모리 가정(해시 1회 19.7 MiB `[실측 로컬]`)을 다시 확인한다 |
 
 ## 2. 첫 배포 절차
 
@@ -360,6 +360,19 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
     `[코드 core/categories.py]`)은 오류 색과 비슷하다 — 슬롯 7이 배정된 카테고리가
     있으면 화면에서 보고 수용 여부를 정한다. 로컬에서는 확인용 카테고리 2개로만
     쟀고 운영 DB는 확인하지 않았다 `[문서 트랙 59, 2026-11-17]`.
+23. **비밀번호 해시 Argon2id 전환(트랙 61) 배포 확인**
+    ① 배포 뒤 본인이 1회 로그인하고 아래 명령을 실행한다. 결과가 `argon2`이면
+    된다. 해시의 나머지 부분은 출력하지 않는다.
+    ```
+    psql "$DATABASE_URL" -c "SELECT split_part(password, '\$', 1) FROM accounts_user WHERE email = '<본인 이메일>';"
+    ```
+    ② Render 로그에서 `Perhaps out of memory?`와 `WORKER TIMEOUT (pid:`를
+    검색한다. 로그인 경로 500이 없는지 본다.
+    ③ 같은 사용자의 다른 기기 세션이 한 번 로그아웃되는 것은 정상이다
+    (`docs/BE/password-hashing.md` (d)).
+    ④(선택) Render Shell을 쓸 수 있으면 `docs/BE/password-hashing.md` (f)
+    스크립트로 운영 CPU의 PBKDF2 대비 Argon2 시간 비율을 잰다. 로컬 기준은
+    1.03배다 `[실측 로컬]`.
 
 ## 4. 백업·복구 (T6)
 
@@ -406,6 +419,13 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 
 - **이전 이미지 재배포**: PaaS의 이전 배포 버전으로 즉시 되돌린다(이미지가
   호스팅 중립이라 플랫폼 기본 롤백 기능을 그대로 사용 가능).
+- **비밀번호 해시(트랙 61) 롤백**: **argon2-cffi 추가 이전 이미지로
+  되돌리지 않는다.** Argon2 해셔를 `PASSWORD_HASHERS`에 둔 채 PBKDF2를
+  첫 항목으로 올리는 설정 변경만 배포한다(코드·의존성 유지). Argon2
+  해셔가 목록에서 사라지면 이미 전환된 사용자는 로그인할 수 없고,
+  복구는 그 사용자의 비밀번호 재설정뿐이다. 근거와 목록 규칙은
+  `docs/BE/password-hashing.md` (c). 이 롤백은 env 토글이 아니라 코드
+  커밋 → main PR → deploy PR 머지(§7)를 거친다.
 - **마이그레이션 역방향 판단 기준**: 롤백 대상 배포가 새 마이그레이션을
   포함했다면, 그 마이그레이션이 되돌릴 수 있는 스키마 변경(컬럼 추가 등)인지
   확인 후 `manage.py migrate <app> <이전 마이그레이션 이름>`으로 역방향
@@ -458,6 +478,7 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 | 배포 후 Supabase 연결 수 실측(트랙 17) | 미검증(계산상 최악 6 ≤ Pool Size 15, §1 DB 항목) | 첫 배포 직후(§3 체크리스트 ⑳) |
 | 배포 후 7일 아웃바운드 비교(트랙 17) | 미검증 | 배포 뒤 7일(§3 체크리스트 ㉑) |
 | `DB_CONN_MAX_AGE`·`PUBLIC_CACHE_TTL_SECONDS` env 롤백의 재시작·재배포 동작(트랙 17) | 미검증 — Render Environment 탭에서 값만 바꿔 저장했을 때 재시작·재배포가 실제로 일어나는지 확인 안 됨 | 다음 env 변경 때(§5) |
+| 운영 CPU에서 Argon2/PBKDF2 해시 시간 비율(트랙 61) | 미검증(로컬 1.03배만 `[실측 로컬 2026-11-20]`) | 배포 뒤 Render Shell을 쓸 수 있을 때(§3 체크리스트 ㉓) |
 
 ## 7. 배포 브랜치와 deploy PR 흐름
 
